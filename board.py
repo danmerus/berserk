@@ -23,8 +23,11 @@ class Board():
     def get_state(self):
         return {i:getattr(self, i) for i in self.__dict__.keys() if i[:1] != '_'}
 
+    def get_available_moves(self, card):
+        return [1,2,29]
+
 
 b = Board()
 b.populate_board([(1, 1)])
-print(b.game_board)
-print(b.get_state())
+#print(b.game_board)
+#print(b.get_state())

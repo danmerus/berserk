@@ -1,0 +1,33 @@
+#:import Line kivy.graphics.Line
+#:import Window kivy.core.window.Window
+
+<MainField>:
+    size_hint: None, None
+    size_hint_x: None
+    size_hint_y: None
+    size: 1920, 1080
+
+<Vertical>:
+    pts: [(Window.width*0.15 + i*Window.width*0.12, Window.height*0.93,  Window.width*0.15 + i*Window.width*0.12, Window.height*0.03) for i in range(6)]
+    canvas:
+        Color:
+            rgba: 1,1,1,1
+    on_parent:
+        for i in range(0, len(root.pts)): self.canvas.add(Line(points=root.pts[i:i+1]))
+
+<Horizontal>:
+    pts: [(Window.width*0.15,  Window.height*0.03 + i*Window.height*0.15,  Window.width*0.75,  Window.height*0.03 + i*Window.height*0.15) for i in range(7)]
+    canvas:
+        Color:
+            rgba: 1,1,1,1
+    on_parent:
+        for i in range(0, len(root.pts)): self.canvas.add(Line(points=root.pts[i:i+1]))
+
+<MoveMark>:
+    canvas:
+        Color:
+            rgba: 1,0,0,1
+        Ellipse:
+            pos: self.x-10, self.y-10
+            size: self.z, self.z
+
