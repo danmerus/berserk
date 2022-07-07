@@ -19,9 +19,11 @@ class Board():
         for c in cards:
             if c.loc >= 0 and c.loc < 30:
                 self.game_board[c.loc] = c
+
     def get_adjacent_cells(self, no):
         pre = [no+6, no-6, no+1, no-1]
         return [x for x in pre if 30 > x >= 0]
+
     def get_available_moves(self, card):
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells(pos)

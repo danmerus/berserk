@@ -5,7 +5,7 @@ from kivy.core.window import Window
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'left', 0)
 Config.set('graphics', 'top',  0)
-#Window.size = (1920, 1080)
+Window.size = (1920, 1080)
 
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
@@ -26,7 +26,6 @@ from functools import partial
 import card as cd
 from itertools import chain
 import board
-
 
 CARD_X_SIZE = (Window.width * 0.12)
 CARD_Y_SIZE = (Window.height * 0.15)
@@ -59,8 +58,10 @@ class MoveMark(ButtonBehavior, Label, Widget):
             anim.start(card)
             curr_widget.destroy_nav_buttons()
 
-            now = curr_widget.card_position_coords.index((x, y))
-            curr_widget.backend.board.update_board(card=card, prev=prev, now=now)
+            for a, b in curr_widget.card_position_coords:
+                if abs(x-a) < 0.001 and abs(y-b) < 0.001:
+                    now = curr_widget.card_position_coords.index((a, b))  # Костыль
+            curr_widget.backend.board.update_board(card=card_obj, prev=prev, now=now)
             card_obj.loc = now
 
 class BerserkApp(App):
@@ -112,6 +113,7 @@ class BerserkApp(App):
                # root.add_widget(l)
 
     def on_click_on_card(self, card, instance):
+       # print('getting card: ', card)
         moves = self.backend.board.get_available_moves(card)
         self.nav_buttons = []
         for move in moves:
@@ -123,7 +125,7 @@ class BerserkApp(App):
             self.root.add_widget(mark)
             self.nav_buttons.append(mark)
 
-    def update_board(self):
+    def create_board(self):
         state = self.backend.board.get_state()
         for i, cell in enumerate(state['game_board']):
             if cell != 0:
@@ -154,7 +156,7 @@ class BerserkApp(App):
         #     if i != 13:
         #         self.layout.remove_widget(bttn)
         root.add_widget(self.layout)
-        self.update_board()
+        self.create_board()
 
         # Dropdowns
         self.dop_zone_1 = DropDown()
