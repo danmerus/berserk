@@ -1,6 +1,7 @@
 import os
 import board
 import berserk_gui
+import numpy.random as rng
 from cards import c1
 from kivy.clock import Clock
 
@@ -18,6 +19,38 @@ class Game:
     def populate_cards(self):
         self.board.populate_board(self.input_cards1)
         self.board.populate_board(self.input_cards2)
+
+    def get_fight_result(self, mod_1=0, mod_2=0):
+        """
+        returns fight simulation, accounts for blessings/curses etc.
+        """
+        x1 = rng.randint(1, 7) + mod_1 # attacker
+        x2 = rng.randint(1, 7) + mod_2 # defender
+        res_dict = {
+            1: (1, 0),
+            2: (2, 1),
+            3: (2, 0),
+            4: (3, 1),
+            5: (3, 0),
+            -1: (1, 0),
+            -2: (0, 0),
+            -3: (0, 1),
+            -4: (1, 2),
+            -5: (0, 2),
+        }
+        score = x1 - x2
+        if score < -5:
+            res = (0, 2)
+        elif score > 5:
+            res = (3, 0)
+        elif score == 0 and x1 <= 4:
+            res = (1, 0)
+        elif score == 0 and x1 > 4:
+            res = (0, 1)
+        else:
+            res = res_dict[score]
+        return res, x1, x2  # (attack, defence) roll1  roll2
+
 
 
     def start(self):

@@ -7,7 +7,7 @@ from kivy.core.window import Window
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'left', 0)
 Config.set('graphics', 'top', 0)
-# Window.size = (1920, 1080)
+Window.size = (1920, 1080)
 
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
@@ -26,7 +26,6 @@ import numpy.random as rng
 from kivy.clock import Clock
 from kivy.animation import Animation
 from functools import partial
-import card as cd
 from itertools import chain
 import board
 
@@ -39,10 +38,6 @@ class MainField(Widget):
         super().__init__(**kwargs)
 
     # Clock.schedule_interval(self.check, 1 / 5.0)
-
-    def check(self, *args):
-        print('txt')
-
 
 class Vertical(Widget):
     pass
@@ -65,7 +60,8 @@ class MoveMark(ButtonBehavior, Label, Widget):
             y = instance.y - CARD_Y_SIZE / 2
             anim = Animation(x=x, y=y, duration=0.5)
             anim.start(card.parent)
-            curr_widget.destroy_nav_buttons()
+            curr_widget.destroy_x(curr_widget.nav_buttons)
+            curr_widget.nav_buttons = []
 
             for a, b in curr_widget.card_position_coords:
                 if abs(x - a) < 0.001 and abs(y - b) < 0.001:
@@ -80,20 +76,14 @@ class BerserkApp(App):
         super(BerserkApp, self).__init__()
         self.backend = backend
 
-    def destroy_nav_buttons(self):
-        for bt in self.nav_buttons:
-            self.root.remove_widget(bt)
-        self.nav_buttons = []
-
-    def destroy_action_buttons(self):
-        for bt in self.selected_card_buttons:
-            self.root.remove_widget(bt)
-        self.selected_card_buttons = []
-
-    def destroy_target_buttons(self):
-        for bt in self.target_marks_buttons:
-            self.root.remove_widget(bt)
-        self.target_marks_buttons = []
+    def destroy_x(self, list_, children=False):
+        if children:
+            for bt in list_:
+                print('here')
+                self.root.remove_widget(bt.children[0])
+        else:
+            for bt in list_:
+                self.root.remove_widget(bt)
 
     def say_coords(self, instance):
         # DELETE LATER
@@ -128,8 +118,17 @@ class BerserkApp(App):
             if abs(pos.x - nav_b.x) < CARD_X_SIZE / 2 and abs(pos.y - nav_b.y) < CARD_Y_SIZE / 2:
                 delete_ = False
         if delete_:
-            self.destroy_nav_buttons()
-        #   self.destroy_target_buttons()
+            self.destroy_x(self.nav_buttons)
+            self.nav_buttons = []
+
+    def delete_target_marks_on_unfocus(self, window, pos):
+        delete_ = True
+        for nav_b in self.target_marks_buttons:
+            if abs(pos.x - nav_b.children[0].x) < CARD_X_SIZE  and abs(pos.y - nav_b.children[0].y) < CARD_Y_SIZE:
+                delete_ = False
+        if delete_:
+            self.destroy_x(self.target_marks_buttons)
+            self.target_marks_buttons = []
 
     def delete_action_buttons_on_unfocus(self, window, pos):
         # deletes buttons if you click on a middle part outside of a card
@@ -139,17 +138,20 @@ class BerserkApp(App):
                 if (pos.x > Window.width * 0.75) or (pos.x < Window.width * 0.15):
                     delete_ = False
             if delete_:
-                self.destroy_action_buttons()
+                self.destroy_x(self.selected_card_buttons)
+                self.selected_card_buttons = []
                 self.selected_card = None
 
     def on_click_on_card(self, card, instance):
+       # print(len(self.root.children))
         self.selected_card = instance
         # Display card action buttons
         self.display_card_actions(card)
         # Display navigation buttons
         moves = self.backend.board.get_available_moves(card)
         if self.nav_buttons:
-            self.destroy_nav_buttons()
+            self.destroy_x(self.nav_buttons)
+            self.nav_buttons = []
         for move in moves:
             mark = MoveMark()
             x, y = self.card_position_coords[move][0] + CARD_X_SIZE / 2, self.card_position_coords[move][
@@ -159,22 +161,55 @@ class BerserkApp(App):
             mark.bind(on_touch_down=partial(mark.move_card, instance, self, card))
             self.root.add_widget(mark)
             self.nav_buttons.append(mark)
-        print(self.hp_label_dict[card].text)
+
+    def destroy_card(self, card):
+        self.layout.remove_widget(self.cards_dict[card])
+        self.backend.board.remove_card(card)
+
+    def perform_action(self, card, ability, target, instance):
+        if ability == 'attack':
+            victim = self.backend.board.game_board[target]
+            (a, b), roll1, roll2 = self.backend.get_fight_result()
+            if a:
+                victim.curr_life -= card.attack[a-1]
+            if b:
+                card.curr_life -= victim.attack[b-1]
+            print('roll1: ', roll1, 'roll2: ', roll2)
+            self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
+            self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
+            if card.curr_life <= 0:
+                self.destroy_card(card)
+            if victim.curr_life <= 0:
+                self.destroy_card(victim)
+
+        self.destroy_x(self.target_marks_buttons, children=False)
+        self.target_marks_buttons = []
+
+
 
     def display_available_targets(self, board, card, ability, instance):
-        b_size = 10  # размер квадратика
+        b_size = 20  # размер квадратика
         if ability == 'attack':
             range_of_action = 1
         else:
             range_of_action = ability.range
         targets = board.get_available_target_cards(board.game_board.index(card), range_=range_of_action)
         for t in targets:
-            btn = Button(pos=(self.card_position_coords[t][0] + CARD_X_SIZE / 2 - b_size / 2,
+            ly = RelativeLayout(pos=(0, 0))
+            btn = Button(pos=(self.card_position_coords[t][0],
+                              self.card_position_coords[t][1]),
+                         background_color=(0, 0, 0, 0.6),
+                         size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_normal='')
+            with ly.canvas:
+                Color(1, 0, 0, 1)
+                rect1 = Rectangle(pos=(self.card_position_coords[t][0] + CARD_X_SIZE / 2 - b_size / 2,
                               self.card_position_coords[t][1] + CARD_Y_SIZE / 2 - b_size / 2),
                          background_color=(1, 0, 0),
-                         size=(b_size, b_size), size_hint=(None, None), background_normal='')
-            self.root.add_widget(btn)
-            self.target_marks_buttons.append(btn)
+                         size=(b_size, b_size), size_hint=(1, 1))
+            btn.bind(on_press=partial(self.perform_action, card, ability, t))
+            ly.add_widget(btn)
+            self.root.add_widget(ly)
+            self.target_marks_buttons.append(ly)
 
     def display_card_actions(self, card):
         # adding attack button
@@ -211,10 +246,11 @@ class BerserkApp(App):
                     Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(0,0,0,0.3), pos_hint=(None, None))
                     Color(1, 1, 1)
                     Line(width=0.5, color=(1,1,1,0), rectangle=(0,0,CARD_X_SIZE*0.33,CARD_Y_SIZE*0.2))
-                    lbl = Label(text='10/10', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
+                    lbl = Label(text=f'{cell.life}/{cell.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
                       pos_hint=(None, None), font_size='12')
                     self.hp_label_dict[cell] = lbl
                     self.layout.add_widget(rl1)
+                    self.cards_dict[cell] = rl1
 
     def build(self):
         root = MainField()
@@ -227,6 +263,7 @@ class BerserkApp(App):
         self.selected_card = None
         self.target_marks_buttons = []
         self.hp_label_dict = {}
+        self.cards_dict = {}
         for i in range(5):
             for j in range(6):
                 btn1 = Button(text=str(i * 6 + j), disabled=False, opacity=0.8,
@@ -240,6 +277,8 @@ class BerserkApp(App):
         Window.bind(on_touch_down=self.delete_move_marks_on_unfocus)
         # when user clicked on square outside selected card
         Window.bind(on_touch_down=self.delete_action_buttons_on_unfocus)
+        # when user clicked on square outside target card
+        Window.bind(on_touch_down=self.delete_target_marks_on_unfocus)
 
         # self.layout.my_buttons[13].bind(on_press=self.say_coords)
         # Window.bind(mouse_pos=partial(self.on_mouse_pos, self.layout.my_buttons[13]))

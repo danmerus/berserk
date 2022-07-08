@@ -1,16 +1,21 @@
+from cards.card import Card
 from cards.card_properties import ActionTypes, SimpleCardAction
 
-class C1:
+class C1():
 
     def __init__(self, player, location):
-        self.pic = 'data/c1.jpg'
+        super(C1, self).__init__()
+        self.pic = 'data/cards/c1.jpg'
         self.life = 8
         self.move = 1
-        self.cost = 8, 0 # gold, silver
+        self.cost = 8, 0  # gold, silver
         self.attack = 2, 2, 3
         self.abilities = []
         self.defences = [ActionTypes.RAZRYAD]
         self.is_unique = False
+        self.curr_life = self.life
+        self.curr_moves = self.move
+        self.actions = 1
         self._update_abilities()
 
         self.player = player

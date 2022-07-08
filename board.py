@@ -20,6 +20,11 @@ class Board():
             if c.loc >= 0 and c.loc < 30:
                 self.game_board[c.loc] = c
 
+    def remove_card(self, card):
+        if card in self.game_board:
+            ix = self.game_board.index(card)
+            self.game_board[ix] = 0
+
     def get_adjacent_cells_no_diag(self, no):
         pre = [no+6, no-6]
         if no not in [5, 11, 17, 23, 29]:
