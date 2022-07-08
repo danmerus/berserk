@@ -17,7 +17,7 @@ class C1:
         self.loc = location  # -1 for flying, -2 for symbiots(??), -3 graveyard
 
     def _update_abilities(self):
-        a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range=6, txt='Разряд на 2')
+        a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range=6, txt='Разряд на 2')  # max length 17
         self.abilities.append(a1)
 
 
