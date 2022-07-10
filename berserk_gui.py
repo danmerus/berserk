@@ -7,7 +7,7 @@ from kivy.core.window import Window
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'left', 0)
 Config.set('graphics', 'top', 0)
-Window.size = (1920, 1080)
+#Window.size = (1920, 1080)
 
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
@@ -198,7 +198,7 @@ class BerserkApp(App):
             ly = RelativeLayout(pos=(0, 0))
             btn = Button(pos=(self.card_position_coords[t][0],
                               self.card_position_coords[t][1]),
-                         background_color=(0, 0, 0, 0.6),
+                         background_color=(1, 1, 1, 0.2),
                          size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_normal='')
             with ly.canvas:
                 Color(1, 0, 0, 1)
@@ -243,7 +243,7 @@ class BerserkApp(App):
                 rl1.add_widget(btn1)
                 with rl1.canvas:
                     Color(0, 0.3, 0.1)
-                    Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(0,0,0,0.3), pos_hint=(None, None))
+                    Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(1,1,1,0.3), pos_hint=(None, None))
                     Color(1, 1, 1)
                     Line(width=0.5, color=(1,1,1,0), rectangle=(0,0,CARD_X_SIZE*0.33,CARD_Y_SIZE*0.2))
                     lbl = Label(text=f'{cell.life}/{cell.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
