@@ -8,18 +8,18 @@
     size: 1920, 1080
 
 <Vertical>:
-    pts: [(Window.width*0.15 + i*Window.width*0.12, Window.height*0.93,  Window.width*0.15 + i*Window.width*0.12, Window.height*0.03) for i in range(6)]
+    pts: [(Window.width*0.18 + i*Window.width*0.12, Window.height*0.93,  Window.width*0.18 + i*Window.width*0.12, Window.height*0.03) for i in range(6)]
     canvas:
         Color:
-            rgba: 1,1,1,1
+            rgba: 1,1,1,0.5
     on_parent:
         for i in range(0, len(root.pts)): self.canvas.add(Line(points=root.pts[i:i+1]))
 
 <Horizontal>:
-    pts: [(Window.width*0.15,  Window.height*0.03 + i*Window.height*0.15,  Window.width*0.75,  Window.height*0.03 + i*Window.height*0.15) for i in range(7)]
+    pts: [(Window.width*0.18,  Window.height*0.03 + i*Window.height*0.15,  Window.width*0.78,  Window.height*0.03 + i*Window.height*0.15) for i in range(7)]
     canvas:
         Color:
-            rgba: 1,1,1,1
+            rgba: 1,1,1,0.5
     on_parent:
         for i in range(0, len(root.pts)): self.canvas.add(Line(points=root.pts[i:i+1]))
 

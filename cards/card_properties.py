@@ -10,6 +10,12 @@ class ActionTypes(enum.Enum):
     VYSTREL = 4
     METANIE = 5
 
+@enum.unique
+class CreatureType(enum.Enum):
+    CREATURE = 1
+    FLYER = 2
+    ARTIFACT = 3
+    LAND = 4
 
 class SimpleCardAction:
 

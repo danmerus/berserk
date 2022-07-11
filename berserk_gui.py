@@ -27,7 +27,10 @@ from kivy.clock import Clock
 from kivy.animation import Animation
 from functools import partial
 from itertools import chain
-import board
+from kivy.uix.image import Image
+from kivy.clock import mainthread
+from kivy.graphics.vertex_instructions import Triangle
+from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
 
 CARD_X_SIZE = (Window.width * 0.12)
 CARD_Y_SIZE = (Window.height * 0.15)
@@ -76,41 +79,10 @@ class BerserkApp(App):
         super(BerserkApp, self).__init__()
         self.backend = backend
 
-    def destroy_x(self, list_, children=False):
-        if children:
-            for bt in list_:
-                print('here')
-                self.root.remove_widget(bt.children[0])
-        else:
-            for bt in list_:
-                self.root.remove_widget(bt)
+    def destroy_x(self, list_, whatever=False):
+        for bt in list_:
+            self.root.remove_widget(bt)
 
-    def say_coords(self, instance):
-        # DELETE LATER
-        instance.background_color = (rng.random(), rng.random(), rng.random(), 1.0)
-
-        # add dropdown
-        btn = Button(text='Opa', size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
-        self.dop_zone_1_buttons.append(btn)
-        self.dop_zone_1.add_widget(btn)
-
-    def on_mouse_pos(self, bttn, window, pos):
-        """
-        КРАСНЫЕ СТРЕЛОЧКИ!!!
-        """
-        for butt in chain(self.layout.my_buttons, self.dop_zone_1_buttons):  #
-            if butt.collide_point(*pos):
-                with self.root.canvas:
-                    if self.red_arrows:
-                        for arr in self.red_arrows:
-                            self.root.canvas.remove(arr)
-                            self.red_arrows.remove(arr)
-                    Color(1., 0, 0)
-                    red_arr = Line(points=[bttn.x + CARD_X_SIZE / 2, bttn.y + CARD_Y_SIZE / 2, butt.x + CARD_X_SIZE / 2,
-                                           butt.y + CARD_Y_SIZE / 2],
-                                   width=2)
-                    self.red_arrows.append(red_arr)
-            # root.add_widget(l)
 
     def delete_move_marks_on_unfocus(self, window, pos):
         delete_ = True
@@ -129,22 +101,26 @@ class BerserkApp(App):
         if delete_:
             self.destroy_x(self.target_marks_buttons)
             self.target_marks_buttons = []
+            Clock.schedule_once(partial(self.destroy_x, self.die_pics), 1)
+            self.die_pics = []
 
-    def delete_action_buttons_on_unfocus(self, window, pos):
-        # deletes buttons if you click on a middle part outside of a card
-        if self.selected_card:
-            delete_ = True
-            for nav_b in self.selected_card_buttons:
-                if (pos.x > Window.width * 0.75) or (pos.x < Window.width * 0.15):
-                    delete_ = False
-            if delete_:
-                self.destroy_x(self.selected_card_buttons)
-                self.selected_card_buttons = []
-                self.selected_card = None
+    def draw_selection_border(self, instance, card):
+        if hasattr(self, "card_border"):
+            self.card_border[1].canvas.remove(self.card_border[0])
+        with instance.canvas:
+            if card.player == 1:
+                c = Color(1, 1, 0, 1)
+            else:
+                c = Color(0.2, 0.2, 0.8, 1)
+            self.card_border = (Line(width=1, color=c, rectangle=(0, 0, CARD_X_SIZE * 1, CARD_Y_SIZE * 1)), instance)
+
 
     def on_click_on_card(self, card, instance):
-       # print(len(self.root.children))
+        #print(instance.parent.pos)
         self.selected_card = instance
+        self.destroy_x(self.selected_card_buttons)
+        # Draw border
+        self.draw_selection_border(instance.parent, card)
         # Display card action buttons
         self.display_card_actions(card)
         # Display navigation buttons
@@ -154,8 +130,7 @@ class BerserkApp(App):
             self.nav_buttons = []
         for move in moves:
             mark = MoveMark()
-            x, y = self.card_position_coords[move][0] + CARD_X_SIZE / 2, self.card_position_coords[move][
-                1] + CARD_Y_SIZE / 2
+            x, y = self.card_position_coords[move][0] + CARD_X_SIZE / 2, self.card_position_coords[move][1] + CARD_Y_SIZE / 2
             mark.x = x
             mark.y = y
             mark.bind(on_touch_down=partial(mark.move_card, instance, self, card))
@@ -166,15 +141,62 @@ class BerserkApp(App):
         self.layout.remove_widget(self.cards_dict[card])
         self.backend.board.remove_card(card)
 
-    def perform_action(self, card, ability, target, instance):
+    def draw_red_arrow(self, from_card, to_card, card, victim):
+
+        with self.root.canvas:
+            c = Color(1, 0, 0, 0.8)
+            if card.type == CreatureType.FLYER or card.type == CreatureType.LAND:
+                if card.player == 1:
+                    x, y = self.dop_zone_1.to_parent(from_card.x, from_card.y)
+                else:
+                    x, y = self.dop_zone_2.to_parent(from_card.x, from_card.y)
+            else:
+                x, y = from_card.x, from_card.y
+            if victim.type == CreatureType.FLYER or victim.type == CreatureType.LAND:
+                if card.player == 1:
+                    n, m = self.dop_zone_1.to_parent(to_card.x, to_card.y)
+                else:
+                    n, m = self.dop_zone_2.to_parent(to_card.x, to_card.y)
+            else:
+                n, m = to_card.x, to_card.y
+
+            l = Line(width=3, color=c, points=(x+CARD_X_SIZE/2, y+CARD_Y_SIZE/2,
+                                           n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2))
+            tri = Triangle(color=c, points=[(n-x)*0.3, (y-m)*0.3,
+                                             n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2,
+                                             n+CARD_X_SIZE/2+30, m+CARD_Y_SIZE/2+30])
+            self.red_arrows.append(l)
+            self.red_arrows.append(tri)
+
+    def draw_die(self, r1, r2):
+        r1_i = Image(source=f'data/dice/Alea_{r1}.png', pos=(Window.width*0.78, Window.height*0.8), size=(0.07*Window.width, Window.height*0.07))
+        r2_i = Image(source=f'data/dice/Alea_{r2}.png', pos=(Window.width*0.12, Window.height*0.8), size=(0.07*Window.width, Window.height*0.07))
+        self.root.add_widget(r1_i)
+        self.root.add_widget(r2_i)
+        self.die_pics.append(r1_i)
+        self.die_pics.append(r2_i)
+
+
+    def perform_card_action(self, card, ability, victim, instance):
         if ability == 'attack':
-            victim = self.backend.board.game_board[target]
-            (a, b), roll1, roll2 = self.backend.get_fight_result()
-            if a:
-                victim.curr_life -= card.attack[a-1]
-            if b:
-                card.curr_life -= victim.attack[b-1]
+            outcome_list, roll1, roll2 = self.backend.get_fight_result()
+            if len(outcome_list) == 1:
+                a, b = outcome_list[0]
+                if a:
+                    victim.curr_life -= card.attack[a-1]
+                if b:
+                    card.curr_life -= victim.attack[b-1]
+            else: # TODO: add extra button
+                a, b = outcome_list[0]
+                if a:
+                    victim.curr_life -= card.attack[a - 1]
+                if b:
+                    card.curr_life -= victim.attack[b - 1]
+
             print('roll1: ', roll1, 'roll2: ', roll2)
+            self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
+
+            self.draw_die(roll1, roll2)
             self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
             self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
             if card.curr_life <= 0:
@@ -182,9 +204,8 @@ class BerserkApp(App):
             if victim.curr_life <= 0:
                 self.destroy_card(victim)
 
-        self.destroy_x(self.target_marks_buttons, children=False)
+        self.destroy_x(self.target_marks_buttons)
         self.target_marks_buttons = []
-
 
 
     def display_available_targets(self, board, card, ability, instance):
@@ -193,20 +214,24 @@ class BerserkApp(App):
             range_of_action = 1
         else:
             range_of_action = ability.range
-        targets = board.get_available_target_cards(board.game_board.index(card), range_=range_of_action)
+        if card.type == CreatureType.CREATURE:
+            targets = board.get_available_targets_ground(board.game_board.index(card), range_=range_of_action)  # targets are card objects
+        elif card.type == CreatureType.FLYER:
+            targets = board.get_available_targets_flyer(card)
         for t in targets:
             ly = RelativeLayout(pos=(0, 0))
-            btn = Button(pos=(self.card_position_coords[t][0],
-                              self.card_position_coords[t][1]),
+            ix = t.loc
+            btn = Button(pos=(self.card_position_coords[ix][0],
+                              self.card_position_coords[ix][1]),
                          background_color=(1, 1, 1, 0.2),
                          size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_normal='')
             with ly.canvas:
                 Color(1, 0, 0, 1)
-                rect1 = Rectangle(pos=(self.card_position_coords[t][0] + CARD_X_SIZE / 2 - b_size / 2,
-                              self.card_position_coords[t][1] + CARD_Y_SIZE / 2 - b_size / 2),
+                rect1 = Rectangle(pos=(self.card_position_coords[ix][0] + CARD_X_SIZE / 2 - b_size / 2,
+                              self.card_position_coords[ix][1] + CARD_Y_SIZE / 2 - b_size / 2),
                          background_color=(1, 0, 0),
                          size=(b_size, b_size), size_hint=(1, 1))
-            btn.bind(on_press=partial(self.perform_action, card, ability, t))
+            btn.bind(on_press=partial(self.perform_card_action, card, ability, t))
             ly.add_widget(btn)
             self.root.add_widget(ly)
             self.target_marks_buttons.append(ly)
@@ -228,33 +253,68 @@ class BerserkApp(App):
             self.root.add_widget(btn)
             self.selected_card_buttons.append(btn)
 
-    def create_board(self):
-        state = self.backend.board.get_state()
-        for i, cell in enumerate(state['game_board']):
-            if cell != 0:
-                print('LIfe: ', cell.life)
-                x, y = self.card_position_coords[i]
+
+    def update_pos(self, instance, value):
+        pass
+
+    def reveal_cards(self, cards):
+        for card in cards:
+            loc = card.loc
+            if card.type == CreatureType.FLYER:
+                print('flyer!')
+                x, y = self.dz1_btn.pos
+                rl1 = RelativeLayout(size_hint=(None, None))#, size=(CARD_X_SIZE, CARD_Y_SIZE))
+                btn1 = Button(text='', disabled=False,
+                              background_normal=card.pic,
+                              size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                self.backend.board.game_board[card.loc] = 0
+                card.loc = -1
+                if card.player == 1:
+                    self.dop_zone_1_gl.add_widget(rl1)
+                    self.dop_zone_1_buttons.append(rl1)
+                else:
+                    self.dop_zone_2_gl.add_widget(rl1)
+                    self.dop_zone_2_buttons.append(rl1)
+            else:
+                x, y = self.card_position_coords[loc]
                 rl1 = RelativeLayout(pos=(x, y))
                 btn1 = Button(text='', disabled=False, opacity=1.0, #pos=(x, y),
-                              background_normal=cell.pic,
-                              size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                          background_normal=card.pic,
+                          size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                btn1.bind(pos= lambda x1: x1.pos)
 
-                btn1.bind(on_press=partial(self.on_click_on_card, cell))
-                rl1.add_widget(btn1)
-                with rl1.canvas:
-                    Color(0, 0.3, 0.1)
-                    Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(1,1,1,0.3), pos_hint=(None, None))
-                    Color(1, 1, 1)
-                    Line(width=0.5, color=(1,1,1,0), rectangle=(0,0,CARD_X_SIZE*0.33,CARD_Y_SIZE*0.2))
-                    lbl = Label(text=f'{cell.life}/{cell.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
-                      pos_hint=(None, None), font_size='12')
-                    self.hp_label_dict[cell] = lbl
+            btn1.bind(on_press=partial(self.on_click_on_card, card))
+            rl1.add_widget(btn1)
+            with rl1.canvas:
+                Color(0, 0.3, 0.1)
+                Rectangle(pos=(0, CARD_Y_SIZE*0.8), size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(1,1,1,0.3), pos_hint=(None, None))
+                Color(1, 1, 1)
+                Line(width=0.5, color=(1,1,1,0), rectangle=(0,CARD_Y_SIZE*0.8,CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2))
+                lbl = Label(pos=(0, CARD_Y_SIZE*0.8), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
+                  pos_hint=(None, None), font_size='12')
+                self.hp_label_dict[card] = lbl
+                self.cards_dict[card] = rl1
+                if card.type == CreatureType.CREATURE:
                     self.layout.add_widget(rl1)
-                    self.cards_dict[cell] = rl1
+
+    def hide_scroll(self, sv, instance):
+        if not sv.disabled:
+            sv.disabled = True
+            sv.opacity = 0
+        else:
+            sv.disabled = False
+            sv.opacity = 1
+
+    def check_children(self):
+        for el in self.layout.children:
+            print(el)
+            if len(el.children) > 0:
+                print(el.children[0].pos)
 
     def build(self):
         root = MainField()
-
+        root.add_widget(Vertical())
+        root.add_widget(Horizontal())
         # generate board coords
         self.layout = FloatLayout(size=(Window.width * 0.8, Window.height))
         self.card_position_coords = []
@@ -264,52 +324,55 @@ class BerserkApp(App):
         self.target_marks_buttons = []
         self.hp_label_dict = {}
         self.cards_dict = {}
+        self.die_pics = []
+        self.red_arrows = []
         for i in range(5):
             for j in range(6):
                 btn1 = Button(text=str(i * 6 + j), disabled=False, opacity=0.8,
-                              pos=(Window.width * 0.15 + i * Window.width * 0.12,
-                                   Window.height * 0.03 + j * Window.height * 0.15),
-                              size=(Window.width * 0.12, Window.height * 0.15), size_hint=(None, None))
+                              pos=(Window.width * 0.18 + i * CARD_X_SIZE,
+                                   Window.height * 0.03 + j * CARD_Y_SIZE),
+                              size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
                 self.card_position_coords.append((btn1.x, btn1.y))
                 self.layout.add_widget(btn1)
 
         # when user clicked on square outside red move marks
         Window.bind(on_touch_down=self.delete_move_marks_on_unfocus)
         # when user clicked on square outside selected card
-        Window.bind(on_touch_down=self.delete_action_buttons_on_unfocus)
+      #  Window.bind(on_touch_down=self.delete_action_buttons_on_unfocus)
         # when user clicked on square outside target card
         Window.bind(on_touch_down=self.delete_target_marks_on_unfocus)
 
-        # self.layout.my_buttons[13].bind(on_press=self.say_coords)
-        # Window.bind(mouse_pos=partial(self.on_mouse_pos, self.layout.my_buttons[13]))
-        # for i, bttn in enumerate(self.layout.my_buttons):
-        #     if i != 13:
-        #         self.layout.remove_widget(bttn)
         root.add_widget(self.layout)
-       # self.create_board()
 
         # Dropdowns
-        self.dop_zone_1 = DropDown()
+        self.dop_zone_1 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
+                                     size=(CARD_X_SIZE, Window.height/2), size_hint=(None, None), pos=(Window.width * 0.84, Window.height * 0.39))
+        self.dop_zone_1_gl = GridLayout(cols=1, size_hint=(None, None))
+        self.dop_zone_1_gl.bind(minimum_height=self.dop_zone_1_gl.setter('height'))
+        self.dop_zone_2 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
+                                     size=(CARD_X_SIZE, Window.height/2), size_hint=(None, None), pos=(Window.width * 0.01, Window.height * 0.39))
+        self.dop_zone_2_gl = GridLayout(cols=1, size_hint=(None, None))
+        self.dop_zone_2_gl.bind(minimum_height=self.dop_zone_2_gl.setter('height'))
+        self.dop_zone_1.add_widget(self.dop_zone_1_gl)
+        self.dop_zone_2.add_widget(self.dop_zone_2_gl)
         self.dop_zone_1_buttons = []
-        for k in range(1):
-            btn = Button(text='k', size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
-            # btn.bind(on_release=lambda btn: dropdown.select(btn.text))
-            self.dop_zone_1.add_widget(btn)
-            self.dop_zone_1_buttons.append(btn)
-        # root.add_widget(dropdown)
-        self.mainbutton = Button(text='Доп.Зона', size_hint=(None, None), size=(CARD_X_SIZE, Window.height * 0.05),
-                                 pos=(Window.width * 0.82, Window.height * 0.9))
+        self.dop_zone_2_buttons = []
+        self.dz1_btn = Button(text='Доп.Зона', size_hint=(None, None), size=(Window.width*0.15, Window.height * 0.05),
+                                 pos=(Window.width * 0.84, Window.height * 0.88))
+        self.dz2_btn = Button(text='Доп.Зона', size_hint=(None, None), size=(Window.width * 0.15, Window.height * 0.05),
+                              pos=(Window.width * 0.01, Window.height * 0.88))
+        self.dz1_btn.bind(on_press=partial(self.hide_scroll, self.dop_zone_1))
+        self.dz2_btn.bind(on_press=partial(self.hide_scroll, self.dop_zone_2))
 
-        self.red_arrows = []
-        self.mainbutton.bind(on_release=self.dop_zone_1.open)
-        # self.dop_zone_1.bind(on_select=lambda instance, x: setattr(mainbutton, 'text', x))
-        root.add_widget(self.mainbutton)
-
-        root.add_widget(Vertical())
-        root.add_widget(Horizontal())
+        root.add_widget(self.dop_zone_1)
+        root.add_widget(self.dop_zone_2)
+        root.add_widget(self.dz1_btn)
+        root.add_widget(self.dz2_btn)
 
         # timeout otherwise some parts are not rendered
-        Clock.schedule_once(lambda x: self.create_board(), 0.5)
+        Clock.schedule_once(lambda x: self.reveal_cards(self.backend.input_cards1), 0.5)
+        Clock.schedule_once(lambda x: self.reveal_cards(self.backend.input_cards2), 0.5)
         #   Window.bind(on_resize=self.check_resize)
+        #Clock.schedule_once(lambda x: self.check_children(), 1)
         return root
 

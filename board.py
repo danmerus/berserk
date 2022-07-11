@@ -1,19 +1,22 @@
 import numpy as np
+from itertools import chain
+from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
 
 class Board():
 
     def __init__(self):
         self.game_board = [0 for _ in range(30)]
-        self.fly1 = []
-        self.fly2 = []
+        self.extra1 = []
+        self.extra2 = []
         self.symb1 = []
         self.symb2 = []
-        self.city1 = []
-        self.city2 = []
         self.grave1 = []
         self.grave2 = []
         self.deck1 = []
         self.deck2 = []
+
+    def get_card_index(self, card):
+        pass
 
     def populate_board(self, cards):
         for c in cards:
@@ -54,12 +57,20 @@ class Board():
             traverse.remove(no)
         return traverse
 
-    def get_available_target_cards(self, card_pos_no, range_):
+    def get_available_targets_ground(self, card_pos_no, range_):
         all_cells = self.get_adjacent_cells(card_pos_no, range_)
-        return [x for x in all_cells if self.game_board[x] != 0]
+        return [self.game_board[x] for x in all_cells if self.game_board[x] != 0]
 
+    def get_available_targets_flyer(self, card):
+        gr = [x for x in self.game_board if x != 0]
+        extr1 = [x for x in self.extra1 if x.type != CreatureType.LAND]
+        extr2 = [x for x in self.extra2 if x.type != CreatureType.LAND]
+        out = chain(gr, self.symb1, self.symb2, extr1, extr2)
+        return list(out)
 
     def get_available_moves(self, card):
+        if card.type != CreatureType.CREATURE:
+            return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)
         out = []

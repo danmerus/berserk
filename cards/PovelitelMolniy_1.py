@@ -1,11 +1,11 @@
 from cards.card import Card
-from cards.card_properties import ActionTypes, SimpleCardAction
+from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
 
-class C1():
+class PovelitelMolniy_1(Card):
 
     def __init__(self, player, location):
-        super(C1, self).__init__()
-        self.pic = 'data/cards/c1.jpg'
+        super().__init__()
+        self.pic = 'data/cards/PovelitelMolniy_1.jpg'
         self.life = 8
         self.move = 1
         self.cost = 8, 0  # gold, silver
@@ -15,7 +15,8 @@ class C1():
         self.is_unique = False
         self.curr_life = self.life
         self.curr_moves = self.move
-        self.actions = 1
+        self.type = CreatureType.CREATURE
+
         self._update_abilities()
 
         self.player = player

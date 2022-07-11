@@ -2,7 +2,8 @@ import os
 import board
 import berserk_gui
 import numpy.random as rng
-from cards import c1
+from game_properties import GameStates
+#from cards import _1_PovelitelMolniy
 from kivy.clock import Clock
 
 class Game:
@@ -15,6 +16,8 @@ class Game:
         self.input_cards1 = cards_on_board1
         self.input_cards2 = cards_on_board2
         self.populate_cards()
+        self.curr_game_state = GameStates.VSKRYTIE
+        self.current_active_player = 1
 
     def populate_cards(self):
         self.board.populate_board(self.input_cards1)
@@ -27,26 +30,26 @@ class Game:
         x1 = rng.randint(1, 7) + mod_1 # attacker
         x2 = rng.randint(1, 7) + mod_2 # defender
         res_dict = {
-            1: (1, 0),
-            2: (2, 1),
-            3: (2, 0),
-            4: (3, 1),
-            5: (3, 0),
-            -1: (1, 0),
-            -2: (0, 0),
-            -3: (0, 1),
-            -4: (1, 2),
-            -5: (0, 2),
+            1: [(1, 0)],
+            2: [(2, 1), (1, 0)],
+            3: [(2, 0)],
+            4: [(3, 1), (2, 0)],
+            5: [(3, 0)],
+            -1: [(1, 0)],
+            -2: [(0, 0)],
+            -3: [(0, 1)],
+            -4: [(1, 2), (0, 1)],
+            -5: [(0, 2)],
         }
         score = x1 - x2
         if score < -5:
-            res = (0, 2)
+            res = [(0, 2)]
         elif score > 5:
-            res = (3, 0)
+            res = [(3, 0)]
         elif score == 0 and x1 <= 4:
-            res = (1, 0)
+            res = [(1, 0)]
         elif score == 0 and x1 > 4:
-            res = (0, 1)
+            res = [(0, 1)]
         else:
             res = res_dict[score]
         return res, x1, x2  # (attack, defence) roll1  roll2
@@ -66,8 +69,10 @@ if __name__ == '__main__':
     for imp in imports:
         exec(imp)
 
-    cards1 = [C1(player=1, location=12)]
-    cards2 = [C1(player=2, location=14)]
+    cards1 = [PovelitelMolniy_1(player=1, location=12), Draks_1(player=1, location=13), Draks_1(player=1, location=2),
+              Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
+    cards2 = [PovelitelMolniy_1(player=2, location=14), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
+    print(cards1[0].__dict__)
     game = Game(cards1, cards2)
     game.start()
     ######## GUI #######
