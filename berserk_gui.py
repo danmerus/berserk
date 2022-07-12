@@ -103,6 +103,11 @@ class BerserkApp(App):
             self.target_marks_buttons = []
             Clock.schedule_once(partial(self.destroy_x, self.die_pics), 1)
             self.die_pics = []
+            #Clock.schedule_once(partial(self.destroy_x, self.red_arrows), 0.5)
+            for el in self.root.canvas.children:
+                if el in self.red_arrows:
+                    self.root.canvas.remove(el)
+            self.red_arrows = []
 
     def draw_selection_border(self, instance, card):
         if hasattr(self, "card_border"):
@@ -162,11 +167,11 @@ class BerserkApp(App):
 
             l = Line(width=3, color=c, points=(x+CARD_X_SIZE/2, y+CARD_Y_SIZE/2,
                                            n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2))
-            tri = Triangle(color=c, points=[(n-x)*0.3, (y-m)*0.3,
-                                             n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2,
-                                             n+CARD_X_SIZE/2+30, m+CARD_Y_SIZE/2+30])
+            # tri = Triangle(color=c, points=[x*0.7+(x-n)*0.15*0.57, (x-n)*0.85+n*0.1,
+            #                                  n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2,
+            #                                 x*0.7+(x-n)*0.15*0.57, (y-m)*0.85+m])
             self.red_arrows.append(l)
-            self.red_arrows.append(tri)
+            #self.red_arrows.append(tri)
 
     def draw_die(self, r1, r2):
         r1_i = Image(source=f'data/dice/Alea_{r1}.png', pos=(Window.width*0.78, Window.height*0.8), size=(0.07*Window.width, Window.height*0.07))
