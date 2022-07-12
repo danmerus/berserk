@@ -3,8 +3,10 @@ import board
 import berserk_gui
 import numpy.random as rng
 from game_properties import GameStates
-#from cards import _1_PovelitelMolniy
 from kivy.clock import Clock
+from kivy import Config
+from kivy.core.window import Window
+# Config.set('graphics', 'fullscreen', 'auto')
 
 class Game:
 
@@ -18,6 +20,7 @@ class Game:
         self.populate_cards()
         self.curr_game_state = GameStates.VSKRYTIE
         self.current_active_player = 1
+        self.instant_actions_present = False
 
     def populate_cards(self):
         self.board.populate_board(self.input_cards1)
@@ -54,7 +57,16 @@ class Game:
             res = res_dict[score]
         return res, x1, x2  # (attack, defence) roll1  roll2
 
+    def next_game_state(self, instance):
+        if self.curr_game_state == GameStates.END_PHASE:
+            self.switch_curr_player()
+        self.curr_game_state = self.curr_game_state.next()
 
+    def switch_curr_player(self):
+        if self.current_active_player == 1:
+            self.current_active_player = 2
+        else:
+            self.current_active_player = 1
 
     def start(self):
         pass
@@ -69,10 +81,10 @@ if __name__ == '__main__':
     for imp in imports:
         exec(imp)
 
+
     cards1 = [PovelitelMolniy_1(player=1, location=12), Draks_1(player=1, location=13), Draks_1(player=1, location=2),
               Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
     cards2 = [PovelitelMolniy_1(player=2, location=14), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
-    print(cards1[0].__dict__)
     game = Game(cards1, cards2)
     game.start()
     ######## GUI #######

@@ -65,8 +65,9 @@ class Board():
         gr = [x for x in self.game_board if x != 0]
         extr1 = [x for x in self.extra1 if x.type != CreatureType.LAND]
         extr2 = [x for x in self.extra2 if x.type != CreatureType.LAND]
-        out = chain(gr, self.symb1, self.symb2, extr1, extr2)
-        return list(out)
+        out = list(chain(gr, self.symb1, self.symb2, extr1, extr2))
+        out.remove(card)
+        return out
 
     def get_available_moves(self, card):
         if card.type != CreatureType.CREATURE:

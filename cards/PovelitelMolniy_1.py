@@ -5,6 +5,8 @@ class PovelitelMolniy_1(Card):
 
     def __init__(self, player, location):
         super().__init__()
+        self.name = 'Повелитель молний'
+        self.vypusk = 'Война стихий'
         self.pic = 'data/cards/PovelitelMolniy_1.jpg'
         self.life = 8
         self.move = 1
@@ -16,6 +18,7 @@ class PovelitelMolniy_1(Card):
         self.curr_life = self.life
         self.curr_moves = self.move
         self.type = CreatureType.CREATURE
+        self.actions_left = 1
 
         self._update_abilities()
 
