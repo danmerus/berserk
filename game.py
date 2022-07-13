@@ -57,7 +57,7 @@ class Game:
             res = res_dict[score]
         return res, x1, x2  # (attack, defence) roll1  roll2
 
-    def next_game_state(self, instance):
+    def next_game_state(self, *args):
         if self.curr_game_state == GameStates.END_PHASE:
             self.switch_curr_player()
         self.curr_game_state = self.curr_game_state.next()
@@ -67,6 +67,15 @@ class Game:
             self.current_active_player = 2
         else:
             self.current_active_player = 1
+        self.on_start_new_turn()
+
+    def on_start_new_turn(self):
+        for card in self.board.get_all_cards():
+            if card.player == self.current_active_player:
+                card.actions_left = 1
+                if card.tapped:
+                    game.gui.tap_card(card)
+
 
     def start(self):
         pass

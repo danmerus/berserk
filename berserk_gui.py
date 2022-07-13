@@ -17,6 +17,8 @@ from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.graphics import Line, Color, InstructionGroup, Rectangle, Rotate
+from kivy.uix.progressbar import ProgressBar
+from kivymd.app import MDApp
 import numpy.random as rng
 from kivy.clock import Clock
 from kivy.animation import Animation
@@ -24,14 +26,16 @@ from functools import partial
 from itertools import chain
 from kivy.uix.image import Image
 from kivy.clock import mainthread
-from kivy.graphics.vertex_instructions import Triangle
+from kivy.graphics.vertex_instructions import Triangle, BorderImage
 from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
 import game_properties
 import card_prep
+import operator
 
-#Window.size = (1920, 1080)
-Window.size = (960, 540)
-Window.maximize()
+
+Window.size = (1920, 1080)
+#Window.size = (960, 540)
+#Window.maximize()
 CARD_X_SIZE = (Window.width * 0.084375)
 CARD_Y_SIZE = (Window.height * 0.15)
 
@@ -39,6 +43,7 @@ CARD_Y_SIZE = (Window.height * 0.15)
 class MainField(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # self.background_normal = bg_sorce
         # self.width = width
         # self.hight = hight
 
@@ -58,7 +63,6 @@ class MoveMark(ButtonBehavior, Label, Widget):
     z = NumericProperty(20)
 
     def move_card(self, card, curr_widget, card_obj, instance, touch):
-        #  print('Instance ',instance.x, instance.y, 'Card X ', card.x, card.y)
         prev = card_obj.loc
         if instance.x + CARD_X_SIZE / 2 > touch.x > instance.x - CARD_X_SIZE / 2 and instance.y + CARD_Y_SIZE / 2 > touch.y > instance.y - CARD_Y_SIZE / 2:
             x = instance.x - CARD_X_SIZE / 2
@@ -84,10 +88,6 @@ class BerserkApp(App):
 
     def destroy_x(self, list_, long=False):
         for bt in list_:
-            # if long:
-            #     print('here')
-            #     bt[1].remove_widget(bt[0])
-            # else:
             self.root.remove_widget(bt)
 
     def destroy_target_marcs(self):
@@ -120,7 +120,6 @@ class BerserkApp(App):
             if abs(pos.x - nav_b.x) < CARD_X_SIZE and abs(pos.y - nav_b.y) < CARD_Y_SIZE:
                 delete_ = False
         if delete_:
-            #self.destroy_target_marcs()
             self.destroy_target_rectangles()
             Clock.schedule_once(partial(self.destroy_x, self.die_pics), 1)
             self.die_pics = []
@@ -142,11 +141,14 @@ class BerserkApp(App):
 
     def on_click_on_card(self, card, instance):
         self.destroy_target_marcs()
-        # print(instance.parent.parent.pos)
-        self.selected_card = instance
+        if self.selected_card:
+            Clock.schedule_once(partial(self.draw_card_overlay, self.selected_card))
+        self.selected_card = card
         self.destroy_x(self.selected_card_buttons)
         # Draw border
         self.draw_selection_border(instance.parent, card)
+        # Higlight name
+        self.bright_card_overlay(card)
         # Display card action buttons
         self.display_card_actions(card, instance)
         # Display navigation buttons
@@ -174,7 +176,6 @@ class BerserkApp(App):
         self.backend.board.remove_card(card)
 
     def draw_red_arrow(self, from_card, to_card, card, victim):
-       # print(self.dop_zone_1.to_parent(from_card.x, from_card.y))
         with self.root.canvas:
             c = Color(1, 0, 0, 0.8)
             if card.type == CreatureType.FLYER or card.type == CreatureType.LAND:
@@ -210,7 +211,7 @@ class BerserkApp(App):
         self.die_pics.append(r2_i)
 
 
-    def perform_card_action(self, card, ability, victim, instance):
+    def perform_card_action(self, card, ability, victim, btn, instance):
         if ability == 'attack':
             outcome_list, roll1, roll2 = self.backend.get_fight_result()
             if len(outcome_list) == 1:
@@ -227,7 +228,6 @@ class BerserkApp(App):
                     card.curr_life -= victim.attack[b - 1]
 
             print('roll1: ', roll1, 'roll2: ', roll2)
-            # print('b_instance: ', b_instance.pos)
             self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
             self.draw_die(roll1, roll2)
 
@@ -243,22 +243,25 @@ class BerserkApp(App):
 
         card.actions_left -= 1
         if card.actions_left <= 0:
-           self.tap_card(card)
+            self.tap_card(card)
+            for b in self.selected_card_buttons:
+                b.disabled = True
 
         self.destroy_target_marcs()
         #self.destroy_x(self.target_marks_buttons)
         #self.target_marks_buttons = []
 
     def tap_card(self, card):
+        scatter_obj = self.cards_dict[card]
+        for obj_ in scatter_obj.children:
+            if isinstance(obj_, Button):
+                ch = obj_
         if not card.tapped:
-            scatter_obj = self.cards_dict[card]
-            scatter_obj.children[0].background_normal = card.pic[:-4]+'_rot90.jpg'
+            ch.background_normal = card.pic[:-4]+'_rot90.jpg'
             card.tapped = True
         else:
-            scatter_obj = self.cards_dict[card]
-            scatter_obj.children[0].background_normal = card.pic
+            ch.background_normal = card.pic
             card.tapped = False
-
 
 
     def display_available_targets(self, board, card, ability, instance):
@@ -294,45 +297,87 @@ class BerserkApp(App):
                               CARD_Y_SIZE / 2 - b_size / 2),
                          background_color=c,
                          size=(b_size, b_size), size_hint=(1, 1))
-                c = Color(1, 1, 1, 0.1)
+                c = Color(1, 1, 1, 0.15)
                 rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE ),
-                                  background_color=(1, 1, 1, 0.15),
+                                  background_color=c,
                                   pos=(0,0), size_hint=(1, 1))
                 self.target_rectangles.append((rect1, self.cards_dict[t].canvas))
                 self.target_rectangles.append((rect2, self.cards_dict[t].canvas))
 
-                btn.bind(on_press=partial(self.perform_card_action, card, ability, t))
+                btn.bind(on_press=partial(self.perform_card_action, card, ability, t, btn))
                 self.cards_dict[t].add_widget(btn)
 
                 self.target_marks_buttons.append(btn)
                 self.target_marks_cards.append([btn, self.cards_dict[t]])
 
     def display_card_actions(self, card, instance):
+        if self.backend.current_active_player == card.player:
+            disabled_ = operator.not_(bool(card.actions_left))
+        else:
+            disabled_ = True
         # adding attack button
         btn1 = Button(text=f'Атака {card.attack[0]}-{card.attack[1]}-{card.attack[2]}',
                       pos=(Window.width * 0.84, Window.height * 0.20),
+                      disabled=disabled_,
                       size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
         Clock.schedule_once(lambda x: btn1.bind(on_press=partial(self.display_available_targets, self.backend.board, card, 'attack')), 0.5)
-        #btn1.bind(on_press=partial(self.display_available_targets, self.backend.board, card, 'attack', instance))
+        #btn1.bind(disabled=lambda x: operator.not_(bool(card.actions_left)))
         self.root.add_widget(btn1)
         self.selected_card_buttons.append(btn1)
         # adding abilities buttons
         for i, ability in enumerate(card.abilities):
             btn = Button(text=ability.txt,
                           pos=(Window.width * 0.84, Window.height * 0.20 - (i + 1) * 0.05 * Window.height),
+                          disabled=disabled_,
                           size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
             btn.bind(on_press=partial(self.display_available_targets, self.backend.board, card, ability))
             self.root.add_widget(btn)
             self.selected_card_buttons.append(btn)
 
 
-    def draw_card_overlay(self, card, ly, wtf):
-        with ly.canvas:
-            name = (card.name[:14] + '...') if len(card.name) > 14 else card.name
-            lbl_ = Label(pos=(0, 0), text=f'{name}', color=(1, 0, 0, 1),
-                        size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
-                        font_size=Window.height * 0.02)
+    def draw_card_overlay(self, *args):
+        card = args[0]
+        if not self.selected_card == card:
+            lyy = RelativeLayout()
+            with lyy.canvas:
+                if card.player == 1:
+                    c = Color(1, 1, 0.6, 1)
+                    c1 = (0, 0, 0, 1)
+                else:
+                    c = Color(0.4, 0.5, 1, 1)
+                    c1 = (1, 1, 1, 1)
+                rect = Rectangle(pos=(0, 0), background_color=c,
+                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
+                             font_size=Window.height * 0.02)
+                name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
+                lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
+                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
+                             font_size=Window.height * 0.02,)
+                self.card_nameplates.append(lbl_)
+                self.card_nameplates_dict[card] = lyy
+            self.cards_dict[card].add_widget(lyy)
+
+    def bright_card_overlay(self, card):
+        if card.player == 1:
+            c = Color(1, 1, 0, 1)
+            c1 = (0, 0, 0, 1)
+        else:
+            c = Color(0.1, 0.1, 1, 1)
+            c1 = (1, 1, 1, 1)
+        lyy = RelativeLayout()
+        with lyy.canvas:
+            self.cards_dict[card].remove_widget(self.card_nameplates_dict[card])
+            self.card_nameplates = []
+            rect = Rectangle(pos=(0, 0), background_color=c,
+                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
+                             font_size=Window.height * 0.02)
+            name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
+            lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
+                         size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
+                         font_size=Window.height * 0.02, )
             self.card_nameplates.append(lbl_)
+        self.cards_dict[card].add_widget(lyy)
+
 
     def reveal_cards(self, cards):
         for card in cards:
@@ -340,10 +385,9 @@ class BerserkApp(App):
             if card.type == CreatureType.FLYER:
                 x, y = self.dz1_btn.pos
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
-                btn1 = Button(text='', disabled=False,
-                              pos_hint = {'center_x': .5, 'center_y': .5},
-                              background_normal=card.pic,
-                              size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                btn1 = Button(disabled=False,
+                              background_normal=card.pic, pos=(0, CARD_Y_SIZE*0.2),
+                              size=(CARD_X_SIZE, CARD_Y_SIZE*0.8), size_hint=(None, None))
                 # update backend
                 self.backend.board.game_board[card.loc] = 0
                 card.loc = -1
@@ -358,9 +402,9 @@ class BerserkApp(App):
             else:
                 x, y = self.card_position_coords[loc]
                 rl1 = RelativeLayout(pos=(x, y))
-                btn1 = Button(disabled=False,  #pos=(x, y),
+                btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.2),
                           background_normal=card.pic,# pos_hint = {'center_x': .5, 'center_y': .5},
-                          size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                          size=(CARD_X_SIZE, CARD_Y_SIZE*0.8), size_hint=(None, None))
 
 
             btn1.bind(on_press=partial(self.on_click_on_card, card))
@@ -375,7 +419,7 @@ class BerserkApp(App):
                 lbl = Label(pos=(0, CARD_Y_SIZE*0.8), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
                   pos_hint=(None, None), font_size='12')
                 self.hp_label_dict[card] = lbl
-                Clock.schedule_once(partial(self.draw_card_overlay, card, rl1))
+                Clock.schedule_once(partial(self.draw_card_overlay, card), 0.1)
 
                 self.cards_dict[card] = rl1
                 if card.type == CreatureType.CREATURE:
@@ -395,8 +439,60 @@ class BerserkApp(App):
         else:
             self.timer_label.text = game_properties.state_to_str[self.backend.curr_game_state]
 
+    def timer_update(self, duration, instance, value, completeion_ratio):
+        try:
+            minutes = int(completeion_ratio * duration) // 60
+            rem_m = (duration - int(completeion_ratio * duration)) // 60
+        except ZeroDivisionError:
+            minutes = 0
+            rem_m = 0
+        total_min = duration//60
+        seconds = completeion_ratio * duration - minutes * 60
+        # Weired bar behaviour for low width values
+        if (Window.width * 0.15) * (1 - completeion_ratio) > Window.width * 0.01:
+            bar_w = (Window.width * 0.15) * (1 - completeion_ratio)
+        else:
+            bar_w = Window.width * 0.01
+        self.timer_bar.size = (bar_w, Window.height * 0.03)
+        if self.backend.curr_game_state == game_properties.GameStates.MAIN_PHASE:
+            txt = game_properties.state_to_str[self.backend.curr_game_state] + ' игрока ' + str(self.backend.current_active_player)
+        else:
+            txt = game_properties.state_to_str[self.backend.curr_game_state]
+        self.timer_label.text = txt + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
+
+    def start_timer(self, *args):
+        duration = args[0]
+        if hasattr(self, 'timer'):
+            self.timer.cancel(self.timer_label)
+        if hasattr(self, 'timer_ly'):
+            self.root.remove_widget(self.timer_ly)
+        self.timer_ly = RelativeLayout()
+        with self.timer_ly.canvas:
+            self.timer_bar_back = BorderImage(size=(Window.width * 0.15, Window.height * 0.03),
+                                              pos=(Window.width * 0.83, Window.height * 0.36),
+                                              color=Color(0.6, 0.15, 0, 1), minimum_width=0)
+            self.timer_bar = BorderImage(size=(Window.width * 0.15, Window.height * 0.03),
+                                         pos=(Window.width * 0.83, Window.height * 0.36),
+                                        color=Color(1,1,0.3,1), minimum_width=0)
+            self.lbl = Label(text=game_properties.state_to_str[self.backend.curr_game_state],
+                        pos=(Window.width * 0.88, Window.height * 0.36), color=(0, 0, 0, 1),
+                        size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
+                        pos_hint=(None, None), font_size=str(Window.height * 0.016))
+            self.timer_label = self.lbl
+        self.root.add_widget(self.timer_ly)
+
+        self.timer = Animation(s=1 / 30, duration=duration)
+        self.timer.bind(on_progress=partial(self.timer_update, duration))
+        self.timer.start(self.timer_label)
+        # ph_button.bind(on_press=Clock.schedule_once(self.update_timer, 0.1))
+        self.timer.bind(on_complete=self.backend.next_game_state)
+        self.timer.bind(on_complete=partial(self.start_timer, duration))
+
+
     def build(self):
         root = MainField()
+        with root.canvas:
+            root.bg_rect = Rectangle(source='data/bg/dark_bg_7.jpg', pos=root.pos, size=Window.size)
        # root.add_widget(Vertical())
        # root.add_widget(Horizontal())
         # generate board coords
@@ -413,6 +509,7 @@ class BerserkApp(App):
         self.card_nameplates = []
         self.target_rectangles = []
         self.target_marks_cards = []
+        self.card_nameplates_dict = {}
         for i in range(5):
             for j in range(6):
                 btn1 = Button(text=str(i * 6 + j), disabled=False, opacity=0.8,
@@ -433,7 +530,9 @@ class BerserkApp(App):
                               pos=(Window.width * 0.80, Window.height * 0.28),
                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         ph_button.bind(on_press=self.backend.next_game_state)
-        ph_button.bind(on_press=Clock.schedule_once(self.update_timer, 0.1))
+        ph_button.bind(on_press=Clock.schedule_once(self.update_timer,))
+        duration = 10
+        ph_button.bind(on_press=partial(self.start_timer, duration))
         self.layout.add_widget(ph_button)
 
         # Button for end of turn
@@ -441,30 +540,15 @@ class BerserkApp(App):
                            pos=(Window.width * 0.88, Window.height * 0.28),
                            size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         self.layout.add_widget(eot_button)
-        # Label to display curr turn state
-        with self.layout.canvas:
-            lbl = Label(text=game_properties.state_to_str[self.backend.curr_game_state],
-                        pos=(Window.width * 0.85, Window.height * 0.34), color=(1, 1, 1, 1),
-                        size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
-                        pos_hint=(None, None), font_size=str(Window.height * 0.025))
-            self.timer_label = lbl
 
-        #Clock.schedule_once(lambda x: self.update_timer(), 0.5)
-
-        # self.timer = Animation(a=0, s=1/30, duration=30)
-        # def on_a(self, instance, value):
-        #     self.text = str(round(value, 1))
-        # self.timer.bind(on_progress=on_a)
-        # #self.anim.bind(on_complete=finish_callback)
-        # self.timer.start(self)
-
-
+        self.timer_label = Label()
+        Clock.schedule_once(lambda x: self.start_timer(5), 1)  # BUGGY?
 
         # Extra zones sliders
         self.dop_zone_1 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
-                                     size=(CARD_X_SIZE, Window.height/2), size_hint=(None, None), pos=(Window.width * 0.84, Window.height * 0.38))
+                                     size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.85, Window.height * 0.43))
         self.dop_zone_2 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
-                                     size=(CARD_X_SIZE, Window.height/2), size_hint=(None, None), pos=(Window.width * 0.01, Window.height * 0.38))
+                                     size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.01, Window.height * 0.43))
         self.dop_zone_1_gl = GridLayout(cols=1, size_hint=(1, None), row_default_height=CARD_Y_SIZE)
         self.dop_zone_2_gl = GridLayout(cols=1, size_hint=(1, None), row_default_height=CARD_Y_SIZE)
         self.dop_zone_1_gl.bind(minimum_height=self.dop_zone_1_gl.setter('height'))

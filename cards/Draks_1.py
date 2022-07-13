@@ -21,6 +21,12 @@ class Draks_1(Card):
         self.type = CreatureType.FLYER
         self.actions_left = 1
 
+        # self.actions = 1
+        # self.is_open = True
+        # self.has_made_action = False
+        # self.number_of_available_attacks = 1
+        # self.tapped = False
+
         self._update_abilities()
 
         self.player = player
