@@ -7,6 +7,7 @@ class PovelitelMolniy_1(Card):
         super().__init__()
         self.name = 'Повелитель молний'
         self.vypusk = 'Война стихий'
+        self.color = 'Горы'
         self.pic = 'data/cards/PovelitelMolniy_1.jpg'
         self.life = 8
         self.move = 1

@@ -7,6 +7,7 @@ class Draks_1(Card):
         super().__init__()
         self.name = 'Дракс'
         self.vypusk = 'Война стихий'
+        self.color = 'Лес'
         self.pic = 'data/cards/Draks_1.jpg'
         self.life = 5
         self.move = -1 # -1=flyer, -2=symbiont

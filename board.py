@@ -27,6 +27,16 @@ class Board():
         if card in self.game_board:
             ix = self.game_board.index(card)
             self.game_board[ix] = 0
+        elif card in self.extra1:
+            self.extra1.remove(card)
+        elif card in self.extra1:
+            self.extra1.remove(card)
+        elif card in self.extra2:
+            self.extra2.remove(card)
+        elif card in self.symb1:
+            self.symb1.remove(card)
+        elif card in self.symb2:
+            self.symb2.remove(card)
 
     def get_adjacent_cells_no_diag(self, no):
         pre = [no+6, no-6]
