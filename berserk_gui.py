@@ -16,9 +16,8 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-from kivy.graphics import Line, Color, InstructionGroup, Rectangle, Rotate
+from kivy.graphics import Line, Color, InstructionGroup, Rectangle, Rotate, PushMatrix, Rotate, PopMatrix
 from kivy.uix.progressbar import ProgressBar
-from kivymd.app import MDApp
 import numpy.random as rng
 from kivy.clock import Clock
 from kivy.animation import Animation
@@ -31,10 +30,11 @@ from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
 import game_properties
 import card_prep
 import operator
+import collections
 
 
-Window.size = (1920, 1080)
-#Window.size = (960, 540)
+#Window.size = (1920, 1080)
+Window.size = (960, 540)
 #Window.maximize()
 CARD_X_SIZE = (Window.width * 0.084375)
 CARD_Y_SIZE = (Window.height * 0.15)
@@ -142,7 +142,7 @@ class BerserkApp(App):
     def on_click_on_card(self, card, instance):
         self.destroy_target_marcs()
         if self.selected_card:
-            Clock.schedule_once(partial(self.draw_card_overlay, self.selected_card))
+            Clock.schedule_once(partial(self.draw_card_overlay, card, False))
         self.selected_card = card
         self.destroy_x(self.selected_card_buttons)
         # Draw border
@@ -258,6 +258,9 @@ class BerserkApp(App):
                 ch = obj_
         if not card.tapped:
             ch.background_normal = card.pic[:-4]+'_rot90.jpg'
+            ch.pos = (CARD_X_SIZE*0.2, 0)
+            ch.size = (CARD_X_SIZE*0.8, CARD_Y_SIZE)
+            self.draw_card_overlay(card, True)
             card.tapped = True
         else:
             ch.background_normal = card.pic
@@ -334,40 +337,56 @@ class BerserkApp(App):
             self.root.add_widget(btn)
             self.selected_card_buttons.append(btn)
 
-
     def draw_card_overlay(self, *args):
         card = args[0]
-        if not self.selected_card == card:
-            lyy = RelativeLayout()
-            with lyy.canvas:
-                if card.player == 1:
-                    c = Color(1, 1, 0.6, 1)
-                    c1 = (0, 0, 0, 1)
-                else:
-                    c = Color(0.4, 0.5, 1, 1)
-                    c1 = (1, 1, 1, 1)
-                rect = Rectangle(pos=(0, 0), background_color=c,
-                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
-                             font_size=Window.height * 0.02)
-                name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
-                lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
-                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
-                             font_size=Window.height * 0.02,)
-                self.card_nameplates.append(lbl_)
-                self.card_nameplates_dict[card] = lyy
-            self.cards_dict[card].add_widget(lyy)
+        turned = args[1]
+        if turned:
+            size_ = (CARD_Y_SIZE * 0.2, CARD_X_SIZE)
+            lx = self.base_overlays[card]
+            with lx.canvas.before:
+                PushMatrix()
+                self.rotation = Rotate()
+                self.rotation.origin = (lx.x+CARD_X_SIZE/2, lx.y+CARD_Y_SIZE/2)
+                self.rotation.angle = -90
+            with lx.canvas.after:
+                PopMatrix()
+        else:
+            size_ = (CARD_X_SIZE, CARD_Y_SIZE * 0.2)
+            if not self.selected_card == card or turned:
+                lyy = self.base_overlays[card]
+                ly = RelativeLayout()
+                self.cards_dict[card].remove_widget(self.card_nameplates_dict[card])
+                with ly.canvas:
+                    if card.player == 1:
+                        c = Color(1, 1, 0.6, 1)
+                        c1 = (0, 0, 0, 1)
+                    else:
+                        c = Color(0.4, 0.5, 1, 1)
+                        c1 = (1, 1, 1, 1)
+                    rect = Rectangle(pos=(0, 0), background_color=c,
+                                 size=size_,
+                                 font_size=Window.height * 0.02)
+                    name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
+                    lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
+                                 size=size_,
+                                 font_size=Window.height * 0.02,)
+
+                    #self.card_nameplate_rect_dict[card] = rect
+                    self.card_nameplates.append(lbl_)
+                    lyy.add_widget(ly)
+                    self.card_nameplates_dict[card] = ly
 
     def bright_card_overlay(self, card):
-        if card.player == 1:
-            c = Color(1, 1, 0, 1)
-            c1 = (0, 0, 0, 1)
-        else:
-            c = Color(0.1, 0.1, 1, 1)
-            c1 = (1, 1, 1, 1)
-        lyy = RelativeLayout()
-        with lyy.canvas:
-            self.cards_dict[card].remove_widget(self.card_nameplates_dict[card])
-            self.card_nameplates = []
+        lyy = self.base_overlays[card]
+        self.cards_dict[card].remove_widget(self.card_nameplates_dict[card])
+        ly = RelativeLayout()
+        with ly.canvas:
+            if card.player == 1:
+                c = Color(1, 1, 0, 1)
+                c1 = (0, 0, 0, 1)
+            else:
+                c = Color(0.1, 0.1, 1, 1)
+                c1 = (1, 1, 1, 1)
             rect = Rectangle(pos=(0, 0), background_color=c,
                              size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
                              font_size=Window.height * 0.02)
@@ -376,8 +395,9 @@ class BerserkApp(App):
                          size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
                          font_size=Window.height * 0.02, )
             self.card_nameplates.append(lbl_)
-        self.cards_dict[card].add_widget(lyy)
-
+            self.card_nameplates_dict[card] = ly
+        lyy.add_widget(ly)
+        #self.cards_dict[card].add_widget(lyy)
 
     def reveal_cards(self, cards):
         for card in cards:
@@ -410,8 +430,10 @@ class BerserkApp(App):
             btn1.bind(on_press=partial(self.on_click_on_card, card))
             rl1.add_widget(btn1)
             #rl1.bind(pos=rl1.setter('pos'))
-            with rl1.canvas:
-                # LIFE
+            #with rl1.canvas:
+            # LIFE
+            base_overlay_layout = RelativeLayout()
+            with base_overlay_layout.canvas:
                 Color(0, 0.3, 0.1)
                 Rectangle(pos=(0, CARD_Y_SIZE*0.8), size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(1,1,1,0.3), pos_hint=(None, None))
                 Color(1, 1, 1)
@@ -419,11 +441,12 @@ class BerserkApp(App):
                 lbl = Label(pos=(0, CARD_Y_SIZE*0.8), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
                   pos_hint=(None, None), font_size='12')
                 self.hp_label_dict[card] = lbl
-                Clock.schedule_once(partial(self.draw_card_overlay, card), 0.1)
-
-                self.cards_dict[card] = rl1
-                if card.type == CreatureType.CREATURE:
-                    self.layout.add_widget(rl1)
+                self.base_overlays[card] = base_overlay_layout
+                Clock.schedule_once(partial(self.draw_card_overlay, card, False), 0.1)
+            rl1.add_widget(base_overlay_layout)
+            self.cards_dict[card] = rl1
+            if card.type == CreatureType.CREATURE:
+                self.layout.add_widget(rl1)
 
     def hide_scroll(self, sv, instance):
         if not sv.disabled:
@@ -507,9 +530,11 @@ class BerserkApp(App):
         self.die_pics = []
         self.red_arrows = []
         self.card_nameplates = []
+        #self.card_nameplate_rect_dict = {}
         self.target_rectangles = []
         self.target_marks_cards = []
-        self.card_nameplates_dict = {}
+        self.card_nameplates_dict = collections.defaultdict(RelativeLayout)
+        self.base_overlays = {}
         for i in range(5):
             for j in range(6):
                 btn1 = Button(text=str(i * 6 + j), disabled=False, opacity=0.8,
@@ -527,7 +552,7 @@ class BerserkApp(App):
 
         # Button for phase skip
         ph_button = Button(text="Пропустить", disabled=False,
-                              pos=(Window.width * 0.80, Window.height * 0.28),
+                              pos=(Window.width * 0.83, Window.height * 0.28),
                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         ph_button.bind(on_press=self.backend.next_game_state)
         ph_button.bind(on_press=Clock.schedule_once(self.update_timer,))
@@ -537,7 +562,7 @@ class BerserkApp(App):
 
         # Button for end of turn
         eot_button = Button(text="Передать", disabled=False,
-                           pos=(Window.width * 0.88, Window.height * 0.28),
+                           pos=(Window.width * 0.91, Window.height * 0.28),
                            size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         self.layout.add_widget(eot_button)
 
