@@ -14,10 +14,7 @@ class Board():
         self.grave2 = []
         self.deck1 = []
         self.deck2 = []
-
-    def get_card_index(self, card):
-        pass
-
+        
     def populate_board(self, cards):
         for c in cards:
             if c.loc >= 0 and c.loc < 30:
@@ -87,7 +84,7 @@ class Board():
         return out
 
     def get_available_moves(self, card):
-        if card.type != CreatureType.CREATURE:
+        if card.tapped or card.type != CreatureType.CREATURE:
             return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)
@@ -107,7 +104,10 @@ class Board():
     def get_state(self):
         return {i:getattr(self, i) for i in self.__dict__.keys() if i[:1] != '_'}
 
+    def get_zone_count(self, attr):
+        return len(getattr(self, attr))
+
 
 # b = Board()
 # print(b.get_adjacent_cells(0, range_=4))
-# print(b.game_board)
+# print(b.get_flyer_count('extra1'))

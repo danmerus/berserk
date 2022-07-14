@@ -1,4 +1,5 @@
 import enum
+from game_properties import GameStates
 
 @enum.unique
 class ActionTypes(enum.Enum):
@@ -19,11 +20,14 @@ class CreatureType(enum.Enum):
 
 class SimpleCardAction:
 
-    def __init__(self, a_type: ActionTypes, damage: int, range: int, txt: str):
+    def __init__(self, a_type: ActionTypes, damage: int, range: int, txt: str, ranged: bool,
+                 state_of_action: GameStates):
         self.a_type = a_type
         self.damage = damage
         self.range = range
         self.txt = txt
+        self.range = ranged
+        self.state_of_action = state_of_action
 
     def __str__(self):
         return self.txt

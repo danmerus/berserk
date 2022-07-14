@@ -59,10 +59,16 @@ class Game:
 
     def next_game_state(self, *args):
         if self.curr_game_state == GameStates.END_PHASE:
-            self.switch_curr_player()
-        self.curr_game_state = self.curr_game_state.next()
+            self.switch_curr_active_player()
+        next_state = self.curr_game_state.next()
+        if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
+            self.curr_game_state = next_state
+        else:
+            self.curr_game_state = next_state
+            self.next_game_state()
 
-    def switch_curr_player(self):
+
+    def switch_curr_active_player(self):
         if self.current_active_player == 1:
             self.current_active_player = 2
         else:
@@ -70,15 +76,25 @@ class Game:
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
+        game.gui.on_new_turn()
         for card in self.board.get_all_cards():
             if card.player == self.current_active_player:
                 card.actions_left = 1
                 if card.tapped:
                     game.gui.tap_card(card)
 
+    def is_state_active(self, state):
+        ret = False
+        for card in self.board.get_all_cards():
+            for ability in card.abilities:
+                if ability.state_of_action == state:
+                    ret = True
+        return ret
 
     def start(self):
-        pass
+        if not self.is_state_active(GameStates.VSKRYTIE):
+            self.next_game_state()
+
 
 
 if __name__ == '__main__':
@@ -91,14 +107,13 @@ if __name__ == '__main__':
         exec(imp)
 
 
-    cards1 = [PovelitelMolniy_1(player=1, location=12), Draks_1(player=1, location=13), Draks_1(player=1, location=2),
+    cards1 = [PovelitelMolniy_1(player=1, location=13), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
               Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
     cards2 = [PovelitelMolniy_1(player=2, location=14), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
     game = Game(cards1, cards2)
     game.start()
+
     ######## GUI #######
     game.gui = berserk_gui.BerserkApp(game)
     game.gui.run()
 
-    #game.on_start('qwe')
-    #game.update_board_gui()
