@@ -20,11 +20,12 @@ class CreatureType(enum.Enum):
 
 class SimpleCardAction:
 
-    def __init__(self, a_type: ActionTypes, damage: int, range: int, txt: str, ranged: bool,
+    def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: GameStates):
         self.a_type = a_type
         self.damage = damage
-        self.range = range
+        self.range_min = range_min
+        self.range_max = range_max
         self.txt = txt
         self.range = ranged
         self.state_of_action = state_of_action

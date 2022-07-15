@@ -68,6 +68,15 @@ class Board():
         all_cells = self.get_adjacent_cells(card_pos_no, range_)
         return [self.game_board[x] for x in all_cells if self.game_board[x] != 0]
 
+    def get_ground_targets_min_max(self, card_pos_no, range_max, range_min):
+        if range_max > range_min:
+            t1 = set(self.get_available_targets_ground(card_pos_no, range_max))
+            t2 = set(self.get_available_targets_ground(card_pos_no, range_min))
+            out = list(t1-t2)
+        elif range_max == range_min:
+            out = self.get_available_targets_ground(card_pos_no, range_max)
+        return out
+
     def get_available_targets_flyer(self, card):
         gr = [x for x in self.game_board if x != 0]
         extr1 = [x for x in self.extra1 if x.type != CreatureType.LAND]

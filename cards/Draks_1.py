@@ -1,5 +1,6 @@
 from cards.card import Card
 from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
+from game_properties import GameStates
 
 class Draks_1(Card):
 
@@ -33,5 +34,8 @@ class Draks_1(Card):
         self.loc = location  # -1 for flying, -2 for symbiots(??), -3 graveyard
 
     def _update_abilities(self):
-        pass
+        a0 = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=self.attack, range_min=1, range_max=1,
+                              txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',
+                              ranged=True, state_of_action=GameStates.MAIN_PHASE)
+        self.abilities.append(a0)
 

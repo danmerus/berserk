@@ -35,9 +35,9 @@ import operator
 import collections
 
 
-#Window.size = (1920, 1080)
-Window.size = (960, 540)
-#Window.maximize()
+Window.size = (1920, 1080)
+#Window.size = (960, 540)
+Window.maximize()
 CARD_X_SIZE = (Window.width * 0.084375)
 CARD_Y_SIZE = (Window.height * 0.15)
 
@@ -126,7 +126,7 @@ class BerserkApp(App):
             Clock.schedule_once(partial(self.destroy_x, self.die_pics), 1)
             self.die_pics = []
             #Clock.schedule_once(partial(self.destroy_x, self.red_arrows), 0.5)
-            self.red_arrows = []
+            #self.red_arrows = []
 
     def draw_selection_border(self, instance, card):
         if hasattr(self, "card_border"):
@@ -183,6 +183,7 @@ class BerserkApp(App):
         for el in self.root.canvas.children:
             if el in self.red_arrows:
                 self.root.canvas.remove(el)
+        self.red_arrows = []
     def check_game_end(self):
         cards = self.backend.board.get_all_cards()
         if not cards:
@@ -262,7 +263,7 @@ class BerserkApp(App):
         Clock.schedule_once(lambda x: self.root.remove_widget(ly), 1)
 
     def perform_card_action(self, card, ability, victim, btn, instance):
-        if ability == 'attack':
+        if ability.a_type == ActionTypes.ATAKA:
             outcome_list, roll1, roll2 = self.backend.get_fight_result()
             if len(outcome_list) == 1:
                 a, b = outcome_list[0]
@@ -353,12 +354,13 @@ class BerserkApp(App):
     def display_available_targets(self, board, card, ability, instance):
         self.destroy_target_marks()
         b_size = 30  # размер квадратика
-        if ability == 'attack':
-            range_of_action = 1
-        else:
-            range_of_action = ability.range
+        # if ability == 'attack':
+        #     range_of_action = 1
+        # else:
+        #     range_of_action = ability.range
         if card.type == CreatureType.CREATURE:
-            targets = board.get_available_targets_ground(board.game_board.index(card), range_=range_of_action)  # targets are card objects
+            targets = board.get_ground_targets_min_max(card_pos_no=board.game_board.index(card),
+                                        range_max=ability.range_max, range_min=ability.range_min)
         elif card.type == CreatureType.FLYER:
             targets = board.get_available_targets_flyer(card)
         for t in targets:
@@ -401,19 +403,9 @@ class BerserkApp(App):
             disabled_ = operator.not_(bool(card.actions_left))
         else:
             disabled_ = True
-        # adding attack button
-        btn1 = Button(text=f'Атака {card.attack[0]}-{card.attack[1]}-{card.attack[2]}',
-                      pos=(Window.width * 0.84, Window.height * 0.20),
-                      disabled=disabled_,
-                      size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
-        Clock.schedule_once(lambda x: btn1.bind(on_press=partial(self.display_available_targets, self.backend.board, card, 'attack')), 0.5)
-        #btn1.bind(disabled=lambda x: operator.not_(bool(card.actions_left)))
-        self.root.add_widget(btn1)
-        self.selected_card_buttons.append(btn1)
-        # adding abilities buttons
         for i, ability in enumerate(card.abilities):
             btn = Button(text=ability.txt,
-                          pos=(Window.width * 0.84, Window.height * 0.20 - (i + 1) * 0.05 * Window.height),
+                          pos=(Window.width * 0.84, Window.height * 0.20 - i * 0.05 * Window.height),
                           disabled=disabled_,
                           size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
             btn.bind(on_press=partial(self.display_available_targets, self.backend.board, card, ability))
@@ -655,16 +647,16 @@ class BerserkApp(App):
         ph_button = Button(text="Пропустить", disabled=False,
                               pos=(Window.width * 0.83, Window.height * 0.28),
                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
-        ph_button.bind(on_press=self.backend.next_game_state)
-        ph_button.bind(on_press=Clock.schedule_once(self.update_timer_text, ))
-        duration = 10
-        ph_button.bind(on_press=partial(self.start_timer, duration))
         self.layout.add_widget(ph_button)
 
         # Button for end of turn
         eot_button = Button(text="Передать", disabled=False,
                            pos=(Window.width * 0.91, Window.height * 0.28),
                            size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
+        eot_button.bind(on_press=self.backend.next_game_state)
+        eot_button.bind(on_press=Clock.schedule_once(self.update_timer_text, ))
+        duration = 10
+        eot_button.bind(on_press=partial(self.start_timer, duration))
         self.layout.add_widget(eot_button)
 
         self.timer_label = Label()
@@ -673,12 +665,6 @@ class BerserkApp(App):
         # Extra zones sliders
         self.dop_zone_1 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
                                      size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.85, Window.height * 0.43))
-        with self.layout.canvas:
-            l1_x, l1_y = self.dop_zone_1.size
-            c = Color(0.8, 0.4, 0, 1)
-            l = Line(width=5, color=c, rectangle=(*self.dop_zone_1.pos, l1_x, l1_y))
-            self.borders_dz1_1 = l
-
         self.dop_zone_2 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
                                      size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.01, Window.height * 0.43))
         self.dop_zone_1_gl = GridLayout(cols=1, size_hint=(1, None), row_default_height=CARD_Y_SIZE)
@@ -693,8 +679,16 @@ class BerserkApp(App):
                                  pos=(Window.width * 0.84, Window.height * 0.88))
         self.dz2_btn = Button(text='Доп.Зона', size_hint=(None, None), size=(Window.width * 0.12, Window.height * 0.04),
                               pos=(Window.width * 0.01, Window.height * 0.88))
+        with self.layout.canvas:  # zone borders
+            l1_x, l1_y = self.dop_zone_1.size
+            l2_x, l2_y = self.dop_zone_2.size
+            c = Color(0.8, 0.4, 0, 1)
+            l1 = Line(width=3, color=c, rectangle=(*self.dop_zone_1.pos, l1_x, l1_y))
+            l2 = Line(width=3, color=c, rectangle=(*self.dop_zone_2.pos, l2_x, l2_y))
+            self.borders_dz1_1 = l1
+            self.borders_dz1_2 = l2
         self.dz1_btn.bind(on_press=partial(self.hide_scroll, self.dop_zone_1, self.borders_dz1_1))
-        #self.dz2_btn.bind(on_press=partial(self.hide_scroll, self.dop_zone_2))
+        self.dz2_btn.bind(on_press=partial(self.hide_scroll, self.dop_zone_2, self.borders_dz1_2))
 
         root.add_widget(self.dop_zone_1)
         root.add_widget(self.dop_zone_2)
