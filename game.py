@@ -3,6 +3,7 @@ import board
 import berserk_gui
 import numpy.random as rng
 from game_properties import GameStates
+from cards.card_properties import *
 from kivy.clock import Clock
 from kivy import Config
 from kivy.core.window import Window
@@ -10,17 +11,19 @@ from kivy.core.window import Window
 
 class Game:
 
-    def __init__(self, cards_on_board1, cards_on_board2):
+    def __init__(self, ):
         """"
         cards_on_board is a cards list
         """
         self.board = board.Board()
-        self.input_cards1 = cards_on_board1
-        self.input_cards2 = cards_on_board2
-        self.populate_cards()
         self.curr_game_state = GameStates.VSKRYTIE
         self.current_active_player = 1
         self.instant_actions_present = False
+
+    def set_cards(self, cards_on_board1, cards_on_board2):
+        self.input_cards1 = cards_on_board1
+        self.input_cards2 = cards_on_board2
+        self.populate_cards()
 
     def populate_cards(self):
         self.board.populate_board(self.input_cards1)
@@ -29,6 +32,16 @@ class Game:
     def get_roll_result(self, mod_1=0):
         x1 = rng.randint(1, 7) + mod_1
         return x1
+
+    def get_all_cards_with_callback(self, condition):
+        all_cards = self.board.get_all_cards()
+        out = []
+        for c in all_cards:
+            for a in c.abilities:
+                if isinstance(a, TriggerBasedCardAction) and a.condition == condition:
+                    out.append((c, a))
+        return out
+
     def get_fight_result(self, mod_1=0, mod_2=0):
         """
         returns fight simulation, accounts for blessings/curses etc.
@@ -91,7 +104,7 @@ class Game:
         ret = False
         for card in self.board.get_all_cards():
             for ability in card.abilities:
-                if ability.state_of_action == state:
+                if not isinstance(ability, TriggerBasedCardAction) and ability.state_of_action == state:
                     ret = True
         return ret
 
@@ -110,13 +123,13 @@ if __name__ == '__main__':
     for imp in imports:
         exec(imp)
 
-    cards1 = [PovelitelMolniy_1(player=1, location=13), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
+    game = Game()
+    gui = berserk_gui.BerserkApp(game)
+    game.gui = gui
+    cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
               Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
     cards2 = [PovelitelMolniy_1(player=2, location=14), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
-    game = Game(cards1, cards2)
     game.start()
-
-    ######## GUI #######
-    game.gui = berserk_gui.BerserkApp(game)
+    game.set_cards(cards1, cards2)
     game.gui.run()
 

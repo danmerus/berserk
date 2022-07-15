@@ -1,5 +1,5 @@
 from cards.card import Card
-from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
+from cards.card_properties import *
 from game_properties import GameStates
 
 class PovelitelMolniy_1(Card):
@@ -18,7 +18,10 @@ class PovelitelMolniy_1(Card):
             is_unique=True,
             type_=CreatureType.CREATURE,
             actions_left=1,
-            active_status=[]
+            active_status=[],
+            description='',
+            curr_fishka=0,
+            max_fishka=2
         )
 
         self.add_attack_ability()
@@ -30,3 +33,14 @@ class PovelitelMolniy_1(Card):
         a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',
                               ranged=True, state_of_action=GameStates.MAIN_PHASE)
         self.abilities.append(a1)
+        a2 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a2_dmg, range_min=1, range_max=6, txt='Разряд на 2+3X',
+                              ranged=True, state_of_action=GameStates.MAIN_PHASE, cost_fishka=self.a2_cost)
+        self.abilities.append(a2)
+
+    def a2_dmg(self):
+        return 2 + self.curr_fishka*3
+
+    def a2_cost(self):
+        return self.curr_fishka
+
+# p = PovelitelMolniy_1(player=2, location=14)

@@ -1,10 +1,10 @@
 from cards.card import Card
-from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
+from cards.card_properties import *
 from game_properties import GameStates
 
-class PovelitelMolniy_1(Card):
+class Lovets_dush_1(Card):
 
-    def __init__(self, player, location, *args):
+    def __init__(self, player, location, gui, *args):
         super().__init__(
             life=7,
             move=1,
@@ -12,21 +12,32 @@ class PovelitelMolniy_1(Card):
             name='Ловец душ',
             vypusk='Война стихий',
             color='Лес',
-            pic='data/cards/.jpg',
+            pic='data/cards/Lovets_dush_1.jpg',
             cost=(7, 0),  # gold, silver,
             defences=[ActionTypes.UDAR_LETAUSHEGO],
             is_unique=True,
             type_=CreatureType.CREATURE,
             actions_left=1,
-            active_status=[]
+            active_status=[],
+            description='',
+            curr_fishka=0,
+            max_fishka=1
         )
 
         self.add_attack_ability()
         self._update_abilities()
         self.player = player
-        self.loc = location  # -1 for flying, -2 for symbiots(??), -3 graveyard
+        self.loc = location
+        self.gui = gui
 
     def _update_abilities(self):  # txt max length 17
-        # a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',
-        #                       ranged=True, state_of_action=GameStates.MAIN_PHASE)
-        # self.abilities.append(a1)
+        a1 = TriggerBasedCardAction(txt='Получить фишку при гибели существа',
+                                    callback=self.a1_cb, condition=Condition.ANYCREATUREDEATH, display=False)
+        self.abilities.append(a1)
+        a2 = FishkaCardAction(a_type=ActionTypes.LECHENIE, damage=4, range_min=0, range_max=6, txt='Лечение на 4',
+                              ranged=True, state_of_action=GameStates.MAIN_PHASE, cost_fishka=1, targets='all')
+        self.abilities.append(a2)
+
+    def a1_cb(self):
+        if self.curr_fishka < self.max_fishka:
+            self.gui.add_fishka(self, False)

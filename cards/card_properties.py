@@ -11,6 +11,8 @@ class ActionTypes(enum.Enum):
     VYSTREL = 4
     METANIE = 5
     UDAR_LETAUSHEGO = 6
+    LECHENIE = 7
+    OTHER = 8
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -19,10 +21,34 @@ class CreatureType(enum.Enum):
     ARTIFACT = 3
     LAND = 4
 
+@enum.unique
+class Condition(enum.Enum):
+    ANYCREATUREDEATH = 0
+
+class TriggerBasedCardAction:
+
+    def __init__(self, txt: str, callback, condition: Condition, display: bool):
+        self.txt = txt
+        self.callback = callback
+        self.condition = condition
+        self.display = display
+
+    def __str__(self):
+        return self.txt
+
+
+class IncreaseFishkaAction:
+    def __init__(self, txt: str, state_of_action: GameStates):
+        self.txt = txt
+        self.state_of_action = state_of_action
+
+    def __str__(self):
+        return self.txt
+
 class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
-                 state_of_action: GameStates):
+                 state_of_action: GameStates, isinstant=False, targets=None):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -30,6 +56,21 @@ class SimpleCardAction:
         self.txt = txt
         self.ranged = ranged
         self.state_of_action = state_of_action
+        self.isinstant = isinstant
+        self.targets = targets
+
+    def __str__(self):
+        return self.txt
+
+
+class FishkaCardAction(SimpleCardAction):
+
+    def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool, cost_fishka,
+                 state_of_action: GameStates, isinstant=False, targets=None):
+        super().__init__(a_type, damage, range_min, range_max, txt, ranged, state_of_action)
+        self.cost_fishka = cost_fishka
+        self.isinstant = isinstant
+        self.targets = targets
 
     def __str__(self):
         return self.txt

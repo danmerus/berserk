@@ -18,7 +18,10 @@ class Draks_1(Card):
             is_unique=True,
             type_=CreatureType.FLYER,
             actions_left=1,
-            active_status=[]
+            active_status=[],
+            description='Величайшие колдуны Лаара хмурят брови и крепче сжимают свои посохи при одном лишь упоминании о Драксах, чьей излюбленной пищей служит магия...',
+            curr_fishka=0,
+            max_fishka=0
         )
         self.add_attack_ability()
         self._update_abilities()

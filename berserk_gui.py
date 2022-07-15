@@ -1,5 +1,5 @@
 import kivy
-kivy.require('1.0.1')
+kivy.require('2.0.1')
 from kivy import Config
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 from kivy.core.window import Window
@@ -29,19 +29,18 @@ from kivy.uix.image import Image
 from  kivy.metrics import dp
 from kivy.clock import mainthread
 from kivy.graphics.vertex_instructions import Triangle, BorderImage
-from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
+from cards.card_properties import *
 import game_properties
 import card_prep
 import operator
 import collections
 
 
-#Window.size = (1920, 1080)
-Window.size = (960, 540)
-#Window.maximize()
+Window.size = (1920, 1080)
+#Window.size = (960, 540)
+Window.maximize()
 CARD_X_SIZE = (Window.width * 0.084375)
-CARD_Y_SIZE = (Window.height * 0.15)
-
+CARD_Y_SIZE = CARD_X_SIZE #(Window.height * 0.15)
 
 class MainField(Widget):
     def __init__(self, **kwargs):
@@ -174,7 +173,11 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.nav_buttons.append(rl)
 
-    def destroy_card(self, card):
+    def destroy_card(self, card, ):
+        cb = self.backend.get_all_cards_with_callback(Condition.ANYCREATUREDEATH)
+        if cb:
+            for c, a in cb:
+                a.callback()
         if card.type_ == CreatureType.FLYER:
             if card.player == 1:
                 self.dop_zone_1.children[0].remove_widget(self.cards_dict[card])
@@ -192,6 +195,7 @@ class BerserkApp(App):
             if el in self.red_arrows:
                 self.root.canvas.remove(el)
         self.red_arrows = []
+
     def check_game_end(self):
         cards = self.backend.board.get_all_cards()
         if not cards:
@@ -277,53 +281,77 @@ class BerserkApp(App):
         Clock.schedule_once(lambda x: self.root.remove_widget(ly), 1)
 
     def perform_card_action(self, card, ability, victim, btn, instance):
-        if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
-            outcome_list, roll1, roll2 = self.backend.get_fight_result()
-            print('roll1: ', roll1, 'roll2: ', roll2)
-            self.draw_die(roll1, roll2)
-            if len(outcome_list) == 1:
-                a, b = outcome_list[0]
-                if a:
-                    victim.curr_life -= card.attack[a-1]
-                    self.display_damage(victim, -1 * card.attack[a - 1])
-                    self.play_attack_sound(card.attack[a - 1])
-                if b:
-                    card.curr_life -= victim.attack[b-1]
-                    self.display_damage(card, -1 * card.attack[b - 1])
-            else:  # TODO: add extra button
-                a, b = outcome_list[0]
-                if a:
-                    victim.curr_life -= card.attack[a - 1]
-                    self.display_damage(victim, -1 * card.attack[a - 1])
-                    self.play_attack_sound(card.attack[a - 1])
-                if b:
-                    card.curr_life -= victim.attack[b - 1]
-                    self.display_damage(card, -1 * card.attack[b - 1])
-        else:
-            if isinstance(ability.damage, int):
-                roll1 = self.backend.get_roll_result()
+        if isinstance(ability, FishkaCardAction):
+            if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
+                    (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
+                self.destroy_target_rectangles()
+                self.destroy_target_marks()
+                return ## ??? + Hidden attack
+        if ability.a_type not in victim.defences:
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                if not victim.tapped:
+                    outcome_list, roll1, roll2 = self.backend.get_fight_result()
+                    print('roll1: ', roll1, 'roll2: ', roll2)
+                    self.draw_die(roll1, roll2)
+                    if len(outcome_list) == 1:
+                        a, b = outcome_list[0]
+                        if a:
+                            victim.curr_life -= card.attack[a-1]
+                            self.display_damage(victim, -1 * card.attack[a - 1])
+                            self.play_attack_sound(card.attack[a - 1])
+                        if b:
+                            card.curr_life -= victim.attack[b-1]
+                            self.display_damage(card, -1 * card.attack[b - 1])
+                    else:  # TODO: add extra button
+                        a, b = outcome_list[0]
+                        if a:
+                            victim.curr_life -= card.attack[a - 1]
+                            self.display_damage(victim, -1 * card.attack[a - 1])
+                            self.play_attack_sound(card.attack[a - 1])
+                        if b:
+                            card.curr_life -= victim.attack[b - 1]
+                            self.display_damage(card, -1 * card.attack[b - 1])
+                else:
+                    roll1 = self.backend.get_roll_result()
+                    if roll1 <= 3:
+                        d = ability.damage[0]
+                    elif 4 <= roll1 <= 5:
+                        d = ability.damage[1]
+                    elif roll1 > 5:
+                        d = ability.damage[2]
+                    victim.curr_life -= d
+                    self.display_damage(victim, -1 * d)
+                    self.play_attack_sound(d)
+                    self.draw_die(roll1)
+            else:
+                if isinstance(ability.damage, int):
+                    d = ability.damage
+                    roll1 = self.backend.get_roll_result()
+                elif callable(ability.damage):
+                    d = ability.damage()
+                    roll1 = self.backend.get_roll_result()
+                elif len(ability.damage) == 3:
+                    roll1 = self.backend.get_roll_result()
+                    if roll1 <= 3:
+                        d = ability.damage[0]
+                    elif 4 <= roll1 <= 5:
+                        d = ability.damage[1]
+                    elif roll1 > 5:
+                        d = ability.damage[2]
+                if ability.a_type != ActionTypes.LECHENIE:
+                    victim.curr_life -= d
+                    self.display_damage(victim, -1 * d)
+                else:
+                    victim.curr_life = min(victim.curr_life + d, victim.life)
+                    self.display_damage(victim, d)
                 self.draw_die(roll1)
-                victim.curr_life -= ability.damage
-                self.display_damage(victim, -1 * ability.damage)
-            elif len(ability.damage) == 3:
-                roll1 = self.backend.get_roll_result()
-                self.draw_die(roll1)
-                if roll1 <= 3:
-                    d = ability.damage[0]
-                if 4 <= roll1 <= 5:
-                    d = ability.damage[1]
-                if roll1 > 5:
-                    d = ability.damage[2]
-                victim.curr_life -= d
-                self.display_damage(victim, -1 * d)
-
 
         self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
-
         self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
         self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
 
         self.destroy_target_rectangles()
+        self.destroy_target_marks()
 
         if card.curr_life <= 0:
             self.destroy_card(card)
@@ -333,12 +361,9 @@ class BerserkApp(App):
         card.actions_left -= 1
         if card.actions_left <= 0:
             self.tap_card(card)
-            for b in self.selected_card_buttons:
-                b.disabled = True
 
-        self.destroy_target_marks()
-        #self.destroy_x(self.target_marks_buttons)
-        #self.target_marks_buttons = []
+        if isinstance(ability, FishkaCardAction):
+            self.remove_fishka(card, ability.cost_fishka)
 
     def play_attack_sound(self, dmg):
         if abs(dmg) < 3:
@@ -375,6 +400,8 @@ class BerserkApp(App):
             ch.size = (CARD_X_SIZE*0.8, CARD_Y_SIZE)
             self.draw_card_overlay(card, 1)
             card.tapped = True
+            for b in self.selected_card_buttons:
+                b.disabled = True
         else:
             ch.background_normal = card.pic
             self.draw_card_overlay(card, 2)
@@ -387,21 +414,14 @@ class BerserkApp(App):
     def display_available_targets(self, board, card, ability, instance):
         self.destroy_target_marks()
         b_size = 30  # размер квадратика
-        if card.type_ == CreatureType.CREATURE:
+        if ability.targets == 'all':
+            targets = board.get_all_cards()
+        elif card.type_ == CreatureType.CREATURE:
             targets = board.get_ground_targets_min_max(card_pos_no=board.game_board.index(card),
                                         range_max=ability.range_max, range_min=ability.range_min, ability=ability)
         elif card.type_ == CreatureType.FLYER:
             targets = board.get_available_targets_flyer(card)
         for t in targets:
-            if card.type_ == CreatureType.ARTIFACT or card.type_ == CreatureType.CREATURE:
-                x, y = self.cards_dict[t].pos
-            else:
-                if t.player == 1 and (t.type_ != CreatureType.ARTIFACT and t.type_ != CreatureType.CREATURE):
-                    x, y = self.dop_zone_1.to_parent(*self.cards_dict[t].pos)
-                elif t.player == 2 and (t.type_ != CreatureType.ARTIFACT and t.type_ != CreatureType.CREATURE):
-                    x, y = self.dop_zone_2.to_parent(*self.cards_dict[t].pos)
-                else:
-                    x, y = self.cards_dict[t].pos
             with self.cards_dict[t].canvas:
                 btn = Button(pos=(0,0),
                              background_color=(1, 1, 1, 0.0),
@@ -427,17 +447,74 @@ class BerserkApp(App):
                 self.target_marks_buttons.append(btn)
                 self.target_marks_cards.append([btn, self.cards_dict[t]])
 
+    def add_fishka(self, card, *args):
+        close = True
+        self.destroy_target_marks()
+        if args:
+            close = args[0]
+        if card.curr_fishka < card.max_fishka:
+            card.curr_fishka += 1
+            if card not in self.fishka_label_dict:
+                self.add_fishki_gui(card)
+            else:
+                self.fishka_label_dict[card].text = str(card.curr_fishka)
+            if close:
+                card.actions_left -= 1
+                self.tap_card(card)
+
+    def add_fishki_gui(self, card):
+        base_overlay = self.base_overlays[card]
+        rl = RelativeLayout()
+        with rl.canvas:
+            Color(0, 0, 0.8)
+            Rectangle(size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15), color=(1, 1, 1, 0.3),
+                      pos=(0, CARD_Y_SIZE * 0.70))  # pos_hint={'x':0, 'y':0.8}
+            Color(1, 1, 1)
+            Line(width=0.5, color=(1, 1, 1, 0),
+                 rectangle=(0, CARD_Y_SIZE * 0.70, CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15))
+            lbl = Label(pos=(0, CARD_Y_SIZE * 0.70), text=f'{card.curr_fishka}', color=(1, 1, 1, 1),
+                        size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
+                        font_size=Window.height * 0.02, valign='top')
+            self.fishka_label_dict[card] = lbl
+        base_overlay.add_widget(rl)
+        self.fishka_dict[card] = rl
+
+    def remove_fishki_gui(self, card):
+        if card in self.fishka_label_dict:
+            del self.fishka_label_dict[card]
+        try:
+            base_overlay = self.base_overlays[card]
+            base_overlay.remove_widget(self.fishka_dict[card])
+        except:
+            pass
+
+    def remove_fishka(self, card, no, *args):
+        if callable(no):
+            cost = no()
+        else:
+            cost = no
+        if card.curr_fishka >= cost:
+            card.curr_fishka -= cost
+        if card.curr_fishka == 0:
+            self.remove_fishki_gui(card)
+        else:
+            self.fishka_label_dict[card].text = str(card.curr_fishka)
+
     def display_card_actions(self, card, instance):
         if self.backend.current_active_player == card.player:
             disabled_ = operator.not_(bool(card.actions_left))
         else:
             disabled_ = True
-        for i, ability in enumerate(card.abilities):
+        displayable = [x for x in card.abilities if not (isinstance(x, TriggerBasedCardAction) and not x.display)]
+        for i, ability in enumerate(displayable):
             btn = Button(text=ability.txt,
                           pos=(Window.width * 0.84, Window.height * 0.20 - i * 0.05 * Window.height),
                           disabled=disabled_,
                           size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
-            btn.bind(on_press=partial(self.display_available_targets, self.backend.board, card, ability))
+            if isinstance(ability, SimpleCardAction) or isinstance(ability, FishkaCardAction):
+                btn.bind(on_press=partial(self.display_available_targets, self.backend.board, card, ability))
+            elif isinstance(ability, IncreaseFishkaAction):
+                btn.bind(on_press=partial(self.add_fishka, card))
             self.root.add_widget(btn)
             self.selected_card_buttons.append(btn)
 
@@ -508,6 +585,7 @@ class BerserkApp(App):
             self.card_nameplates_dict[card] = ly
         lyy.add_widget(ly)
 
+
     def reveal_cards(self, cards):
         for card in cards:
             loc = card.loc
@@ -542,24 +620,27 @@ class BerserkApp(App):
             with base_overlay_layout.canvas:
                 # Life
                 Color(0, 0.3, 0.1)
-                Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2), color=(1,1,1,0.3),
-                          pos=(0, CARD_Y_SIZE*0.8)) #pos_hint={'x':0, 'y':0.8}
+                Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.15), color=(1,1,1,0.3),
+                          pos=(0, CARD_Y_SIZE*0.85)) #pos_hint={'x':0, 'y':0.8}
                 Color(1, 1, 1)
-                Line(width=0.5, color=(1,1,1,0), rectangle=(0,CARD_Y_SIZE*0.8, CARD_X_SIZE*0.33, CARD_Y_SIZE*0.2))
-                lbl = Label(pos=(0, CARD_Y_SIZE*0.8), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
-                  pos_hint=(None, None), font_size=Window.height*0.025)
+                Line(width=0.5, color=(1,1,1,0), rectangle=(0,CARD_Y_SIZE*0.85, CARD_X_SIZE*0.33, CARD_Y_SIZE*0.15))
+                lbl = Label(pos=(0, CARD_Y_SIZE*0.85), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.15),
+                   font_size=Window.height*0.02, valign='top')
                 self.hp_label_dict[card] = lbl
                 # Movement
                 Color(0.6, 0, 0)
-                Rectangle(pos=(CARD_X_SIZE * 0.73, CARD_Y_SIZE * 0.8), size=(CARD_X_SIZE * 0.27, CARD_Y_SIZE * 0.2),
+                Rectangle(pos=(CARD_X_SIZE * 0.73, CARD_Y_SIZE * 0.85), size=(CARD_X_SIZE * 0.27, CARD_Y_SIZE * 0.15),
                           color=(1, 1, 1, 0.3), pos_hint=(None, None))
                 Color(1, 1, 1)
                 Line(width=0.5, color=(1, 1, 1, 0),
-                     rectangle=(CARD_X_SIZE * 0.74, CARD_Y_SIZE*0.8, CARD_X_SIZE * 0.25, CARD_Y_SIZE*0.2))
-                lbl = Label(pos=(CARD_X_SIZE * 0.73, CARD_Y_SIZE * 0.8), text=f'{card.move}/{card.move}', color=(1, 1, 1, 1),
-                            size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
-                            pos_hint=(None, None), font_size=Window.height*0.025)
+                     rectangle=(CARD_X_SIZE * 0.74, CARD_Y_SIZE*0.85, CARD_X_SIZE * 0.25, CARD_Y_SIZE*0.15))
+                lbl = Label(pos=(CARD_X_SIZE * 0.73, CARD_Y_SIZE * 0.85), text=f'{card.move}/{card.move}', color=(1, 1, 1, 1),
+                            size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.15),
+                            pos_hint=(None, None), font_size=Window.height*0.02)
                 self.move_label_dict[card] = lbl
+                if card.curr_fishka > 0:
+                    self.add_fishki_gui(card)
+
 
             self.base_overlays[card] = base_overlay_layout
             Clock.schedule_once(partial(self.draw_card_overlay, card, 0), 0.1)
@@ -659,7 +740,9 @@ class BerserkApp(App):
         self.target_marks_buttons = []
         self.hp_label_dict = {}
         self.move_label_dict = {}
+        self.fishka_label_dict = {}
         self.cards_dict = {}
+        self.fishka_dict = {}
         self.die_pics = []
         self.red_arrows = []
         self.card_nameplates = []
@@ -711,7 +794,7 @@ class BerserkApp(App):
         self.dop_zone_1 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
                                      size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.85, Window.height * 0.43))
         self.dop_zone_2 = ScrollView(bar_pos_x='top', always_overscroll=False, do_scroll_x=False,
-                                     size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.01, Window.height * 0.43))
+                                     size=(CARD_X_SIZE, Window.height*0.45), size_hint=(None, None), pos=(Window.width * 0.03, Window.height * 0.43))
         self.dop_zone_1_gl = GridLayout(cols=1, size_hint=(1, None), row_default_height=CARD_Y_SIZE)
         self.dop_zone_2_gl = GridLayout(cols=1, size_hint=(1, None), row_default_height=CARD_Y_SIZE)
         self.dop_zone_1_gl.bind(minimum_height=self.dop_zone_1_gl.setter('height'))
