@@ -68,32 +68,39 @@ class Board():
         all_cells = self.get_adjacent_cells(card_pos_no, range_)
         return [self.game_board[x] for x in all_cells if self.game_board[x] != 0]
 
-    def get_ground_targets_min_max(self, card_pos_no, range_max, range_min):
+    def get_flying_targets(self):
+        extr1 = [x for x in self.extra1 if x.type_ != CreatureType.LAND]
+        extr2 = [x for x in self.extra2 if x.type_ != CreatureType.LAND]
+        out = list(chain(extr1, extr2))
+        return out
+    def get_ground_targets_min_max(self, card_pos_no, range_max, range_min, ability):
         if range_max > range_min:
             t1 = set(self.get_available_targets_ground(card_pos_no, range_max))
             t2 = set(self.get_available_targets_ground(card_pos_no, range_min))
             out = list(t1-t2)
+            if ability.ranged:
+                out.extend(self.get_flying_targets())
         elif range_max == range_min:
             out = self.get_available_targets_ground(card_pos_no, range_max)
         return out
 
     def get_available_targets_flyer(self, card):
         gr = [x for x in self.game_board if x != 0]
-        extr1 = [x for x in self.extra1 if x.type != CreatureType.LAND]
-        extr2 = [x for x in self.extra2 if x.type != CreatureType.LAND]
+        extr1 = [x for x in self.extra1 if x.type_ != CreatureType.LAND]
+        extr2 = [x for x in self.extra2 if x.type_ != CreatureType.LAND]
         out = list(chain(gr, self.symb1, self.symb2, extr1, extr2))
         out.remove(card)
         return out
 
     def get_all_cards(self):
         gr = [x for x in self.game_board if x != 0]
-        extr1 = [x for x in self.extra1 if x.type]
-        extr2 = [x for x in self.extra2 if x.type]
+        extr1 = [x for x in self.extra1 if x.type_]
+        extr2 = [x for x in self.extra2 if x.type_]
         out = list(chain(gr, self.symb1, self.symb2, extr1, extr2))
         return out
 
     def get_available_moves(self, card):
-        if card.tapped or card.type != CreatureType.CREATURE:
+        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0:
             return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)

@@ -14,4 +14,4 @@ def crop(path):
         img.crop((cr, cr, w-cr, h//2+13)).save('data/cards/PovelitelMolniy_1.jpg') #.show()
 
 rotate_90_clock('data/cards/PovelitelMolniy_1.jpg')
-#crop('data/cards/PV.jpg')
+#crop('data/cards/PovelitelMolniy_1_full.jpg')

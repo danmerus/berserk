@@ -10,6 +10,7 @@ class ActionTypes(enum.Enum):
     VOZDEISTVIE = 3
     VYSTREL = 4
     METANIE = 5
+    UDAR_LETAUSHEGO = 6
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -27,7 +28,7 @@ class SimpleCardAction:
         self.range_min = range_min
         self.range_max = range_max
         self.txt = txt
-        self.range = ranged
+        self.ranged = ranged
         self.state_of_action = state_of_action
 
     def __str__(self):

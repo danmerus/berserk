@@ -26,6 +26,9 @@ class Game:
         self.board.populate_board(self.input_cards1)
         self.board.populate_board(self.input_cards2)
 
+    def get_roll_result(self, mod_1=0):
+        x1 = rng.randint(1, 7) + mod_1
+        return x1
     def get_fight_result(self, mod_1=0, mod_2=0):
         """
         returns fight simulation, accounts for blessings/curses etc.
@@ -76,12 +79,13 @@ class Game:
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
-        game.gui.on_new_turn()
         for card in self.board.get_all_cards():
             if card.player == self.current_active_player:
                 card.actions_left = 1
+                card.curr_move = card.move
                 if card.tapped:
                     game.gui.tap_card(card)
+        game.gui.on_new_turn()
 
     def is_state_active(self, state):
         ret = False
@@ -105,7 +109,6 @@ if __name__ == '__main__':
     imports = [f"from cards import {module}\nfrom cards.{module} import *" for module in sorted(modules)]
     for imp in imports:
         exec(imp)
-
 
     cards1 = [PovelitelMolniy_1(player=1, location=13), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
               Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
