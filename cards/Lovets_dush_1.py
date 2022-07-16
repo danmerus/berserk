@@ -24,7 +24,7 @@ class Lovets_dush_1(Card):
             max_fishka=1
         )
 
-        self.add_attack_ability()
+        self.add_default_abilities()
         self._update_abilities()
         self.player = player
         self.loc = location

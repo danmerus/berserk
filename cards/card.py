@@ -1,4 +1,4 @@
-from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType, IncreaseFishkaAction
+from cards.card_properties import *
 from game_properties import GameStates
 
 
@@ -30,16 +30,23 @@ class Card:
         self.move = move
         self.curr_move = move
         self.active_status = active_status
+        self.can_defend = True
         if self.max_fishka > 0:
             self.abilities.append(IncreaseFishkaAction(txt='Накопить фишку', state_of_action=GameStates.MAIN_PHASE))
 
-    def add_attack_ability(self):
+    def add_default_abilities(self):
         if self.type_ == CreatureType.CREATURE:
             a0 = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=self.attack, range_min=1, range_max=1,
                                   txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',
                                   ranged=False, state_of_action=GameStates.MAIN_PHASE)
+            self.abilities.insert(0, a0)
         elif self.type_ == CreatureType.FLYER:
             a0 = SimpleCardAction(a_type=ActionTypes.UDAR_LETAUSHEGO, damage=self.attack, range_min=1, range_max=1,
                                   txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',
                                   ranged=False, state_of_action=GameStates.MAIN_PHASE)
-        self.abilities.insert(0, a0)
+            self.abilities.insert(0, a0)
+        if not (self.type_ == CreatureType.LAND or self.type_ == CreatureType.ARTIFACT):
+            a1 = DefenceAction(a_type=ActionTypes.ZASCHITA, active=True)
+            self.abilities.insert(1, a1)
+            self.defence_action = a1
+

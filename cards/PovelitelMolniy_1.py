@@ -24,7 +24,7 @@ class PovelitelMolniy_1(Card):
             max_fishka=2
         )
 
-        self.add_attack_ability()
+        self.add_default_abilities()
         self._update_abilities()
         self.player = player
         self.loc = location  # -1 for flying, -2 for symbiots(??), -3 graveyard

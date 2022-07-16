@@ -64,6 +64,32 @@ class Board():
             traverse.remove(no)
         return traverse
 
+    def get_defenders(self, card, victim):
+        if card.player == victim.player:
+            return []
+        if victim.type_ == CreatureType.CREATURE and card.type_ == CreatureType.CREATURE:
+            c1 = self.get_available_targets_ground(card.loc, range_=1)
+            v1 = self.get_available_targets_ground(victim.loc, range_=1)
+            candidates = set(c1).intersection(set(v1))
+            print(c1, v1)
+        elif (card.type_ == CreatureType.CREATURE or card.type_ == CreatureType.FLYER) and \
+            victim.type_ == CreatureType.FLYER:
+            if victim.player == 1:
+                candidates = [x for x in self.extra1 if x != victim]
+            else:
+                candidates = [x for x in self.extra2 if x != victim]
+        elif card.type_ == CreatureType.FLYER and victim.type_ == CreatureType.CREATURE:
+            c1 = self.get_available_targets_ground(victim.loc, range_=1)
+            if victim.player == 1:
+                candidates = self.extra1
+            else:
+                candidates = self.extra2
+            candidates.extend(c1)
+        out = [x for x in candidates if not x.tapped]
+        out = [x for x in out if x.can_defend]
+        out = [x for x in out if x.player == victim.player]
+        return out
+
     def get_available_targets_ground(self, card_pos_no, range_):
         all_cells = self.get_adjacent_cells(card_pos_no, range_)
         return [self.game_board[x] for x in all_cells if self.game_board[x] != 0]

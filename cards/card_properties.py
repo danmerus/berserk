@@ -12,7 +12,9 @@ class ActionTypes(enum.Enum):
     METANIE = 5
     UDAR_LETAUSHEGO = 6
     LECHENIE = 7
-    OTHER = 8
+    ZASCHITA = 8
+    FISHKA = 9
+    OTHER = 10
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -24,6 +26,18 @@ class CreatureType(enum.Enum):
 @enum.unique
 class Condition(enum.Enum):
     ANYCREATUREDEATH = 0
+
+class DefenceAction:
+
+    def __init__(self, a_type, active: bool):
+        self.a_type = a_type
+        self.txt = 'Защитить'
+        self.fight_with = None
+        self.active = active
+        self.state_of_action = GameStates.MAIN_PHASE
+
+    def __str__(self):
+        return self.txt
 
 class TriggerBasedCardAction:
 
@@ -39,8 +53,10 @@ class TriggerBasedCardAction:
 
 class IncreaseFishkaAction:
     def __init__(self, txt: str, state_of_action: GameStates):
+        self.a_type = ActionTypes.FISHKA
         self.txt = txt
         self.state_of_action = state_of_action
+        self.isinstant = False
 
     def __str__(self):
         return self.txt

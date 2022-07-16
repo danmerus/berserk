@@ -19,6 +19,11 @@ class Game:
         self.curr_game_state = GameStates.VSKRYTIE
         self.current_active_player = 1
         self.instant_actions_present = False
+        self.curr_priority = 1
+        self.in_stack = False
+        self.stack = []
+        self.passed_1 = False
+        self.passed_2 = False
 
     def set_cards(self, cards_on_board1, cards_on_board2):
         self.input_cards1 = cards_on_board1
@@ -28,6 +33,12 @@ class Game:
     def populate_cards(self):
         self.board.populate_board(self.input_cards1)
         self.board.populate_board(self.input_cards2)
+
+    def player_passed(self):
+        if self.curr_priority == 1:
+            self.passed_1 = True
+        else:
+            self.passed_2 = True
 
     def get_roll_result(self, mod_1=0):
         x1 = rng.randint(1, 7) + mod_1
@@ -87,8 +98,10 @@ class Game:
     def switch_curr_active_player(self):
         if self.current_active_player == 1:
             self.current_active_player = 2
+            self.curr_priority = 2
         else:
             self.current_active_player = 1
+            self.curr_priority = 1
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
@@ -128,7 +141,7 @@ if __name__ == '__main__':
     game.gui = gui
     cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
               Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
-    cards2 = [PovelitelMolniy_1(player=2, location=14), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
+    cards2 = [PovelitelMolniy_1(player=2, location=14),PovelitelMolniy_1(player=2, location=20), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
     game.start()
     game.set_cards(cards1, cards2)
     game.gui.run()
