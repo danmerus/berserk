@@ -21,6 +21,14 @@ class GameStates(enum.Enum):
             index = 0
         return members[index]
 
+    def next_after_start(self):
+        cls = self.__class__
+        members = list(cls)
+        index = members.index(self) + 1
+        if index >= len(members):
+            index = 3
+        return members[index]
+
 state_to_str = {
     GameStates.VSKRYTIE: 'Вскрытие',
     GameStates.BATTLE_START: 'Начало боя',
@@ -31,5 +39,5 @@ state_to_str = {
     GameStates.END_PHASE: 'Заключительная фаза'
 }
 
-k=GameStates.OPENING_PHASE
-print(state_to_str[k])
+# k=GameStates.OPENING_PHASE
+# print(state_to_str[k])

@@ -21,7 +21,8 @@ class Lovets_dush_1(Card):
             active_status=[],
             description='',
             curr_fishka=0,
-            max_fishka=1
+            max_fishka=1,
+            can_tap_for_fishka=False
         )
 
         self.add_default_abilities()
@@ -34,9 +35,22 @@ class Lovets_dush_1(Card):
         a1 = TriggerBasedCardAction(txt='Получить фишку при гибели существа',
                                     callback=self.a1_cb, condition=Condition.ANYCREATUREDEATH, display=False)
         self.abilities.append(a1)
+
         a2 = FishkaCardAction(a_type=ActionTypes.LECHENIE, damage=4, range_min=0, range_max=6, txt='Лечение на 4',
-                              ranged=True, state_of_action=GameStates.MAIN_PHASE, cost_fishka=1, targets='all')
+                              ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=1, targets='all')
         self.abilities.append(a2)
+
+        a31 = SimpleCardAction(a_type=ActionTypes.ZAKLINANIE, damage=1, range_min=1, range_max=6, txt='Ранить на 1',
+                              ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                                                            GameStates.END_PHASE, GameStates.MAIN_PHASE], targets='enemy')
+        a32 = SimpleCardAction(a_type=ActionTypes.EXTRA_LIFE, damage=1, range_min=0, range_max=6, txt='Доп. жизнь на 1',
+                               ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                                                             GameStates.END_PHASE, GameStates.MAIN_PHASE], targets='ally')
+
+        a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32], target_callbacks=None,
+                              ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                                                            GameStates.END_PHASE, GameStates.MAIN_PHASE], isinstant=True)
+        self.abilities.append(a3)
 
     def a1_cb(self):
         if self.curr_fishka < self.max_fishka:

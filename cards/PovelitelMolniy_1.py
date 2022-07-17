@@ -16,12 +16,13 @@ class PovelitelMolniy_1(Card):
             cost=(8, 0),  # gold, silver,
             defences=[ActionTypes.RAZRYAD],
             is_unique=True,
-            type_=CreatureType.CREATURE,
+            type_ = CreatureType.CREATURE,
             actions_left=1,
             active_status=[],
             description='',
             curr_fishka=0,
-            max_fishka=2
+            max_fishka=2,
+            can_tap_for_fishka=True
         )
 
         self.add_default_abilities()
@@ -31,10 +32,10 @@ class PovelitelMolniy_1(Card):
 
     def _update_abilities(self):  # txt max length 17
         a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',
-                              ranged=True, state_of_action=GameStates.MAIN_PHASE)
+                              ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a1)
         a2 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a2_dmg, range_min=1, range_max=6, txt='Разряд на 2+3X',
-                              ranged=True, state_of_action=GameStates.MAIN_PHASE, cost_fishka=self.a2_cost)
+                              ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=self.a2_cost)
         self.abilities.append(a2)
 
     def a2_dmg(self):

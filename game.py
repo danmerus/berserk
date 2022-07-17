@@ -17,8 +17,8 @@ class Game:
         """
         self.board = board.Board()
         self.curr_game_state = GameStates.VSKRYTIE
+        self.turn = 1
         self.current_active_player = 1
-        self.instant_actions_present = False
         self.curr_priority = 1
         self.in_stack = False
         self.stack = []
@@ -34,24 +34,17 @@ class Game:
         self.board.populate_board(self.input_cards1)
         self.board.populate_board(self.input_cards2)
 
-    def player_passed(self):
-        if self.curr_priority == 1:
-            self.passed_1 = True
-        else:
-            self.passed_2 = True
+    def player_passed(self, *args):
+        if self.in_stack:
+            if self.curr_priority == 1:
+                self.passed_1 = True
+            else:
+                self.passed_2 = True
+            self.switch_priority()
 
     def get_roll_result(self, mod_1=0):
         x1 = rng.randint(1, 7) + mod_1
         return x1
-
-    def get_all_cards_with_callback(self, condition):
-        all_cards = self.board.get_all_cards()
-        out = []
-        for c in all_cards:
-            for a in c.abilities:
-                if isinstance(a, TriggerBasedCardAction) and a.condition == condition:
-                    out.append((c, a))
-        return out
 
     def get_fight_result(self, mod_1=0, mod_2=0):
         """
@@ -87,13 +80,18 @@ class Game:
     def next_game_state(self, *args):
         if self.curr_game_state == GameStates.END_PHASE:
             self.switch_curr_active_player()
-        next_state = self.curr_game_state.next()
+        next_state = self.curr_game_state.next_after_start()
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
         else:
             self.curr_game_state = next_state
             self.next_game_state()
 
+    def switch_priority(self, *args):
+        if self.curr_priority == 1:
+            self.curr_priority = 2
+        else:
+            self.curr_priority = 1
 
     def switch_curr_active_player(self):
         if self.current_active_player == 1:
@@ -105,6 +103,7 @@ class Game:
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
+        self.turn += 1
         for card in self.board.get_all_cards():
             if card.player == self.current_active_player:
                 card.actions_left = 1
@@ -117,11 +116,11 @@ class Game:
         ret = False
         for card in self.board.get_all_cards():
             for ability in card.abilities:
-                if not isinstance(ability, TriggerBasedCardAction) and ability.state_of_action == state:
+                if not isinstance(ability, TriggerBasedCardAction) and state in ability.state_of_action:
                     ret = True
         return ret
 
-    def start(self):
+    def start(self, *args):
         if not self.is_state_active(GameStates.VSKRYTIE):
             self.next_game_state()
 
@@ -139,10 +138,12 @@ if __name__ == '__main__':
     game = Game()
     gui = berserk_gui.BerserkApp(game)
     game.gui = gui
-    cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Draks_1(player=1, location=21), Draks_1(player=1, location=2),
-              Draks_1(player=1, location=3), Draks_1(player=1, location=4), Draks_1(player=1, location=5)]
-    cards2 = [PovelitelMolniy_1(player=2, location=14),PovelitelMolniy_1(player=2, location=20), Draks_1(player=2, location=22), Draks_1(player=2, location=25)]
-    game.start()
+    cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=19, gui=gui),
+              Draks_1(player=1, location=21, gui=gui), Draks_1(player=1, location=2, gui=gui),
+              Draks_1(player=1, location=3, gui=gui), Draks_1(player=1, location=4, gui=gui), Draks_1(player=1, location=5, gui=gui)]
+    cards2 = [PovelitelMolniy_1(player=2, location=14),PovelitelMolniy_1(player=2, location=20),
+              Draks_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
+    Clock.schedule_once(game.start, 1)
     game.set_cards(cards1, cards2)
     game.gui.run()
 

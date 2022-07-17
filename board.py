@@ -1,6 +1,6 @@
 import numpy as np
 from itertools import chain
-from cards.card_properties import ActionTypes, SimpleCardAction, CreatureType
+from cards.card_properties import *
 
 class Board():
 
@@ -65,13 +65,13 @@ class Board():
         return traverse
 
     def get_defenders(self, card, victim):
+        candidates = []
         if card.player == victim.player:
             return []
         if victim.type_ == CreatureType.CREATURE and card.type_ == CreatureType.CREATURE:
             c1 = self.get_available_targets_ground(card.loc, range_=1)
             v1 = self.get_available_targets_ground(victim.loc, range_=1)
             candidates = set(c1).intersection(set(v1))
-            print(c1, v1)
         elif (card.type_ == CreatureType.CREATURE or card.type_ == CreatureType.FLYER) and \
             victim.type_ == CreatureType.FLYER:
             if victim.player == 1:
@@ -80,14 +80,34 @@ class Board():
                 candidates = [x for x in self.extra2 if x != victim]
         elif card.type_ == CreatureType.FLYER and victim.type_ == CreatureType.CREATURE:
             c1 = self.get_available_targets_ground(victim.loc, range_=1)
+            print(self.extra2)
             if victim.player == 1:
                 candidates = self.extra1
             else:
                 candidates = self.extra2
-            candidates.extend(c1)
+           # print('candidates', victim.player,  candidates)
+            candidates = candidates + c1
         out = [x for x in candidates if not x.tapped]
         out = [x for x in out if x.can_defend]
         out = [x for x in out if x.player == victim.player]
+        return out
+
+    def get_all_cards_with_callback(self, condition):
+        all_cards = self.get_all_cards()
+        out = []
+        for c in all_cards:
+            for a in c.abilities:
+                if isinstance(a, TriggerBasedCardAction) and a.condition == condition:
+                    out.append((c, a))
+        return out
+
+    def get_instants(self):
+        all_cards = self.get_all_cards()
+        out = []
+        for c in all_cards:
+            for a in c.abilities:
+                if a.isinstant and not isinstance(a, DefenceAction):
+                    out.append((c, a))
         return out
 
     def get_available_targets_ground(self, card_pos_no, range_):
