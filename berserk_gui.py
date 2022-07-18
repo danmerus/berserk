@@ -36,9 +36,9 @@ import operator
 import collections
 
 
-Window.size = (1920, 1080)
-#Window.size = (960, 540)
-Window.maximize()
+#Window.size = (1920, 1080)
+Window.size = (960, 540)
+#Window.maximize()
 CARD_X_SIZE = (Window.width * 0.084375)
 CARD_Y_SIZE = CARD_X_SIZE #(Window.height * 0.15)
 
@@ -365,12 +365,13 @@ class BerserkApp(App):
                 self.handle_instant_stack(ability, card, victim)
             else:
                 if isinstance(ability, MultipleCardAction):
-                    out = []
-                    for i, a in enumerate(ability.action_list):
-                        out.append((a, card, self.multiple_targets_list[i]))
-                    self.multiple_targets_list = []
-                    self.perform_card_action(out)
-                    self.process_stack()
+                    if len(self.multiple_targets_list) == len(ability.action_list):
+                        for i, a in enumerate(ability.action_list):
+                            self.perform_card_action(a, card, self.multiple_targets_list[i])
+                        self.multiple_targets_list = []
+                        self.process_stack()
+                    else:
+                        return
                 else:
                     self.perform_card_action(ability, card, victim)
                     self.process_stack()
