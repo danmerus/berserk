@@ -24,6 +24,7 @@ class Game:
         self.stack = []
         self.passed_1 = False
         self.passed_2 = False
+        self.passed_once = False
 
     def set_cards(self, cards_on_board1, cards_on_board2):
         self.input_cards1 = cards_on_board1
@@ -78,11 +79,18 @@ class Game:
         return res, x1, x2  # (attack, defence) roll1  roll2
 
     def next_game_state(self, *args):
+        self.passed_1 = False
+        self.passed_2 = False
+        self.passed_once = False
         if self.curr_game_state == GameStates.END_PHASE:
             self.switch_curr_active_player()
+#            game.gui.check_all_passed(None)
         next_state = self.curr_game_state.next_after_start()
+        if next_state != GameStates.MAIN_PHASE:
+            gui.disable_all_non_instant_actions()
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
+            game.gui.check_all_passed(None)
         else:
             self.curr_game_state = next_state
             self.next_game_state()
@@ -92,6 +100,7 @@ class Game:
             self.curr_priority = 2
         else:
             self.curr_priority = 1
+        gui.buttons_on_priority_switch()
 
     def switch_curr_active_player(self):
         if self.current_active_player == 1:
@@ -106,7 +115,7 @@ class Game:
         self.turn += 1
         for card in self.board.get_all_cards():
             if card.player == self.current_active_player:
-                card.actions_left = 1
+                card.actions_left = card.actions
                 card.curr_move = card.move
                 if card.tapped:
                     game.gui.tap_card(card)
@@ -142,8 +151,8 @@ if __name__ == '__main__':
               Draks_1(player=1, location=21, gui=gui), Draks_1(player=1, location=2, gui=gui),
               Draks_1(player=1, location=3, gui=gui), Draks_1(player=1, location=4, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [PovelitelMolniy_1(player=2, location=14),PovelitelMolniy_1(player=2, location=20),
+              Lovets_dush_1(player=2, location=12, gui=gui), Lovets_dush_1(player=2, location=15, gui=gui),
               Draks_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
-    Clock.schedule_once(game.start, 1)
     game.set_cards(cards1, cards2)
     game.gui.run()
 

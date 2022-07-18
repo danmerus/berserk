@@ -80,12 +80,10 @@ class Board():
                 candidates = [x for x in self.extra2 if x != victim]
         elif card.type_ == CreatureType.FLYER and victim.type_ == CreatureType.CREATURE:
             c1 = self.get_available_targets_ground(victim.loc, range_=1)
-            print(self.extra2)
             if victim.player == 1:
                 candidates = self.extra1
             else:
                 candidates = self.extra2
-           # print('candidates', victim.player,  candidates)
             candidates = candidates + c1
         out = [x for x in candidates if not x.tapped]
         out = [x for x in out if x.can_defend]
@@ -113,6 +111,12 @@ class Board():
     def get_available_targets_ground(self, card_pos_no, range_):
         all_cells = self.get_adjacent_cells(card_pos_no, range_)
         return [self.game_board[x] for x in all_cells if self.game_board[x] != 0]
+
+    def isinstant_card(self, card):
+        for a in card.abilities:
+            if a.isinstant and not a.a_type == ActionTypes.ZASCHITA:
+                return True
+        return False
 
     def get_flying_targets(self):
         extr1 = [x for x in self.extra1 if x.type_ != CreatureType.LAND]
