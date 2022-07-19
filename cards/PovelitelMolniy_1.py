@@ -12,6 +12,7 @@ class PovelitelMolniy_1(Card):
             name='Повелитель молний',
             vypusk='Война стихий',
             color='Горы',
+            rarity='rare',
             pic='data/cards/PovelitelMolniy_1.jpg',
             cost=(8, 0),  # gold, silver,
             defences=[ActionTypes.RAZRYAD],

@@ -6,7 +6,7 @@ class Card:
 
     def __init__(self, life, move, attack, name,
                  vypusk, color, pic, cost, defences, is_unique,
-                 type_, actions_left, active_status, description, curr_fishka,
+                 type_, actions_left, active_status, description, curr_fishka, rarity,
                  max_fishka, can_tap_for_fishka):
         self.curr_fishka = curr_fishka
         self.max_fishka = max_fishka
@@ -18,6 +18,7 @@ class Card:
         self.pic = pic
         self.color = color
         self.vypusk = vypusk
+        self.rarity = rarity
         self.name = name
         self.actions = 1
         self.actions_left = actions_left

@@ -11,6 +11,7 @@ class Draks_1(Card):
             attack=(1, 1, 2),
             name='Дракс',
             vypusk='Война стихий',
+            rarity = 'common',
             color='Лес',
             pic='data/cards/Draks_1.jpg',
             cost=(0, 3),  # gold, silver,

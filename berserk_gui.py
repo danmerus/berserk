@@ -384,11 +384,11 @@ class BerserkApp(App):
             self.ph_button.disabled = False
         i1 = [(c, a) for (c, a) in instants if (c.player == 1 and c.actions_left > 0)]
         i2 = [(c, a) for (c, a) in instants if (c.player == 2 and c.actions_left > 0)]
-        if not i1 and not self.pending_attack:
+        if not i1 and not self.pending_attack and self.backend.in_stack:
             self.backend.passed_1 = True
             if self.backend.curr_priority == 1:
                 self.backend.switch_priority()
-        if not i2 and not self.pending_attack:
+        if not i2 and not self.pending_attack and self.backend.in_stack:
             self.backend.passed_2 = True
             if self.backend.curr_priority == 2:
                 self.backend.switch_priority()
@@ -422,6 +422,8 @@ class BerserkApp(App):
                 self.eot_button.disabled = False
                 self.ph_button.disabled = True
                 self.start_timer(TURN_DURATION)
+                if self.backend.curr_priority != self.backend.current_active_player:
+                    self.backend.switch_priority()
             else:
                 self.backend.next_game_state()
             return
@@ -563,6 +565,7 @@ class BerserkApp(App):
             Clock.schedule_once(partial(self.draw_card_overlay, self.selected_card, 0))
         self.selected_card = card
         self.destroy_x(self.selected_card_buttons)
+        self.selected_card_buttons = []
         # Draw border
         self.draw_selection_border(instance.parent, card)
         # Higlight name
@@ -744,9 +747,11 @@ class BerserkApp(App):
             elif not show_slow and ability.isinstant:
                 disabled_ = False
             btn = Button(text=ability.txt,
-                          pos=(Window.width * 0.84, Window.height * 0.20 - i * 0.05 * Window.height),
-                          disabled=disabled_,
-                          size=(Window.width * 0.14, Window.height * 0.05), size_hint=(None, None))
+                          pos=(Window.width * 0.84, Window.height * 0.20 - i * 0.04 * Window.height),
+                          disabled=disabled_, background_color=(1,0,0,1),
+                         border=[1,1,1,1],
+                        #  backgroun1d_normal='data/bg/dark_bg_1.jpg', background_disabled_normal='data/bg/dark_bg_1.jpg',
+                          size=(Window.width * 0.14, Window.height * 0.04),)# size_hint=(None, None))
             if isinstance(ability, SimpleCardAction) or isinstance(ability, FishkaCardAction):
                 btn.bind(on_press=partial(self.display_available_targets, self.backend.board, card, ability, None))
             elif isinstance(ability, IncreaseFishkaAction):
@@ -756,6 +761,7 @@ class BerserkApp(App):
             elif isinstance(ability, MultipleCardAction):
                 btn.bind(on_press=partial(self.handle_multiple_actions, ability, card))
             self.root.add_widget(btn)
+            print(btn.size)
             self.selected_card_buttons.append(btn)
 
     def draw_card_overlay(self, *args):
@@ -967,6 +973,8 @@ class BerserkApp(App):
         self.timer.start(self.timer_label)
         if self.backend.in_stack:
             self.timer.bind(on_complete=self.backend.player_passed)
+            self.timer.bind(on_complete=Clock.schedule_once(self.check_all_passed))
+            self.timer.bind(on_complete=partial(self.start_timer, STACK_DURATION))
             #Clock.schedule_once(self.check_all_passed)
         else:
             if self.selected_card:
@@ -992,7 +1000,8 @@ class BerserkApp(App):
         if self.selected_card and not self.selected_card.tapped and self.selected_card.actions_left > 0:
             if self.selected_card.player != self.backend.curr_priority:
                 for b in self.selected_card_buttons:
-                    b.disabled = True
+                    if not b.disabled:
+                        b.disabled = True
             else:
                 self.display_card_actions(self.selected_card, True, None)
 
