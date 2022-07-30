@@ -16,7 +16,8 @@ class ActionTypes(enum.Enum):
     FISHKA = 9
     EXTRA_LIFE = 10
     MAG_UDAR = 11
-    OTHER = 12
+    MOVEMENT = 12
+    OTHER = 13
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -47,6 +48,15 @@ class DefenceAction:
     def __str__(self):
         return self.txt
 
+class DefaultMovementAction:
+    def __init__(self, move=None):
+        self.a_type = ActionTypes.MOVEMENT
+        self.move = move
+        self.isinstant = False
+        self.display = False
+       # self.txt = ''
+
+
 class TriggerBasedCardAction:
 
     def __init__(self, txt: str, callback, condition: Condition, display: bool):
@@ -59,6 +69,16 @@ class TriggerBasedCardAction:
     def __str__(self):
         return self.txt
 
+class TapToHitFlyerAction:
+    def __init__(self):
+        self.a_type = ActionTypes.OTHER
+        self.txt = 'Удар по летающему'
+        self.isinstant = False
+        self.display = True
+        self.state_of_action = [GameStates.MAIN_PHASE]
+
+    def __str__(self):
+        return self.txt
 
 class IncreaseFishkaAction:
     def __init__(self, txt: str, state_of_action: [GameStates]):

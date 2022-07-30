@@ -148,9 +148,11 @@ if __name__ == '__main__':
     gui = berserk_gui.BerserkApp(game)
     game.gui = gui
     cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=19, gui=gui),
+              PovelitelMolniy_1(player=1, location=20),
               Draks_1(player=1, location=21, gui=gui), Draks_1(player=1, location=2, gui=gui),
               Draks_1(player=1, location=3, gui=gui), Draks_1(player=1, location=4, gui=gui), Draks_1(player=1, location=5, gui=gui)]
-    cards2 = [PovelitelMolniy_1(player=2, location=14),PovelitelMolniy_1(player=2, location=20),
+    cards2 = [
+        PovelitelMolniy_1(player=2, location=14),
               Lovets_dush_1(player=2, location=12, gui=gui), Lovets_dush_1(player=2, location=15, gui=gui),
               Draks_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
     game.set_cards(cards1, cards2)

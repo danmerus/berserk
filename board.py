@@ -123,6 +123,7 @@ class Board():
         extr2 = [x for x in self.extra2 if x.type_ != CreatureType.LAND]
         out = list(chain(extr1, extr2))
         return out
+
     def get_ground_targets_min_max(self, card_pos_no, range_max, range_min, ability):
         if range_max > range_min:
             t1 = set(self.get_available_targets_ground(card_pos_no, range_max))
