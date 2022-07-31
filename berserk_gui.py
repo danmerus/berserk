@@ -43,8 +43,8 @@ Window.size = (960, 540)
 CARD_X_SIZE = (Window.width * 0.084375)
 CARD_Y_SIZE = CARD_X_SIZE #(Window.height * 0.15)
 
-STACK_DURATION = 10
-TURN_DURATION = 12
+STACK_DURATION = 5
+TURN_DURATION = 6
 
 DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
 
@@ -133,36 +133,45 @@ class BerserkApp(App):
         for c in self.selection_flicker_dict.keys():
             self.base_overlays[c].remove_widget(self.selection_flicker_dict[c])
 
+    def check_displayable_crd_actions(self, card):
+        out = []
+        for ability in card.abilities:
+            if isinstance(ability, FishkaCardAction):
+                if (isinstance(ability.cost_fishka, int) and ability.cost_fishka <= card.curr_fishka) or \
+                        (callable(ability.cost_fishka) and ability.cost_fishka() <= card.curr_fishka):
+                            out.append((ability, 1))
+                else:
+                    out.append((ability, 0))
+            else:
+                out.append((ability, 1))
+        displayable = [x for x in out if not (isinstance(x[0], TriggerBasedCardAction) and not x[0].display)]
+        return displayable
+
     def popup_attack_bind(self, result, ability, card, victim, *args):
+        self.timer.unbind(on_complete=self.press_1)
         if hasattr(self, 'attack_popup'):
             self.attack_popup.dismiss()
             del self.attack_popup
         a, b = result
         if a:
-            victim.curr_life -= card.attack[a - 1]
-            self.display_damage(victim, -1 * card.attack[a - 1])
-            self.play_attack_sound(card.attack[a - 1])
+            ability.damage_make = card.attack[a - 1]
+        else:
+            ability.damage_make = 0
         if b:
-            card.curr_life -= victim.attack[b - 1]
-            self.display_damage(card, -1 * card.attack[b - 1])
+            ability.damage_receive = victim.attack[b - 1]
+        else:
+            ability.damage_receive = 0
 
-        self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
-        self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
-        self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
+        instants = self.backend.board.get_instants()
+        # if instants:
+        #     self.backend.passed_1 = False
+        #     self.backend.passed_2 = False
+        # else:
+        self.backend.passed_1 = True
+        self.backend.passed_2 = True
+        self.backend.stack.append((ability, card, victim, 2))
+        self.process_stack()
 
-        self.destroy_target_rectangles()
-        self.destroy_target_marks()
-        all_cards = self.backend.board.get_all_cards()
-        if card.curr_life <= 0 and card in all_cards:
-            self.destroy_card(card)
-        if victim.curr_life <= 0 and victim in all_cards:
-            self.destroy_card(victim)
-        card.actions_left -= 1
-        if card.actions_left <= 0:
-            if not card.tapped:
-                self.tap_card(card)
-        if ability.tap_target:
-            self.tap_card(victim)
 
     def destroy_card(self, card, ):
         cb = self.backend.board.get_all_cards_with_callback(Condition.ANYCREATUREDEATH)
@@ -298,7 +307,6 @@ class BerserkApp(App):
             #                                  n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2,
             #                                 x*0.7+(x-n)*0.15*0.57, (y-m)*0.85+m])
             self.red_arrows.append(l)
-            Clock.schedule_once(lambda x: self.destroy_red_arrows(), 2)
             #self.red_arrows.append(tri)
 
     def draw_die(self, *args):
@@ -349,9 +357,9 @@ class BerserkApp(App):
     def handle_instant_stack(self, ability, card, victim):
         if self.backend.stack:
             for el in self.backend.stack:
-                if len(el) == 3:
-                    ab, _, _ = el
-                    if isinstance(ab, DefaultMovementAction) and isinstance(ability, DefaultMovementAction) :
+                if len(el) == 4:
+                    ab, _, _, _ = el
+                    if isinstance(ab, DefaultMovementAction) and isinstance(ability, DefaultMovementAction):
                         return
         self.backend.in_stack = True
         self.eot_button.disabled = True
@@ -364,11 +372,11 @@ class BerserkApp(App):
             if len(self.multiple_targets_list) == len(ability.action_list):
                 out = []
                 for i, a in enumerate(ability.action_list):
-                    out.append((a, card, self.multiple_targets_list[i]))
+                    out.append((a, card, self.multiple_targets_list[i], 0))
             else:
                 return
         else:
-            out = (ability, card, victim)
+            out = (ability, card, victim, 0)
         if card.actions_left > 0:
             self.backend.stack.append(out)
             self.multiple_targets_list = []
@@ -382,13 +390,14 @@ class BerserkApp(App):
         if (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO) and \
             not CardEffect.NAPRAVLENNY_UDAR in card.active_status:
             defenders = self.backend.board.get_defenders(card, victim)
-            if defenders:
+            if defenders:  # Предварительный этап ("при объявлении [текст]")
                 self.backend.in_stack = True
                 self.eot_button.disabled = True
                 self.ph_button.disabled = False
                 self.backend.curr_priority = victim.player
 
                 self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
+                Clock.schedule_once(lambda x: self.destroy_red_arrows(), 2)
                 Clock.schedule_once(lambda x: self.start_timer(STACK_DURATION))
                 self.disable_all_buttons_except_instant(defenders)  # adds to stack_cards
                 card.actions_left -= 1
@@ -406,33 +415,27 @@ class BerserkApp(App):
                     self.selection_flicker_dict[c] = rl
                     c.defence_action.fight_with = card
                 self.pending_attack = ability
-                self.backend.stack.append((ability, card, victim))
+                self.backend.stack.append((ability, card, victim, 0))
             elif self.backend.board.get_instants():
                 self.handle_instant_stack(ability, card, victim)
             else:
-                self.perform_card_action(ability, card, victim)
+                self.perform_card_action(ability, card, victim, 0)
                 self.process_stack()
         elif ability.a_type == ActionTypes.ZASCHITA:
             if hasattr(self, 'pending_attack') and self.pending_attack:
                 if self.backend.curr_priority == card.player and ability.fight_with:
                     self.destroy_flickering()
-                    for a, c, v in self.backend.stack:
+                    for a, c, v, stage in self.backend.stack:
                         if a == self.pending_attack:
-                            self.backend.stack.remove((a, c, v))
+                            self.backend.stack.remove((a, c, v, stage))
                     self.defender_set = True
                     self.backend.player_passed()
                     Clock.schedule_once(lambda x: self.start_timer(STACK_DURATION))
                     temp_attack = deepcopy(self.pending_attack)
                     temp_attack.tap_target = True
                     self.pending_attack = None
-                    self.backend.stack.append((temp_attack, ability.fight_with, card))
+                    self.backend.stack.append((temp_attack, ability.fight_with, card, 0))
         else:
-            # if isinstance(ability, FishkaCardAction):  # Separate func?
-            #     if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
-            #             (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
-            #         self.destroy_target_rectangles()
-            #         self.destroy_target_marks()
-            #         return
             instants = self.backend.board.get_instants()
             self.disable_all_buttons_except_instant(instants)
             if instants:  #or self.pending_attack
@@ -441,13 +444,13 @@ class BerserkApp(App):
                 if isinstance(ability, MultipleCardAction):
                     if len(self.multiple_targets_list) == len(ability.action_list):
                         for i, a in enumerate(ability.action_list):
-                            self.perform_card_action(a, card, self.multiple_targets_list[i])
+                            self.perform_card_action(a, card, self.multiple_targets_list[i], 0)
                         self.multiple_targets_list = []
                         self.process_stack()
                     else:
                         return
                 else:
-                    self.perform_card_action(ability, card, victim)
+                    self.perform_card_action(ability, card, victim, 0)
                     self.process_stack()
 
     def check_all_passed(self, instance):
@@ -484,7 +487,7 @@ class BerserkApp(App):
         if not self.backend.passed_1 and not self.backend.passed_2:
             return
 
-    def process_stack(self):
+    def process_stack(self, *args):
         if len(self.backend.stack) == 0:  # выход по завершении стека
             self.pending_attack = None
             self.backend.curr_priority = self.backend.current_active_player
@@ -520,134 +523,175 @@ class BerserkApp(App):
     def perform_card_action(self, *args):
         if self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
             return
-        if len(args) == 3:
-            ability, card, victim = args
+        if len(args) == 4:
+            ability, card, victim, stage = args
         elif isinstance(args, tuple):
-            for a, c, v in args:
-                self.perform_card_action(a, c, v)
+            for a, c, v, stage in args:
+                self.backend.stack.append((a, c, v, 0))
             return
-        if isinstance(ability, FishkaCardAction):
-            if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
-                    (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
-                self.destroy_target_rectangles()
-                self.destroy_target_marks()
+        # STAGE 0  - PODGOTOVKA
+        if stage == 0:
+            if isinstance(ability, FishkaCardAction):
+                if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
+                        (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
+                    self.destroy_target_rectangles()
+                    self.destroy_target_marks()
+                    return
+            if isinstance(ability, IncreaseFishkaAction):
+                self.add_fishka(card)
                 return
-        if isinstance(ability, IncreaseFishkaAction):
-            self.add_fishka(card)
-            return
-        if isinstance(ability, TapToHitFlyerAction):
-            card.can_hit_flyer = True
-            card.actions_left -= 1
-            self.tap_card(card)
-            return
-        if isinstance(ability, DefaultMovementAction):
-            if not card.tapped:
-                self.move_card(card, victim[0], victim[1])  # victim here is a move
+            if isinstance(ability, TapToHitFlyerAction):
+                card.can_hit_flyer = True
+                card.actions_left -= 1
+                self.tap_card(card)
+                return
+            if isinstance(ability, DefaultMovementAction):
+                if not card.tapped:
+                    self.move_card(card, victim[0], victim[1])  # victim here is a move
+                else:
+                    pass
+                return
+
+            instants = self.backend.board.get_instants()
+            if instants:
+                self.backend.passed_1 = False
+                self.backend.passed_2 = False
             else:
-                pass
-            return
-        all_cards = self.backend.board.get_all_cards()
-        if ability.a_type not in victim.defences and card in all_cards and victim in all_cards:  # check if target and action card is valid (card is alive)
+                self.backend.passed_1 = True
+                self.backend.passed_2 = True
+            self.backend.stack.append((ability, card, victim, 1))
+            self.process_stack()
+
+        # STAGE 1 - KUBIKI
+        # Шаг броска кубика (накладываем модификаторы к броску кубика, срабатывают особенности карт "при броске кубика")
+        if stage == 1:
+            self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
+            num_die_rolls = 1
             if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
-                if ability.callback:
-                    ability.callback(victim)
-                if card.can_hit_flyer and victim.type_ == CreatureType.FLYER:
-                    card.can_hit_flyer = False
                 if not victim.tapped:
-                    outcome_list, roll1, roll2 = self.backend.get_fight_result()
-                    print('roll1: ', roll1, 'roll2: ', roll2)
-                    self.draw_die(roll1, roll2)
+                    num_die_rolls = 2
+            for _ in range(num_die_rolls):
+                ability.rolls.append(self.backend.get_roll_result())
+
+            self.draw_die(*ability.rolls)
+            print('rolls: ', ability.rolls)
+
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                if not victim.tapped:
+                    outcome_list = self.backend.get_fight_result(*ability.rolls)
                     if len(outcome_list) == 1:
                         a, b = outcome_list[0]
                         if a:
-                            victim.curr_life -= card.attack[a-1]
-                            self.display_damage(victim, -1 * card.attack[a - 1])
-                            self.play_attack_sound(card.attack[a - 1])
+                            ability.damage_make = card.attack[a - 1]
+                        else:
+                            ability.damage_make = 0
                         if b:
-                            card.curr_life -= victim.attack[b-1]
-                            self.display_damage(card, -1 * card.attack[b - 1])
+                            ability.damage_receive = victim.attack[b - 1]
+                        else:
+                            ability.damage_receive = 0
                     else:
                         self.attack_popup = OmegaPopup(title='Berserk renewal',
-                                  width=310, height=150, background_color=(1,0,0,1),
-                                  overlay_color=(0,0,0,0), size_hint=(None, None),
-                                  auto_dismiss=False)
+                                                       width=310, height=150, background_color=(1, 0, 0, 1),
+                                                       overlay_color=(0, 0, 0, 0), size_hint=(None, None),
+                                                       auto_dismiss=False)
                         rl = RelativeLayout(size=self.attack_popup.size, size_hint=(None, None))
                         self.attack_popup.content = rl
                         with rl.canvas:
                             l = Label(pos=(70, 20), size_hint=(None, None), text='Выберите результат сражения: ')
                             self.garbage.append(l)
                         dmg_dict = {0: 'Промах', 1: 'Слабый', 2: 'Средний', 3: 'Cильный'}
-                        btn1 = Button(pos=(0, 0), size=(130, 30), background_color=(1,0,0,1),
-                                      size_hint=(None, None), text=dmg_dict[outcome_list[0][0]]+'-'+dmg_dict[outcome_list[0][1]])
-                        btn2 = Button(pos=(rl.width/2, 0), size=(130, 30), background_color=(1,0,0,1),
-                                      size_hint=(None, None), text=dmg_dict[outcome_list[1][0]]+'-'+dmg_dict[outcome_list[1][1]])
+                        btn1 = Button(pos=(0, 0), size=(130, 30), background_color=(1, 0, 0, 1),
+                                      size_hint=(None, None),
+                                      text=dmg_dict[outcome_list[0][0]] + '-' + dmg_dict[outcome_list[0][1]])
+                        btn2 = Button(pos=(rl.width / 2, 0), size=(130, 30), background_color=(1, 0, 0, 1),
+                                      size_hint=(None, None),
+                                      text=dmg_dict[outcome_list[1][0]] + '-' + dmg_dict[outcome_list[1][1]])
                         btn1.bind(on_press=partial(self.popup_attack_bind, outcome_list[0], ability, card, victim))
                         btn2.bind(on_press=partial(self.popup_attack_bind, outcome_list[1], ability, card, victim))
-                        self.timer.bind(on_complete=partial(self.popup_attack_bind, outcome_list[1], ability, card, victim))
+                        self.press_1 = lambda *_: partial(self.popup_attack_bind, outcome_list[1], ability, card, victim)
+                        self.timer.bind(on_complete=lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim))
                         rl.add_widget(btn1)
                         rl.add_widget(btn2)
                         self.attack_popup.open()
                         return
-                else:
-                    roll1 = self.backend.get_roll_result()
-                    if roll1 <= 3:
-                        d = ability.damage[0]
-                    elif 4 <= roll1 <= 5:
-                        d = ability.damage[1]
-                    elif roll1 > 5:
-                        d = ability.damage[2]
-                    victim.curr_life -= d
-                    self.display_damage(victim, -1 * d)
-                    self.play_attack_sound(d)
-                    self.draw_die((roll1, card.player))
             else:
+                roll1 = ability.rolls[0]
                 if isinstance(ability.damage, int):
                     d = ability.damage
-                    roll1 = self.backend.get_roll_result()
                 elif callable(ability.damage):
                     d = ability.damage()
-                    roll1 = self.backend.get_roll_result()
                 elif len(ability.damage) == 3:
-                    roll1 = self.backend.get_roll_result()
                     if roll1 <= 3:
                         d = ability.damage[0]
                     elif 4 <= roll1 <= 5:
                         d = ability.damage[1]
                     elif roll1 > 5:
                         d = ability.damage[2]
-                if ability.a_type == ActionTypes.LECHENIE:
-                    victim.curr_life = min(victim.curr_life + d, victim.life)
-                    self.display_damage(victim, d)
-                elif ability.a_type == ActionTypes.EXTRA_LIFE:
-                    victim.life += d
-                    victim.curr_life += d
-                    self.display_damage(victim, d)
+                ability.damage_make = d
+
+            instants = self.backend.board.get_instants()
+            if instants:
+                self.backend.passed_1 = False
+                self.backend.passed_2 = False
+            else:
+                self.backend.passed_1 = True
+                self.backend.passed_2 = True
+            self.backend.stack.append((ability, card, victim, 2))
+            self.process_stack()
+
+        #  STAGE 2 - NALOJENIE I OPLATA
+        if stage == 2:
+            all_cards = self.backend.board.get_all_cards()
+            if ability.a_type not in victim.defences and card in all_cards and victim in all_cards:
+                if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                    if ability.callback:
+                        ability.callback(victim)
+                    if card.can_hit_flyer and victim.type_ == CreatureType.FLYER:
+                        card.can_hit_flyer = False
+                    if ability.damage_make:
+                        victim.curr_life -= ability.damage_make
+                        self.display_damage(victim, -1 * ability.damage_make)
+                        self.play_attack_sound(ability.damage_make)
+                    if ability.damage_receive:
+                        card.curr_life -= ability.damage_receive
+                        self.display_damage(card, -1 * ability.damage_receive)
                 else:
-                    victim.curr_life -= d
-                    self.display_damage(victim, -1 * d)
-                self.draw_die((roll1, card.player))
+                    if ability.a_type == ActionTypes.LECHENIE:
+                        victim.curr_life = min(victim.curr_life + ability.damage_make, victim.life)
+                        self.display_damage(victim, ability.damage_make)
+                    elif ability.a_type == ActionTypes.EXTRA_LIFE:
+                        victim.life += ability.damage_make
+                        victim.curr_life += ability.damage_make
+                        self.display_damage(victim, ability.damage_make)
+                    else:
+                        victim.curr_life -= ability.damage_make
+                        self.display_damage(victim, -1 * ability.damage_make)
 
-        self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
-        self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
-        self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
+            self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
+            self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
 
-        self.destroy_target_rectangles()
-        self.destroy_target_marks()
+            self.destroy_target_rectangles()
+            self.destroy_target_marks()
 
-        if card.curr_life <= 0 and card in all_cards:
-            self.destroy_card(card)
-        if victim.curr_life <= 0 and victim in all_cards:
-            self.destroy_card(victim)
+            if card.curr_life <= 0 and card in all_cards:
+                self.destroy_card(card)
+            if victim.curr_life <= 0 and victim in all_cards:
+                self.destroy_card(victim)
 
-        card.actions_left -= 1
-        if card.actions_left <= 0:
-            if not card.tapped:
-                self.tap_card(card)
-        if ability.tap_target:
-            self.tap_card(victim)
+            card.actions_left -= 1
+            if card.actions_left <= 0:
+                if not card.tapped:
+                    self.tap_card(card)
+            if ability.tap_target:
+                self.tap_card(victim)
 
-        if isinstance(ability, FishkaCardAction):
-            self.remove_fishka(card, ability.cost_fishka)
+            if isinstance(ability, FishkaCardAction):
+                self.remove_fishka(card, ability.cost_fishka)
+
+            Clock.schedule_once(lambda x: self.destroy_red_arrows(), 1)
+            ability.rolls = []  # cleanup
+            ability.damage_make = 0
+            ability.damage_receive = 0
 
     def on_new_turn(self):
         self.damage_marks = []
@@ -787,7 +831,6 @@ class BerserkApp(App):
                 self.target_marks_cards.append([btn, self.cards_dict[t]])
 
     def add_fishka(self, card, *args):
-        # self.check_all_passed(None)
         close = True
         self.destroy_target_marks()
         if args:
@@ -859,8 +902,14 @@ class BerserkApp(App):
                 and card.type_ == CreatureType.CREATURE and add_tap_for_flyer_flag:
             card.abilities.append(TapToHitFlyerAction())
 
-        displayable = [x for x in card.abilities if not (isinstance(x, TriggerBasedCardAction) and not x.display)]
-        for i, ability in enumerate(displayable):
+        displayable = self.check_displayable_crd_actions(card)
+
+        for i, ab in enumerate(displayable):  #TODO Полный пипец надо переписать
+            ability, code = ab
+            if code == 0:
+                disabled_ = True
+            else:
+                disabled_ = False
             if self.backend.in_stack:
                 if not ability.isinstant:
                     disabled_ = True

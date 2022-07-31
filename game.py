@@ -47,12 +47,10 @@ class Game:
         x1 = rng.randint(1, 7) + mod_1
         return x1
 
-    def get_fight_result(self, mod_1=0, mod_2=0):
+    def get_fight_result(self, roll1, x2):
         """
         returns fight simulation, accounts for blessings/curses etc.
         """
-        x1 = rng.randint(1, 7) + mod_1 # attacker
-        x2 = rng.randint(1, 7) + mod_2 # defender
         res_dict = {
             1: [(1, 0)],
             2: [(2, 1), (1, 0)],
@@ -65,18 +63,18 @@ class Game:
             -4: [(1, 2), (0, 1)],
             -5: [(0, 2)],
         }
-        score = x1 - x2
+        score = roll1 - x2
         if score < -5:
             res = [(0, 2)]
         elif score > 5:
             res = [(3, 0)]
-        elif score == 0 and x1 <= 4:
+        elif score == 0 and roll1 <= 4:
             res = [(1, 0)]
-        elif score == 0 and x1 > 4:
+        elif score == 0 and roll1 > 4:
             res = [(0, 1)]
         else:
             res = res_dict[score]
-        return res, x1, x2  # (attack, defence) roll1  roll2
+        return res  # (attack, defence) list
 
     def next_game_state(self, *args):
         self.passed_1 = False

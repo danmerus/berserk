@@ -17,7 +17,8 @@ class ActionTypes(enum.Enum):
     EXTRA_LIFE = 10
     MAG_UDAR = 11
     MOVEMENT = 12
-    OTHER = 13
+    DIE_ROLL = 13
+    OTHER = 14
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -106,6 +107,9 @@ class SimpleCardAction:
         self.tap_target = False
         self.callback = callback
         self.condition = condition
+        self.rolls = []
+        self.damage_make = 0
+        self.damage_receive = 0
 
     def __str__(self):
         return self.txt

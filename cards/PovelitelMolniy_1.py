@@ -6,7 +6,7 @@ class PovelitelMolniy_1(Card):
 
     def __init__(self, player, location, *args):
         super().__init__(
-            life=8,
+            life=1,
             move=1,
             attack=(2, 2, 3),
             name='Повелитель молний',
