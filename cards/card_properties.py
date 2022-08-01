@@ -18,7 +18,8 @@ class ActionTypes(enum.Enum):
     MAG_UDAR = 11
     MOVEMENT = 12
     DIE_ROLL = 13
-    OTHER = 14
+    TRIGGER = 14
+    OTHER = 15
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -26,6 +27,26 @@ class CreatureType(enum.Enum):
     FLYER = 2
     ARTIFACT = 3
     LAND = 4
+
+@enum.unique
+class Rarity(enum.Enum):
+    COMMON = 'частая'
+    RARE = 'редкая'
+    UNIQUE = 'ультраредкая'
+    PROMO = 'промо'
+
+@enum.unique
+class CardColor(enum.Enum):
+    NEUTRAL = 'нейтральная'
+    GORY = 'горы'
+    STEP = 'степь'
+    BOLOTA = 'болота'
+    LES = 'лес'
+    TYMA = 'тьма'
+
+@enum.unique
+class GameSet(enum.Enum):
+    VOYNA_STIHIY = 'Война стихий'
 
 @enum.unique
 class CardEffect(enum.Enum):
@@ -66,6 +87,7 @@ class TriggerBasedCardAction:
         self.condition = condition
         self.display = display
         self.isinstant = False
+        self.a_type = ActionTypes.TRIGGER
 
     def __str__(self):
         return self.txt

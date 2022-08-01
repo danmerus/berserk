@@ -37,17 +37,6 @@ import operator
 from copy import deepcopy
 import collections
 
-Window.size = (960, 540)
-# Window.size = (1920, 1080)
-# Window.maximize()
-CARD_X_SIZE = (Window.width * 0.084375)
-CARD_Y_SIZE = CARD_X_SIZE #(Window.height * 0.15)
-
-STACK_DURATION = 5
-TURN_DURATION = 6
-
-DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
-
 class MainField(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -82,9 +71,20 @@ class OmegaPopup(DragBehavior, Popup):
 
 class BerserkApp(App):
 
-    def __init__(self, backend):
+    def __init__(self, backend, window_size):
         super(BerserkApp, self).__init__()
         self.backend = backend
+        Window.size = window_size
+        if window_size == (1920, 1080):
+            Window.maximize()
+        global CARD_X_SIZE, CARD_Y_SIZE, STACK_DURATION, TURN_DURATION, DZ_SIZE
+        CARD_X_SIZE = (Window.width * 0.084375)
+        CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
+
+        STACK_DURATION = 5
+        TURN_DURATION = 6
+
+        DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
         self.title = 'Berserk Renewal'
 
     def destroy_x(self, list_, long=False):
@@ -142,6 +142,8 @@ class BerserkApp(App):
                             out.append((ability, 1))
                 else:
                     out.append((ability, 0))
+            elif isinstance(ability, IncreaseFishkaAction) and card.curr_fishka >= card.max_fishka:
+                out.append((ability, 0))
             else:
                 out.append((ability, 1))
         displayable = [x for x in out if not (isinstance(x[0], TriggerBasedCardAction) and not x[0].display)]
@@ -163,7 +165,7 @@ class BerserkApp(App):
             ability.damage_receive = 0
 
         instants = self.backend.board.get_instants()
-        # if instants:
+        # if instants: TODO
         #     self.backend.passed_1 = False
         #     self.backend.passed_2 = False
         # else:
@@ -172,12 +174,19 @@ class BerserkApp(App):
         self.backend.stack.append((ability, card, victim, 2))
         self.process_stack()
 
-
     def destroy_card(self, card, ):
         cb = self.backend.board.get_all_cards_with_callback(Condition.ANYCREATUREDEATH)
         if cb:
             for c, a in cb:
-                a.callback()
+                instants = self.backend.board.get_instants()
+                if instants:
+                    self.backend.passed_1 = False
+                    self.backend.passed_2 = False
+                else:
+                    self.backend.passed_1 = True
+                    self.backend.passed_2 = True
+                self.backend.stack.append((a, c, None, 0))
+                self.process_stack()
         if card.type_ == CreatureType.FLYER:
             if card.player == 1:
                 self.dop_zone_1.children[0].remove_widget(self.cards_dict[card])
@@ -260,9 +269,23 @@ class BerserkApp(App):
         self.destroy_x(self.nav_buttons)
         self.nav_buttons = []
         card.curr_move -= 1
+        stroy_neighbors_old = self.backend.board.get_adjacent_with_stroy(card.loc)
         self.backend.board.update_board(card.loc, move, card)
         card.loc = move
         self.move_label_dict[card].text = f'{card.curr_move}/{card.move}'
+
+        stroy_neighbors_new = self.backend.board.get_adjacent_with_stroy(card.loc)  # Строй
+        if len(stroy_neighbors_new) != 0 and not card.in_stroy and card.stroy_in:
+            card.stroy_in()
+            for neigh in stroy_neighbors_new:
+                if not neigh.in_stroy:
+                    neigh.stroy_in()
+        elif len(stroy_neighbors_new) == 0 and card.in_stroy:
+            card.stroy_out()
+        if len(stroy_neighbors_old) != 0:
+            for neigh in stroy_neighbors_old:
+                if len(self.backend.board.get_adjacent_with_stroy(neigh.loc)) == 0 and neigh.stroy_out:
+                    neigh.stroy_out()
 
     def check_game_end(self):
         cards = self.backend.board.get_all_cards()
@@ -309,25 +332,46 @@ class BerserkApp(App):
             self.red_arrows.append(l)
             #self.red_arrows.append(tri)
 
-    def draw_die(self, *args):
-        r1 = args[0]
-        if isinstance(r1, tuple) and r1[1] == 2:
-            r1_i = Image(source=f'data/dice/Alea_{r1[0]}.png', pos=(Window.width * 0.12, Window.height * 0.8),
-                         size=(0.07 * Window.width, Window.height * 0.07))
-        elif isinstance(r1, tuple) and r1[1] == 1:
-            r1_i = Image(source=f'data/dice/Alea_{r1[0]}.png', pos=(Window.width * 0.78, Window.height * 0.8),
-                         size=(0.07 * Window.width, Window.height * 0.07))
-        else:
-            r1_i = Image(source=f'data/dice/Alea_{r1}.png', pos=(Window.width * 0.78, Window.height * 0.8),
-                         size=(0.07 * Window.width, Window.height * 0.07))
-        self.root.add_widget(r1_i)
-        self.die_pics.append(r1_i)
-        if len(args) == 2:
-            r2 = args[1]
-            r2_i = Image(source=f'data/dice/Alea_{r2}.png', pos=(Window.width * 0.12, Window.height * 0.8),
-                         size=(0.07 * Window.width, Window.height * 0.07))
+    def draw_die(self, player, bonus1, bonus2, *args):
+        rolls = args
+        if len(rolls) == 2:
+            if player == 1:
+                r1_i = Image(source=f'data/dice/Alea_{rolls[1]}.png', pos=(Window.width * 0.12, Window.height * 0.8),
+                             size=(0.07 * Window.width, Window.height * 0.07))
+                r2_i = Image(source=f'data/dice/Alea_{rolls[0]}.png', pos=(Window.width * 0.78, Window.height * 0.8),
+                             size=(0.07 * Window.width, Window.height * 0.07))
+                with r2_i.canvas:
+                    if bonus1:
+                        l = Label(text='+'+str(bonus1), pos=(Window.width * 0.78, Window.height * 0.7))
+                        self.die_pics.append(l)
+                    if bonus2:
+                        l = Label(text='+' + str(bonus2), pos=(Window.width * 0.12, Window.height * 0.7))
+                        self.die_pics.append(l)
+            elif player == 2:
+                r1_i = Image(source=f'data/dice/Alea_{rolls[0]}.png', pos=(Window.width * 0.12, Window.height * 0.8),
+                             size=(0.07 * Window.width, Window.height * 0.07))
+                r2_i = Image(source=f'data/dice/Alea_{rolls[1]}.png', pos=(Window.width * 0.78, Window.height * 0.8),
+                             size=(0.07 * Window.width, Window.height * 0.07))
+                with r2_i.canvas:
+                    if bonus1:
+                        l = Label(text='+'+str(bonus1), pos=(Window.width * 0.12, Window.height * 0.7))
+                        self.die_pics.append(l)
+                    if bonus2:
+                        l = Label(text='+' + str(bonus2), pos=(Window.width * 0.78, Window.height * 0.7))
+                        self.die_pics.append(l)
+            self.root.add_widget(r1_i)
+            self.die_pics.append(r1_i)
             self.die_pics.append(r2_i)
             self.root.add_widget(r2_i)
+        elif len(rolls) == 1:
+            r1_i = Image(source=f'data/dice/Alea_{rolls[0]}.png', pos=(Window.width * 0.78, Window.height * 0.8),
+                         size=(0.07 * Window.width, Window.height * 0.07))
+            with r1_i.canvas:
+                l = Label(text='+' + str(bonus1), pos=(Window.width * 0.78, Window.height * 0.7))
+                self.die_pics.append(l)
+            self.root.add_widget(r1_i)
+            self.die_pics.append(r1_i)
+        Clock.schedule_once(partial(self.destroy_x, self.die_pics), 2)
 
     def get_pos(self, card):
         if card.type_ == CreatureType.CREATURE:
@@ -502,6 +546,8 @@ class BerserkApp(App):
                 self.ph_button.disabled = True
                 if not hasattr(self, 'attack_popup'):
                     self.start_timer(TURN_DURATION)
+                else:
+                    self.wasted_time = False
                 if self.backend.curr_priority != self.backend.current_active_player:
                     self.backend.switch_priority()
             else:
@@ -520,17 +566,12 @@ class BerserkApp(App):
 
         self.process_stack()
 
-    def perform_card_action(self, *args):
-        if self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
-            return
-        if len(args) == 4:
-            ability, card, victim, stage = args
-        elif isinstance(args, tuple):
-            for a, c, v, stage in args:
-                self.backend.stack.append((a, c, v, 0))
-            return
+    def perform_card_action_0(self, args):
         # STAGE 0  - PODGOTOVKA
-        if stage == 0:
+        out = []
+        if len(args) == 4 and not isinstance(args[0], tuple):
+            args = tuple([args])
+        for ability, card, victim, stage in args:
             if isinstance(ability, FishkaCardAction):
                 if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
                         (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
@@ -551,20 +592,30 @@ class BerserkApp(App):
                 else:
                     pass
                 return
+            if isinstance(ability, TriggerBasedCardAction):
+                ability.callback()
+                return
+            out.append((ability, card, victim, 1))
 
-            instants = self.backend.board.get_instants()
-            if instants:
-                self.backend.passed_1 = False
-                self.backend.passed_2 = False
-            else:
-                self.backend.passed_1 = True
-                self.backend.passed_2 = True
-            self.backend.stack.append((ability, card, victim, 1))
-            self.process_stack()
+        instants = self.backend.board.get_instants()
+        if instants:
+            self.backend.passed_1 = False
+            self.backend.passed_2 = False
+        else:
+            self.backend.passed_1 = True
+            self.backend.passed_2 = True
+        self.backend.stack.append(out)
+        self.process_stack()
 
+    def perform_card_action_1(self, args):
         # STAGE 1 - KUBIKI
         # Шаг броска кубика (накладываем модификаторы к броску кубика, срабатывают особенности карт "при броске кубика")
-        if stage == 1:
+        out = []
+        bonus1 = 0
+        bonus2 = 0
+        if len(args) == 4 and not isinstance(args[0], tuple):
+            args = tuple([args])
+        for ability, card, victim, stage in args:
             self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
             num_die_rolls = 1
             if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
@@ -573,12 +624,14 @@ class BerserkApp(App):
             for _ in range(num_die_rolls):
                 ability.rolls.append(self.backend.get_roll_result())
 
-            self.draw_die(*ability.rolls)
-            print('rolls: ', ability.rolls)
-
             if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                if ability.callback:
+                    ability.callback(victim)
                 if not victim.tapped:
-                    outcome_list = self.backend.get_fight_result(*ability.rolls)
+                    bonus1 = card.exp_in_off
+                    bonus2 = victim.exp_in_def
+                    outcome_list = self.backend.get_fight_result(ability.rolls[0] + bonus1,
+                                                                 ability.rolls[1] + bonus2)
                     if len(outcome_list) == 1:
                         a, b = outcome_list[0]
                         if a:
@@ -590,6 +643,8 @@ class BerserkApp(App):
                         else:
                             ability.damage_receive = 0
                     else:
+                        self.draw_die(self.backend.current_active_player, bonus1, bonus2, *ability.rolls)
+                        print('rolls: ', ability.rolls, bonus1, bonus2)
                         self.attack_popup = OmegaPopup(title='Berserk renewal',
                                                        width=310, height=150, background_color=(1, 0, 0, 1),
                                                        overlay_color=(0, 0, 0, 0), size_hint=(None, None),
@@ -609,11 +664,22 @@ class BerserkApp(App):
                         btn1.bind(on_press=partial(self.popup_attack_bind, outcome_list[0], ability, card, victim))
                         btn2.bind(on_press=partial(self.popup_attack_bind, outcome_list[1], ability, card, victim))
                         self.press_1 = lambda *_: partial(self.popup_attack_bind, outcome_list[1], ability, card, victim)
-                        self.timer.bind(on_complete=lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim))
+                        self.timer.bind(
+                            on_complete=lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim))
                         rl.add_widget(btn1)
                         rl.add_widget(btn2)
                         self.attack_popup.open()
                         return
+                else:
+                    roll1 = ability.rolls[0]
+                    if roll1 <= 3:
+                        d = card.attack[0]
+                    elif 4 <= roll1 <= 5:
+                        d = card.attack[1]
+                    elif roll1 > 5:
+                        d = card.attack[2]
+                    ability.damage_make = d
+                    out.append((ability, card, victim, 2))
             else:
                 roll1 = ability.rolls[0]
                 if isinstance(ability.damage, int):
@@ -628,24 +694,29 @@ class BerserkApp(App):
                     elif roll1 > 5:
                         d = ability.damage[2]
                 ability.damage_make = d
+            out.append((ability, card, victim, 2))
+            self.draw_die(self.backend.current_active_player, bonus1, bonus2,  *ability.rolls)
+            print('rolls: ', ability.rolls, bonus1, bonus2)
 
-            instants = self.backend.board.get_instants()
-            if instants:
-                self.backend.passed_1 = False
-                self.backend.passed_2 = False
-            else:
-                self.backend.passed_1 = True
-                self.backend.passed_2 = True
-            self.backend.stack.append((ability, card, victim, 2))
-            self.process_stack()
+        instants = self.backend.board.get_instants()
+        if instants:
+            self.backend.passed_1 = False
+            self.backend.passed_2 = False
+        else:
+            self.backend.passed_1 = True
+            self.backend.passed_2 = True
+        self.backend.stack.append(out)
+        self.process_stack()
 
+    def perform_card_action_2(self, args):
         #  STAGE 2 - NALOJENIE I OPLATA
-        if stage == 2:
+        out = []
+        if len(args) == 4 and not isinstance(args[0], tuple):
+            args = tuple([args])
+        for ability, card, victim, stage in args:
             all_cards = self.backend.board.get_all_cards()
             if ability.a_type not in victim.defences and card in all_cards and victim in all_cards:
                 if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
-                    if ability.callback:
-                        ability.callback(victim)
                     if card.can_hit_flyer and victim.type_ == CreatureType.FLYER:
                         card.can_hit_flyer = False
                     if ability.damage_make:
@@ -693,6 +764,20 @@ class BerserkApp(App):
             ability.damage_make = 0
             ability.damage_receive = 0
 
+    def perform_card_action(self, *args):
+        if self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
+            return
+        if len(args) == 4:
+            ability, card, victim, stage = args
+        elif isinstance(args, tuple):
+            a, c, v, stage = args[0]
+        if stage == 1:
+            self.perform_card_action_1(args)
+        elif stage == 2:
+            self.perform_card_action_2(args)
+        elif stage == 0:
+            self.perform_card_action_0(args)
+
     def on_new_turn(self):
         self.damage_marks = []
         for b in self.selected_card_buttons:
@@ -723,7 +808,10 @@ class BerserkApp(App):
         # Higlight name
         self.bright_card_overlay(card)
         # Display card action buttons
-        self.display_card_actions(card, True, instance)
+        if self.backend.in_stack:
+            self.display_card_actions(card, False, instance)
+        else:
+            self.display_card_actions(card, True, instance)
         # Display navigation buttons
         moves = self.backend.board.get_available_moves(card)
         if card.player != self.backend.current_active_player or self.backend.in_stack:
@@ -795,6 +883,8 @@ class BerserkApp(App):
         elif ability.targets == 'enemy':
             all_cards = board.get_all_cards()
             targets = [x for x in all_cards if x.player != card.player]
+        elif ability.targets == 'self':
+            targets = [card]
         elif callable(ability.targets):
             targets = ability.targets()
         elif card.type_ == CreatureType.CREATURE and not card.can_hit_flyer:
@@ -884,11 +974,6 @@ class BerserkApp(App):
             self.fishka_label_dict[card].text = str(card.curr_fishka)
 
     def display_card_actions(self, card, show_slow, instance):
-        if self.backend.curr_priority == card.player:
-            disabled_ = operator.not_(bool(card.actions_left))
-        else:
-            disabled_ = True
-
         ground_1 = [x for x in [x for x in self.backend.board.game_board if not isinstance(x, int)] if x.player == 1]
         ground_2 = [x for x in [x for x in self.backend.board.game_board if not isinstance(x, int)] if x.player == 2]
         add_tap_for_flyer_flag = True
@@ -904,20 +989,16 @@ class BerserkApp(App):
 
         displayable = self.check_displayable_crd_actions(card)
 
-        for i, ab in enumerate(displayable):  #TODO Полный пипец надо переписать
+        for i, ab in enumerate(displayable):  #TODO Убрать show_slow
             ability, code = ab
-            if code == 0:
+            if self.backend.curr_priority == card.player:
+                disabled_ = operator.not_(bool(card.actions_left))
+            else:
+                disabled_ = True
+            if disabled_ or (not show_slow and not ability.isinstant) or (code == 0)\
+                    or (self.backend.in_stack and not ability.isinstant):
                 disabled_ = True
             else:
-                disabled_ = False
-            if self.backend.in_stack:
-                if not ability.isinstant:
-                    disabled_ = True
-                elif card.player == self.backend.curr_priority:
-                    disabled_ = False
-            if not show_slow and not ability.isinstant:
-                disabled_ = True
-            elif not show_slow and ability.isinstant:
                 disabled_ = False
             btn = Button(text=ability.txt,
                           pos=(Window.width * 0.84, Window.height * 0.20 - i * 0.04 * Window.height),
@@ -937,7 +1018,7 @@ class BerserkApp(App):
         card = args[0]
         turned = args[1]  # 0 - initial, 1 - tapped, 2 - untapped
         if turned == 3:
-            size_ = (CARD_X_SIZE, CARD_Y_SIZE * 0.2)
+            size_ = (CARD_X_SIZE-2, CARD_Y_SIZE * 0.2)
             lyy = self.base_overlays[card]
             ly = RelativeLayout()
             with ly.canvas:
@@ -947,7 +1028,7 @@ class BerserkApp(App):
                 else:
                     c = Color(0.4, 0.5, 1, 1)
                     c1 = (1, 1, 1, 1)
-                rect = Rectangle(pos=(0, 0), background_color=c,
+                rect = Rectangle(pos=(1, 0), background_color=c,
                                  size=size_,
                                  font_size=Window.height * 0.02)
                 name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
@@ -968,7 +1049,7 @@ class BerserkApp(App):
             with lx.canvas.after:
                 PopMatrix()
         else:
-            size_ = (CARD_X_SIZE, CARD_Y_SIZE * 0.2)
+            size_ = (CARD_X_SIZE-2, CARD_Y_SIZE * 0.2)
             if not self.selected_card == card or turned:
                 lyy = self.base_overlays[card]
                 ly = RelativeLayout()
@@ -988,7 +1069,7 @@ class BerserkApp(App):
                     else:
                         c = Color(0.4, 0.5, 1, 1)
                         c1 = (1, 1, 1, 1)
-                    rect = Rectangle(pos=(0, 0), background_color=c,
+                    rect = Rectangle(pos=(1, 0), background_color=c,
                                  size=size_,
                                  font_size=Window.height * 0.02)
                     name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
@@ -1010,8 +1091,8 @@ class BerserkApp(App):
             else:
                 c = Color(0.1, 0.1, 1, 1)
                 c1 = (1, 1, 1, 1)
-            rect = Rectangle(pos=(0, 0), background_color=c,
-                             size=(CARD_X_SIZE, CARD_Y_SIZE * 0.2),
+            rect = Rectangle(pos=(2, 0), background_color=c,
+                             size=(CARD_X_SIZE-2, CARD_Y_SIZE * 0.2),
                              font_size=Window.height * 0.02)
             name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
             lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
@@ -1025,7 +1106,6 @@ class BerserkApp(App):
         for card in cards:
             loc = card.loc
             if card.type_ == CreatureType.FLYER:
-                x, y = self.dz1_btn.pos
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
                 btn1 = Button(disabled=False,
                               background_normal=card.pic, pos=(0, CARD_Y_SIZE*0.2),
@@ -1073,17 +1153,22 @@ class BerserkApp(App):
                             size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.15),
                             pos_hint=(None, None), font_size=Window.height*0.02)
                 self.move_label_dict[card] = lbl
-                if card.curr_fishka > 0:
-                    self.add_fishki_gui(card)
 
 
             self.base_overlays[card] = base_overlay_layout
             Clock.schedule_once(partial(self.draw_card_overlay, card, 0), 0.1)
             rl1.add_widget(base_overlay_layout)
             self.cards_dict[card] = rl1
+            if card.curr_fishka > 0:
+                self.add_fishki_gui(card)
             if card.type_ == CreatureType.CREATURE:
                 self.layout.add_widget(rl1)
             self.update_zone_counters()
+        # Строй
+        for card in cards:
+            stroy_neighbors = self.backend.board.get_adjacent_with_stroy(card.loc)
+            if len(stroy_neighbors) != 0 and not card.in_stroy and card.stroy_in:
+                card.stroy_in()
 
     def update_zone_counters(self):
         zones = [(self.dz1_btn, 'extra1', 'Доп. зона'), (self.dz2_btn, 'extra2', 'Доп. зона'),
@@ -1254,7 +1339,7 @@ class BerserkApp(App):
         root.add_widget(Horizontal())
 
         # generate board coords
-        self.layout = FloatLayout(size=(Window.width * 0.8, Window.height))
+        self.layout = FloatLayout(size=(0, 0))
         self.card_position_coords = []
         self.nav_buttons = []
         self.selected_card_buttons = []

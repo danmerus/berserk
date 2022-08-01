@@ -4,15 +4,15 @@ from game_properties import GameStates
 
 class Draks_1(Card):
 
-    def __init__(self, player, location, gui):
+    def __init__(self, player=1, location=0, gui=None):
         super().__init__(
             life=5,
             move=0,
             attack=(1, 1, 2),
             name='Дракс',
-            vypusk='Война стихий',
-            rarity = 'common',
-            color='Лес',
+            vypusk=GameSet.VOYNA_STIHIY,
+            rarity=Rarity.COMMON,
+            color=CardColor.LES,
             pic='data/cards/Draks_1.jpg',
             cost=(0, 3),  # gold, silver,
             defences=[],

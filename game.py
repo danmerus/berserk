@@ -4,6 +4,7 @@ import berserk_gui
 import numpy.random as rng
 from game_properties import GameStates
 from cards.card_properties import *
+import placement
 from kivy.clock import Clock
 from kivy import Config
 from kivy.core.window import Window
@@ -25,8 +26,14 @@ class Game:
         self.passed_1 = False
         self.passed_2 = False
         self.passed_once = False
+        self.cards_on_board1 = []
+        self.cards_on_board2 = []
 
-    def set_cards(self, cards_on_board1, cards_on_board2):
+    def set_cards(self, cards_on_board1, cards_on_board2, gui):
+        for card in cards_on_board1:
+            card.gui = gui
+        for card in cards_on_board2:
+            card.gui = gui
         self.input_cards1 = cards_on_board1
         self.input_cards2 = cards_on_board2
         self.populate_cards()
@@ -47,9 +54,11 @@ class Game:
         x1 = rng.randint(1, 7) + mod_1
         return x1
 
-    def get_fight_result(self, roll1, x2):
+    def get_fight_result(self, roll1, roll2):
         """
         returns fight simulation, accounts for blessings/curses etc.
+        roll1 - attacker,
+        roll2 - defender
         """
         res_dict = {
             1: [(1, 0)],
@@ -63,7 +72,7 @@ class Game:
             -4: [(1, 2), (0, 1)],
             -5: [(0, 2)],
         }
-        score = roll1 - x2
+        score = roll1 - roll2
         if score < -5:
             res = [(0, 2)]
         elif score > 5:
@@ -142,17 +151,31 @@ if __name__ == '__main__':
     for imp in imports:
         exec(imp)
 
+    WINDOW_SIZE = (960, 540) #(1920, 1080)
     game = Game()
-    gui = berserk_gui.BerserkApp(game)
+    # cards1 = [Lovets_dush_1()]#, PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),]
+    #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
+    #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
+    # cards2 = [Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(), Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),]
+    #          # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(), Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
+    #         #  Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
+    # selection = placement.SelectionApp(game, WINDOW_SIZE, cards1, 1)
+    # selection.run()
+    # selection = placement.SelectionApp(game, WINDOW_SIZE, cards2, 2)
+    # selection.run()
+
+    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE)
     game.gui = gui
-    cards1 = [Lovets_dush_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=19, gui=gui),
-              PovelitelMolniy_1(player=1, location=20),
-              Draks_1(player=1, location=21, gui=gui), Draks_1(player=1, location=2, gui=gui),
+    # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
+    cards1 = [Ar_gull_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=19, gui=gui),
+              # PovelitelMolniy_1(player=1, location=20),
+              Bjorn_1(player=1, location=21, gui=gui), Bjorn_1(player=1, location=27, gui=gui),
               Draks_1(player=1, location=3, gui=gui), Draks_1(player=1, location=4, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
-        PovelitelMolniy_1(player=2, location=14),
+        PovelitelMolniy_1(player=2, location=14), Bjorn_1(player=2, location=20, gui=gui),
               Lovets_dush_1(player=2, location=12, gui=gui), Lovets_dush_1(player=2, location=15, gui=gui),
               Draks_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
-    game.set_cards(cards1, cards2)
+    game.set_cards(cards1, cards2, gui)
+
     game.gui.run()
 

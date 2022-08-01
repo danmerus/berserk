@@ -35,6 +35,14 @@ class Board():
         elif card in self.symb2:
             self.symb2.remove(card)
 
+    def get_adjacent_with_stroy(self, no):
+        out = []
+        if self.game_board[no] != 0:
+            player_ = self.game_board[no].player
+            neigh = [self.game_board[x] for x in self.get_adjacent_cells_no_diag(no) if self.game_board[x] != 0]
+            out = [x for x in neigh if x.stroy_in and x.player == player_]
+        return out
+
     def get_adjacent_cells_no_diag(self, no):
         pre = [no+6, no-6]
         if no not in [5, 11, 17, 23, 29]:

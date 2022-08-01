@@ -4,20 +4,20 @@ from game_properties import GameStates
 
 class PovelitelMolniy_1(Card):
 
-    def __init__(self, player, location, *args):
+    def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=1,
+            life=8,
             move=1,
             attack=(2, 2, 3),
             name='Повелитель молний',
-            vypusk='Война стихий',
-            color='Горы',
-            rarity='rare',
+            vypusk=GameSet.VOYNA_STIHIY,
+            color=CardColor.GORY,
+            rarity=Rarity.RARE,
             pic='data/cards/PovelitelMolniy_1.jpg',
             cost=(8, 0),  # gold, silver,
             defences=[ActionTypes.RAZRYAD],
             is_unique=True,
-            type_ = CreatureType.CREATURE,
+            type_=CreatureType.CREATURE,
             actions_left=1,
             active_status=[],
             description='',
@@ -29,7 +29,7 @@ class PovelitelMolniy_1(Card):
         self.add_default_abilities()
         self._update_abilities()
         self.player = player
-        self.loc = location  # -1 for flying, -2 for symbiots(??), -3 graveyard
+        self.loc = location
 
     def _update_abilities(self):  # txt max length 17
         a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',

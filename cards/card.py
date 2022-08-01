@@ -34,6 +34,11 @@ class Card:
         self.can_defend = True
         self.can_tap_for_fishka = can_tap_for_fishka
         self.can_hit_flyer = False
+        self.stroy_in = None
+        self.stroy_out = None
+        self.in_stroy = False
+        self.exp_in_def = 0
+        self.exp_in_off = 0
         if self.can_tap_for_fishka:
             self.abilities.append(IncreaseFishkaAction(txt='Накопить фишку', state_of_action=[GameStates.MAIN_PHASE]))
 

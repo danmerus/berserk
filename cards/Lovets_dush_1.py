@@ -4,15 +4,15 @@ from game_properties import GameStates
 
 class Lovets_dush_1(Card):
 
-    def __init__(self, player, location, gui, *args):
+    def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
             life=7,
             move=1,
             attack=(1, 2, 3),
             name='Ловец душ',
-            vypusk='Война стихий',
-            rarity='common',
-            color='Лес',
+            vypusk=GameSet.VOYNA_STIHIY,
+            rarity=Rarity.COMMON,
+            color=CardColor.LES,
             pic='data/cards/Lovets_dush_1.jpg',
             cost=(7, 0),  # gold, silver,
             defences=[ActionTypes.UDAR_LETAUSHEGO],
