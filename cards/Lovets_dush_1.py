@@ -6,7 +6,7 @@ class Lovets_dush_1(Card):
 
     def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=7,
+            life=8,
             move=1,
             attack=(1, 2, 3),
             name='Ловец душ',

@@ -7,7 +7,8 @@ class Card:
     def __init__(self, life, move, attack, name,
                  vypusk, color, pic, cost, defences, is_unique,
                  type_, actions_left, active_status, description, curr_fishka, rarity,
-                 max_fishka, can_tap_for_fishka):
+                 max_fishka, can_tap_for_fishka, card_class=None,
+                 exp_in_def=0, exp_in_off=0):
         self.curr_fishka = curr_fishka
         self.max_fishka = max_fishka
         self.description = description
@@ -37,12 +38,15 @@ class Card:
         self.stroy_in = None
         self.stroy_out = None
         self.in_stroy = False
-        self.exp_in_def = 0
-        self.exp_in_off = 0
-        if self.can_tap_for_fishka:
-            self.abilities.append(IncreaseFishkaAction(txt='Накопить фишку', state_of_action=[GameStates.MAIN_PHASE]))
+        self.rolls_twice = False
+        self.card_class = card_class
+        self.exp_in_def = exp_in_def
+        self.exp_in_off = exp_in_off
 
     def add_default_abilities(self):
+        self.abilities = []
+        if self.can_tap_for_fishka:
+            self.abilities.append(IncreaseFishkaAction(txt='Накопить фишку', state_of_action=[GameStates.MAIN_PHASE]))
         if self.type_ == CreatureType.CREATURE:
             a0 = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=self.attack, range_min=1, range_max=1,
                                   txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',

@@ -19,7 +19,10 @@ class ActionTypes(enum.Enum):
     MOVEMENT = 12
     DIE_ROLL = 13
     TRIGGER = 14
-    OTHER = 15
+    OTRAVLENIE = 15
+    UDAR_CHEREZ_RYAD = 16
+    BLOCK = 17
+    OTHER = 18
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -45,17 +48,26 @@ class CardColor(enum.Enum):
     TYMA = 'тьма'
 
 @enum.unique
+class CardClass(enum.Enum):
+    GNOME = 'гном'
+
+@enum.unique
 class GameSet(enum.Enum):
     VOYNA_STIHIY = 'Война стихий'
 
 @enum.unique
 class CardEffect(enum.Enum):
     NAPRAVLENNY_UDAR = 1
+    UDAR_CHEREZ_RYAD = 2
+    REGEN = 3
 
 @enum.unique
 class Condition(enum.Enum):
     ANYCREATUREDEATH = 0
     ATTACKING = 1
+    ON_RECIEVING_RANGED_ATTACK = 2
+    START_MAIN_PHASE = 3
+    ON_SELF_MOVING = 4
 
 class DefenceAction:
 
@@ -81,16 +93,32 @@ class DefaultMovementAction:
 
 class TriggerBasedCardAction:
 
-    def __init__(self, txt: str, callback, condition: Condition, display: bool):
+    def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False):
         self.txt = txt
         self.callback = callback
         self.condition = condition
         self.display = display
         self.isinstant = False
         self.a_type = ActionTypes.TRIGGER
+        self.recieve_inc = recieve_inc
+        self.tap_target = False
 
     def __str__(self):
         return self.txt
+
+class BlockAction:
+    def __init__(self, to_block):
+        self.a_type = ActionTypes.BLOCK
+        self.txt = 'Заблокировать'
+        self.isinstant = False
+        self.display = False
+        self.to_block = to_block
+        self.state_of_action = [GameStates.MAIN_PHASE]
+        self.tap_target = False
+
+    def __str__(self):
+        return self.txt
+
 
 class TapToHitFlyerAction:
     def __init__(self):
@@ -113,6 +141,7 @@ class IncreaseFishkaAction:
     def __str__(self):
         return self.txt
 
+
 class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
@@ -132,6 +161,18 @@ class SimpleCardAction:
         self.rolls = []
         self.damage_make = 0
         self.damage_receive = 0
+
+    def __str__(self):
+        return self.txt
+
+class SelectCardAction():
+
+    def __init__(self, child_action, targets=None):
+        self.child_action = child_action
+        self.state_of_action = child_action.state_of_action
+        self.a_type = child_action.a_type
+        self.isinstant = child_action.isinstant
+        self.targets = targets
 
     def __str__(self):
         return self.txt

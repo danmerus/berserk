@@ -15,7 +15,7 @@ class Bjorn_1(Card):
             rarity=Rarity.COMMON,
             pic='data/cards/Bjorn_1.jpg',
             cost=(0, 5),  # gold, silver,
-            defences=[ActionTypes.RAZRYAD, ActionTypes.ZAKLINANIE, ActionTypes.MAG_UDAR],
+            defences=[ActionTypes.RAZRYAD, ActionTypes.ZAKLINANIE, ActionTypes.MAG_UDAR, ],
             is_unique=False,
             type_=CreatureType.CREATURE,
             actions_left=1,
