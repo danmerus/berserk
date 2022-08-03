@@ -92,6 +92,7 @@ class BerserkApp(App):
             self.root.remove_widget(bt)
 
     def destroy_target_marks(self):
+        print('called')
         for btn, card in self.target_marks_cards:
             card.remove_widget(btn)
 
@@ -909,6 +910,7 @@ class BerserkApp(App):
                 b.disabled = False
 
     def bind_multiple_actions(self, card, multiple_ability, ix, target, *args):
+        self.disabled_actions = True adf
         self.destroy_target_rectangles()
         self.destroy_target_marks()
         self.multiple_targets_list.append(target)
@@ -927,7 +929,9 @@ class BerserkApp(App):
                                            partial(self.bind_multiple_actions, card, ability, 0),  None)
 
     def handle_selection_action(self, ability, card, t, *args):
-        # self.timer.unbind(on_complete=self.press_2)
+        self.timer_ability.unbind(on_complete=self.press_2)
+        self.timer_ability.unbind(on_complete=self.restart_timer)
+        self.eot_button.unbind(on_press=self.press_2)
         self.backend.stack.append((ability.child_action, card, t, 0))
         self.destroy_target_rectangles()
         self.destroy_target_marks()
@@ -959,11 +963,13 @@ class BerserkApp(App):
         elif card.type_ == CreatureType.FLYER or card.can_hit_flyer:
             targets = board.get_available_targets_flyer(card)
 
-        if bind_ == 1:  # TODO доделать для случая двух сразу
-            self.timer_ability = Animation(duration=TURN_DURATION)
-            self.press2 = lambda *_: self.handle_selection_action(ability, card, ability.targets[0])
-            self.timer_ability.bind(on_complete=self.press2)
-            self.timer_ability.start(self)
+        if bind_ == 1:
+            self.timer_ability = Animation(duration=TURN_DURATION-1)
+            self.press_2 = lambda *_: self.handle_selection_action(ability, card, ability.targets[0])
+            self.timer_ability.bind(on_complete=self.press_2)
+            self.timer_ability.bind(on_complete=self.restart_timer)
+            self.eot_button.bind(on_press=self.press_2)
+            self.timer_ability.start(self)  # TODO доделать что бы как по закрытому
         for t in targets:
             with self.cards_dict[t].canvas:
                 btn = Button(pos=(0,0),
@@ -1335,7 +1341,7 @@ class BerserkApp(App):
                 txt = game_properties.state_to_str[self.backend.curr_game_state]
         self.timer_label.text = txt + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
 
-    def restart_timer(self):
+    def restart_timer(self, *args):
         if hasattr(self, 'timer'):
             self.timer.cancel(self.timer_label)
             self.timer.start(self.timer_label)
