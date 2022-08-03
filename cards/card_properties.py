@@ -68,6 +68,7 @@ class Condition(enum.Enum):
     ON_RECIEVING_RANGED_ATTACK = 2
     START_MAIN_PHASE = 3
     ON_SELF_MOVING = 4
+    ON_DEFENCE_BEFORE_DICE = 5
 
 class DefenceAction:
 
@@ -93,7 +94,8 @@ class DefaultMovementAction:
 
 class TriggerBasedCardAction:
 
-    def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False):
+    def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False,
+                 target=None, prep=None, actor=None, check=None):
         self.txt = txt
         self.callback = callback
         self.condition = condition
@@ -102,6 +104,29 @@ class TriggerBasedCardAction:
         self.a_type = ActionTypes.TRIGGER
         self.recieve_inc = recieve_inc
         self.tap_target = False
+        self.disabled = True
+        self.check = check
+        self.target = target
+        self.prep = prep
+        self.actor = actor
+
+    def __str__(self):
+        return self.txt
+
+class BlockActionButton:
+    def __init__(self, txt, condition):
+        self.txt = txt
+        self.tap_target = False
+        self.rolls = []
+        self.damage_make = 0
+        self.damage_receive = 0
+        self.a_type = ActionTypes.BLOCK
+        self.txt = txt
+        self.isinstant = False
+        self.display = False
+        self.state_of_action = [GameStates.MAIN_PHASE]
+        self.tap_target = False
+        self.condition = condition
 
     def __str__(self):
         return self.txt
@@ -161,6 +186,7 @@ class SimpleCardAction:
         self.rolls = []
         self.damage_make = 0
         self.damage_receive = 0
+        self.redirected = False
 
     def __str__(self):
         return self.txt
@@ -204,3 +230,13 @@ class FishkaCardAction(SimpleCardAction):
 
     def __str__(self):
         return self.txt
+
+class LambdaCardAction():
+
+    def __init__(self, func, a_type=None, isinstant=False):
+        self.a_type = a_type
+        self.state_of_action = []
+        self.isinstant = isinstant
+        self.func = func
+
+

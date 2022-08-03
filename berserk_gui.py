@@ -34,7 +34,7 @@ from cards.card_properties import *
 import game_properties
 import card_prep
 import operator
-from copy import deepcopy
+from copy import deepcopy, copy
 import collections
 
 class MainField(Widget):
@@ -145,6 +145,8 @@ class BerserkApp(App):
                 else:
                     out.append((ability, 0))
             elif isinstance(ability, IncreaseFishkaAction) and card.curr_fishka >= card.max_fishka:
+                out.append((ability, 0))
+            elif isinstance(ability, TriggerBasedCardAction) and ability.disabled:
                 out.append((ability, 0))
             else:
                 out.append((ability, 1))
@@ -393,6 +395,19 @@ class BerserkApp(App):
         anime.start(ly)
         Clock.schedule_once(lambda x: self.root.remove_widget(ly), 1)
 
+    def start_flickering(self, card):
+        rl = RelativeLayout()
+        self.base_overlays[card].add_widget(rl)
+        with rl.canvas:
+            col = Color(1, 1, 1, 0.2)
+            rect = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
+                             background_color=col,
+                             pos=(0, 0), size_hint=(1, 1))
+            anim = Animation(opacity=0, duration=0.5) + Animation(opacity=1, duration=0.5)
+            anim.repeat = True
+            anim.start(rl)
+            self.selection_flicker_dict[card] = rl
+
     def handle_instant_stack(self, ability, card, victim):
         if self.backend.stack:
             for el in self.backend.stack:
@@ -441,17 +456,7 @@ class BerserkApp(App):
                 self.disable_all_buttons_except_instant(defenders)  # adds to stack_cards
                 card.actions_left -= 1
                 for c in defenders:
-                    rl = RelativeLayout()
-                    self.base_overlays[c].add_widget(rl)
-                    with rl.canvas:
-                        col = Color(1,1,1,0.2)
-                        rect = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
-                                  background_color=col,
-                                  pos=(0, 0), size_hint=(1, 1))
-                        anim = Animation(opacity=0, duration=0.5)+Animation(opacity=1, duration=0.5)
-                        anim.repeat = True
-                        anim.start(rl)
-                    self.selection_flicker_dict[c] = rl
+                    self.start_flickering(c)
                     c.defence_action.fight_with = card
                 self.pending_attack = ability
                 self.backend.stack.append((ability, card, victim, 0))
@@ -470,8 +475,9 @@ class BerserkApp(App):
                     self.defender_set = True
                     self.backend.player_passed()
                     Clock.schedule_once(lambda x: self.start_timer(STACK_DURATION))
-                    temp_attack = deepcopy(self.pending_attack)
+                    temp_attack = copy(self.pending_attack)  #  deepcopy
                     temp_attack.tap_target = True
+                    temp_attack.redirected = True
                     self.pending_attack = None
                     self.backend.stack.append((temp_attack, ability.fight_with, card, 0))
         else:
@@ -527,6 +533,7 @@ class BerserkApp(App):
             return
 
     def process_stack(self, *args):
+        # print('stack: ', self.backend.stack
         self.disabled_actions = False
         if self.exit_stack:
             return
@@ -631,6 +638,10 @@ class BerserkApp(App):
         if len(args) == 4 and not isinstance(args[0], tuple):
             args = tuple([args])
         for ability, card, victim, stage in args:
+            if isinstance(ability, LambdaCardAction):
+                ability.func()
+                continue
+            ability.rolls = []
             self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
             num_die_rolls_attack = 1
             num_die_rolls_def = 0
@@ -826,6 +837,27 @@ class BerserkApp(App):
         elif isinstance(args, tuple):
             a, c, v, stage = args[0]
         if stage == 1:
+            ability, card, victim, stage = args[0]
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                cb = self.backend.board.get_all_cards_with_callback(Condition.ON_DEFENCE_BEFORE_DICE)
+                for c, a in cb:
+                    if c == victim and a.check(ability):
+                        a.disabled = False
+                        a.repeat = True
+                        a.target = ability
+                        a.actor = card
+                        a.prep()
+                        a.isinstant = True
+                        self.backend.in_stack = True
+                        self.eot_button.disabled = True
+                        self.ph_button.disabled = False
+                        self.backend.curr_priority = victim.player
+                        self.backend.passed_1 = False
+                        self.backend.passed_2 = False
+                        self.disable_all_buttons_except_instant([c])
+                        Clock.schedule_once(lambda x: self.start_timer(STACK_DURATION))
+                        return
+                    # self.disable_all_buttons_except_instant(defenders)
             self.perform_card_action_1(args)
         elif stage == 2:
             self.perform_card_action_2(args)
@@ -847,7 +879,7 @@ class BerserkApp(App):
                 self.display_card_actions(self.selected_card, False, None)
 
     def on_click_on_card(self, card, instance):
-        # print('Опыт в защите: ', card.exp_in_def)
+        # print('Опыт в защите: ', card.defences)
         if self.disabled_actions:
             return
         self.destroy_target_marks()
@@ -912,6 +944,8 @@ class BerserkApp(App):
                 b.disabled = False
 
     def bind_multiple_actions(self, card, multiple_ability, ix, target, *args):
+        if len(self.multiple_targets_list) > 0 and ix == 0:
+            self.multiple_targets_list = []
         self.disabled_actions = True
         self.destroy_target_rectangles()
         self.destroy_target_marks()
@@ -1091,7 +1125,10 @@ class BerserkApp(App):
                 btn.bind(on_press=partial(self.start_stack_action, ability, card, ability))
             elif isinstance(ability, MultipleCardAction):
                 btn.bind(on_press=partial(self.handle_multiple_actions, ability, card))
+            elif isinstance(ability, TriggerBasedCardAction) and not ability.disabled:
+                btn.bind(on_press=partial(self.start_stack_action, ability, card, ability.target))
             self.root.add_widget(btn)
+            ability.button = btn
             self.selected_card_buttons.append(btn)
 
     def draw_card_overlay(self, *args):
