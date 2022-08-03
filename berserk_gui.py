@@ -92,7 +92,6 @@ class BerserkApp(App):
             self.root.remove_widget(bt)
 
     def destroy_target_marks(self):
-        print('called')
         for btn, card in self.target_marks_cards:
             card.remove_widget(btn)
 
@@ -477,8 +476,8 @@ class BerserkApp(App):
                     self.backend.stack.append((temp_attack, ability.fight_with, card, 0))
         else:
             instants = self.backend.board.get_instants()
-            self.disable_all_buttons_except_instant(instants)
             if instants:  #or self.pending_attack
+                self.disable_all_buttons_except_instant(instants)
                 self.handle_instant_stack(ability, card, victim)
             else:
                 if isinstance(ability, MultipleCardAction):
@@ -528,6 +527,7 @@ class BerserkApp(App):
             return
 
     def process_stack(self, *args):
+        self.disabled_actions = False
         if self.exit_stack:
             return
         if len(self.backend.stack) == 0:  # выход по завершении стека
@@ -833,6 +833,7 @@ class BerserkApp(App):
             self.perform_card_action_0(args)
 
     def on_new_turn(self):
+        self.disabled_actions = False
         self.damage_marks = []
         for b in self.selected_card_buttons:
             b.disabled = True
@@ -846,6 +847,7 @@ class BerserkApp(App):
                 self.display_card_actions(self.selected_card, False, None)
 
     def on_click_on_card(self, card, instance):
+        # print('Опыт в защите: ', card.exp_in_def)
         if self.disabled_actions:
             return
         self.destroy_target_marks()
@@ -910,7 +912,7 @@ class BerserkApp(App):
                 b.disabled = False
 
     def bind_multiple_actions(self, card, multiple_ability, ix, target, *args):
-        self.disabled_actions = True adf
+        self.disabled_actions = True
         self.destroy_target_rectangles()
         self.destroy_target_marks()
         self.multiple_targets_list.append(target)
@@ -937,7 +939,6 @@ class BerserkApp(App):
         self.destroy_target_marks()
         self.disabled_actions = False
         self.exit_stack = False
-        # self.timer.bind(on_complete=self.backend.next_game_state)
         Clock.schedule_once(self.process_stack)
 
     def display_available_targets(self, board, card, ability, bind_, instance):

@@ -48,13 +48,13 @@ class Lovets_dush_1(Card):
                                ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
                                                              GameStates.END_PHASE, GameStates.MAIN_PHASE], targets='ally')
 
-        a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32], target_callbacks=None,
-                              ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
-                                                            GameStates.END_PHASE, GameStates.MAIN_PHASE], isinstant=True)
-        # a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32],
-        #                         target_callbacks=None,
-        #                         ranged=True, state_of_action=[GameStates.MAIN_PHASE],
-        #                         isinstant=False)
+        # a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32], target_callbacks=None,
+        #                       ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+        #                                                     GameStates.END_PHASE, GameStates.MAIN_PHASE], isinstant=True)
+        a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32],
+                                target_callbacks=None,
+                                ranged=True, state_of_action=[GameStates.MAIN_PHASE],
+                                isinstant=False)
         self.abilities.append(a3)
 
     def a1_cb(self):

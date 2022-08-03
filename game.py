@@ -175,7 +175,7 @@ if __name__ == '__main__':
     # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Ar_gull_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
               # PovelitelMolniy_1(player=1, location=20),
-              Bjorn_1(player=1, location=21, gui=gui), Bjorn_1(player=1, location=27, gui=gui),
+              Bjorn_1(player=1, location=21, gui=gui), Gorny_velikan_1(player=1, location=27, gui=gui),
               Voin_hrama_1(player=1, location=2, gui=gui),
               Gnom_basaarg_1(player=1, location=4, gui=gui),
               Gnom_basaarg_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
