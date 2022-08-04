@@ -151,6 +151,24 @@ class Board():
         out.remove(card)
         return out
 
+    def get_available_targets_uchr(self, card):
+        no = card.loc
+        candidates = [(no+1, no+2), (no-1, no-2), (no+6, no+12), (no-6, no-12)]
+        if no in [0,6,12,24,1,7,13,25]:
+            candidates = [(no+1, no+2), (no+6, no+12), (no-6, no-12)]
+        if no in [4,10,16,22,28,5,11,17,23,29]:
+            candidates = [(no-1, no-2), (no+6, no+12), (no-6, no-12)]
+        out = []
+        for over, c in candidates:
+            if 30 > c >= 0:
+                if self.game_board[over] == 0:
+                    out.append(c)
+                elif self.game_board[over].player == card.player:
+                    out.append(c)
+        outt = [x for x in out if self.game_board[x] != 0]
+        return [self.game_board[x] for x in outt]
+
+
     def get_all_cards(self):
         gr = [x for x in self.game_board if x != 0]
         extr1 = [x for x in self.extra1 if x.type_]

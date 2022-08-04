@@ -803,16 +803,22 @@ class BerserkApp(App):
                         self.display_damage(victim, -1 * ability.damage_make)
 
             if card and victim:
-                self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
-                self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
-
                 self.destroy_target_rectangles()
                 self.destroy_target_marks()
 
                 if card.curr_life <= 0 and card in all_cards:
                     self.destroy_card(card)
                 if victim.curr_life <= 0 and victim in all_cards:
+                    if CardEffect.TRUPOEDSTVO in card.active_status and not CardEffect.BESTELESNOE in victim.active_status:
+                        if card.type_ == CreatureType.FLYER or victim.loc in self.backend.board.get_adjacent_cells(card.loc):
+                            card.curr_life = card.life
+                            if CardEffect.OTRAVLEN in card.active_status:
+                                card.otravlenie = 0
+                                card.active_status.remove(CardEffect.OTRAVLEN)
                     self.destroy_card(victim)
+
+                self.hp_label_dict[victim].text = f'{victim.curr_life}/{victim.life}'
+                self.hp_label_dict[card].text = f'{card.curr_life}/{card.life}'
 
                 card.actions_left -= 1
                 if card.actions_left <= 0:
@@ -988,6 +994,8 @@ class BerserkApp(App):
             targets = [x for x in all_cards if x.player != card.player]
         elif ability.targets == 'self':
             targets = [card]
+        elif ability.a_type == ActionTypes.UDAR_CHEREZ_RYAD:
+            targets = self.backend.board.get_available_targets_uchr(card)
         elif callable(ability.targets):
             targets = ability.targets()
         elif isinstance(ability.targets, list):

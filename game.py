@@ -178,8 +178,8 @@ if __name__ == '__main__':
               Bjorn_1(player=1, location=21, gui=gui),
               Cobold_1(player=1, location=27, gui=gui),
               Voin_hrama_1(player=1, location=2, gui=gui),
-              Gnom_basaarg_1(player=1, location=4, gui=gui),
-              Gnom_basaarg_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
+              Ledyanoy_ohotnik_1(player=1, location=4, gui=gui),
+              Mrazen_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14), Bjorn_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
               Lovets_dush_1(player=2, location=12, gui=gui), Lovets_dush_1(player=2, location=15, gui=gui),

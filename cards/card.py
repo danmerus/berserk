@@ -39,6 +39,7 @@ class Card:
         self.stroy_out = None
         self.in_stroy = False
         self.rolls_twice = False
+        self.otravlenie = 0
         self.card_class = card_class
         self.exp_in_def = exp_in_def
         self.exp_in_off = exp_in_off
