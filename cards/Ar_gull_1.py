@@ -37,7 +37,7 @@ class Ar_gull_1(Card):
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=self.a1_cost)
         self.abilities.append(a1)
         a2 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=2, range_min=0, range_max=0,
-                              txt='Излечиться на 2', targets='self',
+                              txt='Излечиться на 2', target='self',
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a2)
 

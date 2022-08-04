@@ -30,6 +30,7 @@ class PovelitelMolniy_1(Card):
         self._update_abilities()
         self.player = player
         self.loc = location
+        self.gui = gui
 
     def _update_abilities(self):  # txt max length 17
         a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',

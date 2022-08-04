@@ -41,7 +41,7 @@ class Cobold_1(Card):
         self.a1.repeat = False
         self.abilities.append(self.a1)
         a2 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=3, range_min=0, range_max=0,
-                              txt='Излечиться на 3', targets='self',
+                              txt='Излечиться на 3', target='self',
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a2)
 

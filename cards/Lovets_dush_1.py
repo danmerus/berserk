@@ -6,7 +6,7 @@ class Lovets_dush_1(Card):
 
     def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=8,
+            life=1,
             move=1,
             attack=(1, 2, 3),
             name='Ловец душ',
@@ -38,15 +38,15 @@ class Lovets_dush_1(Card):
         self.abilities.append(a1)
 
         a2 = FishkaCardAction(a_type=ActionTypes.LECHENIE, damage=4, range_min=0, range_max=6, txt='Лечение на 4',
-                              ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=1, targets='all')
+                              ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=1, target='all')
         self.abilities.append(a2)
 
         a31 = SimpleCardAction(a_type=ActionTypes.ZAKLINANIE, damage=1, range_min=1, range_max=6, txt='Ранить на 1',
-                              ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
-                                                            GameStates.END_PHASE, GameStates.MAIN_PHASE], targets='enemy')
+                               ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                                                            GameStates.END_PHASE, GameStates.MAIN_PHASE], target='enemy')
         a32 = SimpleCardAction(a_type=ActionTypes.EXTRA_LIFE, damage=1, range_min=0, range_max=6, txt='Доп. жизнь на 1',
                                ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
-                                                             GameStates.END_PHASE, GameStates.MAIN_PHASE], targets='ally')
+                                                             GameStates.END_PHASE, GameStates.MAIN_PHASE], target='ally')
 
         # a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32], target_callbacks=None,
         #                       ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,

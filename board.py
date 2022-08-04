@@ -72,6 +72,25 @@ class Board():
             traverse.remove(no)
         return traverse
 
+    def get_adjacent_empty(self, card):
+        candidates = self.get_adjacent_cells(card.loc, range_=1)
+        return [x for x in candidates if self.game_board[x] == 0]
+
+    def get_grave_elite(self, player):
+        if player == 1:
+            return [x for x in self.grave1 if x.cost[0] > 0]
+        elif player == 2:
+            return [x for x in self.grave2 if x.cost[0] > 0]
+        else:
+            return [x for x in self.grave1 if x.cost[0] > 0] +  [x for x in self.grave2 if x.cost[0] > 0]
+
+    def get_grave_ryad(self, player):
+        if player == 1:
+            return [x for x in self.grave1 if x.cost[0] == 0]
+        elif player == 2:
+            return [x for x in self.grave2 if x.cost[0] == 0]
+        else:
+            return [x for x in self.grave2 if x.cost[0] == 0]+[x for x in self.grave1 if x.cost[0] == 0]
     def get_defenders(self, card, victim):
         candidates = []
         if card.player == victim.player:

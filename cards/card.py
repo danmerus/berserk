@@ -11,6 +11,7 @@ class Card:
                  exp_in_def=0, exp_in_off=0):
         self.curr_fishka = curr_fishka
         self.max_fishka = max_fishka
+        self.start_fishka = curr_fishka
         self.description = description
         self.type_ = type_
         self.is_unique = is_unique
@@ -43,6 +44,7 @@ class Card:
         self.card_class = card_class
         self.exp_in_def = exp_in_def
         self.exp_in_off = exp_in_off
+        self.alive = True
 
     def add_default_abilities(self):
         self.abilities = []

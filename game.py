@@ -173,7 +173,7 @@ if __name__ == '__main__':
     gui = berserk_gui.BerserkApp(game, WINDOW_SIZE)
     game.gui = gui
     #game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
-    cards1 = [Ar_gull_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
+    cards1 = [Necromant_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
               # PovelitelMolniy_1(player=1, location=20),
               Bjorn_1(player=1, location=21, gui=gui),
               Cobold_1(player=1, location=27, gui=gui),
@@ -182,7 +182,7 @@ if __name__ == '__main__':
               Mrazen_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14), Bjorn_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
-              Lovets_dush_1(player=2, location=12, gui=gui), Lovets_dush_1(player=2, location=15, gui=gui),
+              Lovets_dush_1(player=2, location=12, gui=gui), Ar_gull_1(player=2, location=15, gui=gui),
               Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
     game.set_cards(cards1, cards2, gui)
 

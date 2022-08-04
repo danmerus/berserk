@@ -22,7 +22,8 @@ class ActionTypes(enum.Enum):
     OTRAVLENIE = 15
     UDAR_CHEREZ_RYAD = 16
     BLOCK = 17
-    OTHER = 18
+    VOZROJDENIE = 18
+    OTHER = 19
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -173,7 +174,7 @@ class IncreaseFishkaAction:
 class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
-                 state_of_action: [GameStates], isinstant=False, targets=None, callback=None, condition=None):
+                 state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -182,7 +183,7 @@ class SimpleCardAction:
         self.ranged = ranged
         self.state_of_action = state_of_action
         self.isinstant = isinstant
-        self.targets = targets
+        self.targets = target
         self.tap_target = False
         self.callback = callback
         self.condition = condition
@@ -190,6 +191,7 @@ class SimpleCardAction:
         self.damage_make = 0
         self.damage_receive = 0
         self.redirected = False
+        self.target_count = target_count
 
     def __str__(self):
         return self.txt
@@ -209,7 +211,7 @@ class SelectCardAction():
 class MultipleCardAction():
 
     def __init__(self, a_type: ActionTypes, txt: str, ranged: bool, state_of_action: [GameStates], 
-                 target_callbacks, action_list, isinstant=False):
+                 target_callbacks, action_list, isinstant=False, take_all_targets=False):
         self.action_list = action_list
         self.state_of_action = state_of_action
         self.ranged = ranged
@@ -217,6 +219,7 @@ class MultipleCardAction():
         self.a_type = a_type
         self.target_callbacks = target_callbacks
         self.isinstant = isinstant
+        self.take_all_targets = take_all_targets
 
     def __str__(self):
         return self.txt
@@ -225,16 +228,17 @@ class MultipleCardAction():
 class FishkaCardAction(SimpleCardAction):
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool, cost_fishka,
-                 state_of_action: [GameStates], isinstant=False, targets=None):
+                 state_of_action: [GameStates], isinstant=False, target=None, is_tapped=False):
         super().__init__(a_type, damage, range_min, range_max, txt, ranged, state_of_action)
         self.cost_fishka = cost_fishka
         self.isinstant = isinstant
-        self.targets = targets
+        self.targets = target
+        self.is_tapped = is_tapped
 
     def __str__(self):
         return self.txt
 
-class LambdaCardAction():
+class LambdaCardAction():  #  ONLY for stage 1
 
     def __init__(self, func, a_type=None, isinstant=False):
         self.a_type = a_type
@@ -243,3 +247,11 @@ class LambdaCardAction():
         self.func = func
 
 
+
+class SelectTargetAction():
+
+    def __init__(self, targets, a_type=None, isinstant=False):
+        self.a_type = ActionTypes.OTHER
+        self.state_of_action = []
+        self.isinstant = isinstant
+        self.targets = targets

@@ -33,7 +33,7 @@ class Leshii_1(Card):
 
     def _update_abilities(self):
         a1 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=self.a1_cb, range_min=0, range_max=0,
-                              txt='Полностью излечиться', targets='self',
+                              txt='Полностью излечиться', target='self',
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a1)
 
