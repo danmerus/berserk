@@ -13,6 +13,6 @@ def crop(path):
         cr = 11
         img.crop((cr, cr, w-cr, h//2+14)).save(path[:-9]+'.jpg') #.show()
 
-img = 'data/cards/Gnom_basaarg_1_full.jpg'
+img = 'data/cards/Korpit_1_full.jpg'
 crop(img)
 rotate_90_clock(img[:-9]+'.jpg')

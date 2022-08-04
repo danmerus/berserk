@@ -60,6 +60,7 @@ class CardEffect(enum.Enum):
     NAPRAVLENNY_UDAR = 1
     UDAR_CHEREZ_RYAD = 2
     REGEN = 3
+    TRUPOEDSTVO = 4
 
 @enum.unique
 class Condition(enum.Enum):
