@@ -46,6 +46,7 @@ class Draks_1(Card):
         if self.upped:
             self.attack = self.attack[0] - 1, self.attack[1] - 1, self.attack[2] - 1
             self.upped = False
+            self.a0.damage = self.attack
         for a in victim.abilities:
             if a.a_type in [ActionTypes.RAZRYAD, ActionTypes.ZAKLINANIE, ActionTypes.MAG_UDAR]:
                 self.attack = self.attack[0]+1, self.attack[1]+1, self.attack[2]+1

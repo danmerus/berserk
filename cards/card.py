@@ -1,6 +1,5 @@
-from cards.card_properties import *
 from game_properties import GameStates
-
+from cards.card_properties import *
 
 class Card:
 

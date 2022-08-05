@@ -22,7 +22,7 @@ class Necromant_1(Card):
             actions_left=1,
             active_status=[],
             description='',
-            curr_fishka=10,
+            curr_fishka=0,
             max_fishka=4,
             can_tap_for_fishka=True
         )
@@ -51,7 +51,7 @@ class Necromant_1(Card):
 
         a32 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,
                                txt='Возрождение элитного существа', target=partial(self.gui.backend.board.get_adjacent_empty, self),
-                               ranged=False, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=4, is_tapped=True)
+                               ranged=False, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=3, is_tapped=True)
 
         a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Возрождение рядового существа',
                                 action_list=[a31, a32],

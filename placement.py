@@ -5,39 +5,12 @@ Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
-from kivy.properties import ObjectProperty, StringProperty, NumericProperty, BooleanProperty
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.layout import Layout
-from kivy.uix.scatterlayout import ScatterLayout
-from kivy.uix.behaviors import ButtonBehavior, DragBehavior
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.dropdown import DropDown
-from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from kivy.core.audio import SoundLoader
 from kivy.uix.label import Label
-from kivy.uix.modalview import ModalView
-from kivy.graphics import Line, Color, InstructionGroup, Rectangle, Rotate, PushMatrix, Rotate, PopMatrix, Ellipse
-from kivy.uix.progressbar import ProgressBar
-import numpy.random as rng
-from kivy.clock import Clock
-from kivy.animation import Animation
-from functools import partial
-from itertools import chain
-from kivy.uix.image import Image
-from  kivy.metrics import dp
-from kivy.clock import mainthread
-from kivy.graphics.vertex_instructions import Triangle, BorderImage
+from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
-from cards.card_properties import *
-import game_properties
-import card_prep
-import operator
-from copy import deepcopy
-import collections
 
 
 class MainField(Widget):

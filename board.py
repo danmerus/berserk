@@ -1,6 +1,6 @@
-import numpy as np
 from itertools import chain
 from cards.card_properties import *
+
 
 class Board():
 

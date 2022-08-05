@@ -3,11 +3,9 @@ import board
 import berserk_gui
 import numpy.random as rng
 from game_properties import GameStates
-from cards.card_properties import *
-import placement
 from kivy.clock import Clock
-from kivy import Config
-from kivy.core.window import Window
+
+
 # Config.set('graphics', 'fullscreen', 'auto')
 
 class Game:
@@ -150,10 +148,10 @@ class Game:
 
 if __name__ == '__main__':
     # hack to import all cards
-    filedir = 'cards'
+    filedir = 'cards/set_1'
     modules = [f[:-3] for f in os.listdir(filedir) if
                os.path.isfile(os.path.join(filedir, f)) and f.endswith('.py') and f != '__init__.py']
-    imports = [f"from cards import {module}\nfrom cards.{module} import *" for module in sorted(modules)]
+    imports = [f"from cards.set_1 import {module}\nfrom cards.set_1.{module} import *" for module in sorted(modules)]
     for imp in imports:
         exec(imp)
 
@@ -174,15 +172,16 @@ if __name__ == '__main__':
     game.gui = gui
     #game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Necromant_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
-              # PovelitelMolniy_1(player=1, location=20),
+              Lovets_dush_1(player=1, location=0, gui=gui),
               Bjorn_1(player=1, location=21, gui=gui),
               Cobold_1(player=1, location=27, gui=gui),
-              Voin_hrama_1(player=1, location=2, gui=gui),
-              Ledyanoy_ohotnik_1(player=1, location=4, gui=gui),
+              Gnom_basaarg_1(player=1, location=2, gui=gui),
+              Otvajnii_gnom_1(player=1, location=4, gui=gui),
               Mrazen_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14), Bjorn_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
-              Lovets_dush_1(player=2, location=12, gui=gui), Ar_gull_1(player=2, location=15, gui=gui),
+              # Lovets_dush_1(player=2, location=12, gui=gui),
+              Ar_gull_1(player=2, location=15, gui=gui),
               Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
     game.set_cards(cards1, cards2, gui)
 

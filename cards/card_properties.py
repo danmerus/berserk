@@ -23,7 +23,9 @@ class ActionTypes(enum.Enum):
     UDAR_CHEREZ_RYAD = 16
     BLOCK = 17
     VOZROJDENIE = 18
-    OTHER = 19
+    DESTRUCTION = 19
+    POPUP = 20
+    OTHER = 21
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -73,6 +75,7 @@ class Condition(enum.Enum):
     START_MAIN_PHASE = 3
     ON_SELF_MOVING = 4
     ON_DEFENCE_BEFORE_DICE = 5
+    PRI_ATAKE = 6
 
 class DefenceAction:
 
@@ -174,7 +177,8 @@ class IncreaseFishkaAction:
 class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
-                 state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1):
+                 state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
+                 reverse=False):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -191,6 +195,7 @@ class SimpleCardAction:
         self.damage_make = 0
         self.damage_receive = 0
         self.redirected = False
+        self.reverse = reverse
         self.target_count = target_count
 
     def __str__(self):
@@ -221,6 +226,21 @@ class MultipleCardAction():
         self.isinstant = isinstant
         self.take_all_targets = take_all_targets
 
+    def __str__(self):
+        return self.txt
+
+class PopupAction():
+
+    def __init__(self,  options, action_list, a_type=ActionTypes.POPUP, txt='', ranged=False, state_of_action=GameStates.MAIN_PHASE,
+                  isinstant=False):
+        self.action_list = action_list
+        self.state_of_action = state_of_action
+        self.ranged = ranged
+        self.txt = txt
+        self.a_type = a_type
+        self.options = options
+        self.isinstant = isinstant
+        self.options = options
     def __str__(self):
         return self.txt
 
