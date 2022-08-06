@@ -60,7 +60,7 @@ class Cobold_1(Card):
             return
         elif self.a1.target:
             b = BlockAction(self.a1.target)
-            self.gui.backend.stack.append((b, None, None, 2))
+            self.gui.backend.stack.append((b, self, self, 2))
         self.actions_left -= 1
         self.gui.tap_card(self)
         self.a1.isinstant = False

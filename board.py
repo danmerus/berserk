@@ -170,6 +170,12 @@ class Board():
         out.remove(card)
         return out
 
+    def get_flyer_magnets(self, player, enemy=False):
+        all_card = self.get_all_cards()
+        if enemy:
+            return [c for c in all_card if CardEffect.FLYER_MAGNET in c.active_status and c.player != player]
+        return [c for c in all_card if CardEffect.FLYER_MAGNET in c.active_status]
+
     def get_available_targets_uchr(self, card):
         no = card.loc
         candidates = [(no+1, no+2), (no-1, no-2), (no+6, no+12), (no-6, no-12)]

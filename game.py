@@ -156,6 +156,8 @@ if __name__ == '__main__':
         exec(imp)
 
     WINDOW_SIZE = (960, 540) # (1920, 1080) #
+    STACK_DURATION = 5
+    TURN_DURATION = 5
     game = Game()
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
@@ -168,7 +170,7 @@ if __name__ == '__main__':
     # selection = placement.SelectionApp(game, WINDOW_SIZE, cards2, 2)
     # selection.run()
 
-    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE)
+    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
     game.gui = gui
     #game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Necromant_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
@@ -176,7 +178,7 @@ if __name__ == '__main__':
               Bjorn_1(player=1, location=21, gui=gui),
               Cobold_1(player=1, location=27, gui=gui),
               Gnom_basaarg_1(player=1, location=2, gui=gui),
-              Otvajnii_gnom_1(player=1, location=4, gui=gui),
+              Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
               Mrazen_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14), Bjorn_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),

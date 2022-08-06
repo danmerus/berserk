@@ -25,7 +25,9 @@ class ActionTypes(enum.Enum):
     VOZROJDENIE = 18
     DESTRUCTION = 19
     POPUP = 20
-    OTHER = 21
+    TAP = 21
+    NET = 22
+    OTHER = 23
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -66,6 +68,8 @@ class CardEffect(enum.Enum):
     TRUPOEDSTVO = 4
     BESTELESNOE = 5
     OTRAVLEN = 6
+    FLYER_MAGNET = 7
+    NETTED = 8
 
 @enum.unique
 class Condition(enum.Enum):
@@ -89,6 +93,7 @@ class DefenceAction:
 
     def __str__(self):
         return self.txt
+
 
 class DefaultMovementAction:
     def __init__(self, move=None):
@@ -265,7 +270,6 @@ class LambdaCardAction():  #  ONLY for stage 1
         self.state_of_action = []
         self.isinstant = isinstant
         self.func = func
-
 
 
 class SelectTargetAction():

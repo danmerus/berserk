@@ -61,7 +61,7 @@ class OmegaPopup(DragBehavior, Popup):
 
 class BerserkApp(App):
 
-    def __init__(self, backend, window_size):
+    def __init__(self, backend, window_size, stack_duration, turn_duration ):
         super(BerserkApp, self).__init__()
         self.backend = backend
         Window.size = window_size
@@ -71,8 +71,8 @@ class BerserkApp(App):
         CARD_X_SIZE = (Window.width * 0.084375)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
 
-        STACK_DURATION = 5
-        TURN_DURATION = 16
+        STACK_DURATION = stack_duration
+        TURN_DURATION = turn_duration
 
         DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
         self.title = 'Berserk Renewal'
@@ -431,7 +431,7 @@ class BerserkApp(App):
         else:
             return None
 
-    def handle_instant_stack(self, ability, card, victim):
+    def handle_instant_stack(self, ability, card, victim, state=0, force=0):
         if self.backend.stack:
             for el in self.backend.stack:
                 if len(el) == 4:
@@ -457,7 +457,7 @@ class BerserkApp(App):
                 return
         else:
             out = (ability, card, victim, 0)
-        if card.actions_left > 0:
+        if card.actions_left > 0 or force:
             self.backend.stack.append(out)
             self.multiple_targets_list = []
             if ability.a_type != ActionTypes.MOVEMENT:
@@ -466,7 +466,7 @@ class BerserkApp(App):
                 b.disabled = True
             self.start_timer(STACK_DURATION)
 
-    def start_stack_action(self, ability, card, victim, instance):
+    def start_stack_action(self, ability, card, victim, state=0, force=0):
         if (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO) and \
             not CardEffect.NAPRAVLENNY_UDAR in card.active_status:
             defenders = self.backend.board.get_defenders(card, victim)
@@ -510,7 +510,7 @@ class BerserkApp(App):
             instants = self.backend.board.get_instants()
             if instants:  #or self.pending_attack
                 self.disable_all_buttons_except_instant(instants)
-                self.handle_instant_stack(ability, card, victim)
+                self.handle_instant_stack(ability, card, victim, state, force)
             else:
                 if isinstance(ability, MultipleCardAction):
                     if len(self.multiple_targets_list) == len(ability.action_list):
@@ -562,7 +562,7 @@ class BerserkApp(App):
             return
 
     def process_stack(self, *args):
-        # print('stack: ', self.backend.stack
+        # print('stack: ', self.backend.stack)
         self.disabled_actions = False
         if self.exit_stack:
             return
@@ -602,8 +602,13 @@ class BerserkApp(App):
             else:
                 if not hasattr(self, 'attack_popup'):
                     self.start_timer(STACK_DURATION)
-                return
-
+                    return
+                elif hasattr(self, 'attack_popup'):
+                    try:
+                        self.attack_popup.dismiss()
+                        del self.attack_popup
+                    except:
+                        pass
         self.process_stack()
 
     def cleanup_card(self, new_card):
@@ -721,18 +726,22 @@ class BerserkApp(App):
                 self.destroy_target_rectangles()
                 self.destroy_target_marks()
                 return
+            if ability.a_type == ActionTypes.TAP:
+                if not victim.tapped:
+                    self.tap_card(victim)
+                return
             if isinstance(ability, PopupAction):
-                print('poppin')
-                self.attack_popup = self.create_selection_popup('Сделайте выбор: ',
-                                                                button_texts=['Пукнуть','Хрюкнуть'],
-                                                                button_binds=[(lambda x: print('1')), (lambda x: print('2'))])
+                if not hasattr(self, 'attack_popup'):
+                    self.attack_popup = self.create_selection_popup('Сделайте выбор: ',
+                                                                    button_texts=ability.options,
+                                                                button_binds=ability.action_list)
+                self.press_1 = ability.action_list[0]
+                self.timer_ability = Animation(duration=self.timer.duration - 1)
+                self.timer_ability.bind(on_complete=self.press_1)
+                self.timer_ability.bind(on_complete=self.restart_timer)
+                self.timer_ability.start(self)
                 return
 
-                # self.press_1 = lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim)
-                # self.timer_ability = Animation(duration=self.timer.duration - 1)
-                # self.timer_ability.bind(on_complete=self.press_1)
-                # self.timer_ability.bind(on_complete=self.restart_timer)
-                # self.timer_ability.start(self)
 
             out.append((ability, card, victim, 1))
         instants = self.backend.board.get_instants()
@@ -823,7 +832,6 @@ class BerserkApp(App):
                     elif roll1 > 5:
                         d = ability.damage[2]
                     ability.damage_make = d
-                    out.append((ability, card, victim, 2))
                     if card.player == 1:
                         self.draw_die(bonus1, bonus2,ability.rolls, [])
                     else:
@@ -906,6 +914,9 @@ class BerserkApp(App):
                     elif ability.a_type in [ActionTypes.VYSTREL, ActionTypes.METANIE, ActionTypes.RAZRYAD]: # bez UCHR
                         victim.curr_life -= ability.damage_make
                         self.display_damage(victim, -1 * ability.damage_make)
+                    elif ability.a_type == ActionTypes.NET:
+                        victim.active_status.append(CardEffect.NETTED)
+                        self.add_defence_signs(victim)
                     else:
                         victim.curr_life -= ability.damage_make
                         self.display_damage(victim, -1 * ability.damage_make)
@@ -937,14 +948,23 @@ class BerserkApp(App):
 
             if isinstance(ability, FishkaCardAction):
                 self.remove_fishka(card, ability.cost_fishka)
-            for ab in card.abilities:
-                if isinstance(ab, TriggerBasedCardAction) and ab.condition == Condition.PRI_ATAKE:
-                    ab.callback()
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                for ab in card.abilities:
+                    if isinstance(ab, TriggerBasedCardAction) and ab.condition == Condition.PRI_ATAKE:
+                        if ab.recieve_inc:
+                            ab.callback(victim)
+                        else:
+                            ab.callback()
             ability.rolls = []  # cleanup
             ability.damage_make = 0
             ability.damage_receive = 0
 
     def perform_card_action(self, *args):
+        try:
+            self.attack_popup.dismiss()
+            del self.attack_popup
+        except:
+            pass
         if self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
             return
         if len(args) == 4:
@@ -1112,8 +1132,14 @@ class BerserkApp(App):
             targets = board.get_ground_targets_min_max(card_pos_no=board.game_board.index(card),
                                                        range_max=ability.range_max, range_min=ability.range_min,
                                                        ability=ability)
-        elif card.type_ == CreatureType.FLYER or card.can_hit_flyer:
+        elif card.can_hit_flyer:  # NO TARGETS ON GROUND ONLY FLYING  CREATURES
             targets = board.get_available_targets_flyer(card)
+        elif card.type_ == CreatureType.FLYER:
+            magnets = self.backend.board.get_flyer_magnets(card.player, enemy=True)
+            if magnets:
+                targets = magnets
+            else:
+                targets = board.get_available_targets_flyer(card)
         if bind_ == 1:
             self.timer_ability = Animation(duration=TURN_DURATION - 1)
             self.press_2 = lambda *_: self.handle_selection_action(ability, card, ability.targets[0])
@@ -1443,6 +1469,7 @@ class BerserkApp(App):
 
     def add_defence_signs(self, card):
         base_overlay = self.base_overlays[card]
+        self.card_signs[card] = []
         if ActionTypes.RAZRYAD in card.defences and ActionTypes.ZAKLINANIE in card.defences and ActionTypes.MAG_UDAR in card.defences:
             self.card_signs[card].append('data/icons/zom.png')
         if ActionTypes.VYSTREL in card.defences:
@@ -1455,6 +1482,8 @@ class BerserkApp(App):
             self.card_signs[card].append('data/icons/uchr.png')
         if CardEffect.REGEN in card.active_status:
             self.card_signs[card].append('data/icons/regen.png')
+        if CardEffect.NETTED in card.active_status:
+            self.card_signs[card].append('data/icons/spider-web.png')
         rl = RelativeLayout()
         with rl.canvas:
             for i, p in enumerate(self.card_signs[card]):
