@@ -42,14 +42,14 @@ class Lovets_dush_1(Card):
         self.abilities.append(a2)
 
         a31 = SimpleCardAction(a_type=ActionTypes.ZAKLINANIE, damage=1, range_min=1, range_max=6, txt='Ранить на 1',
-                               ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                               ranged=True, state_of_action=[GameStates.OPENING_PHASE,
                                                             GameStates.END_PHASE, GameStates.MAIN_PHASE], target='enemy')
         a32 = SimpleCardAction(a_type=ActionTypes.EXTRA_LIFE, damage=1, range_min=0, range_max=6, txt='Доп. жизнь на 1',
-                               ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+                               ranged=True, state_of_action=[GameStates.OPENING_PHASE,
                                                              GameStates.END_PHASE, GameStates.MAIN_PHASE], target='ally')
 
         # a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32], target_callbacks=None,
-        #                       ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
+        #                       ranged=True, state_of_action=[GameStates.OPENING_PHASE,
         #                                                     GameStates.END_PHASE, GameStates.MAIN_PHASE], isinstant=True)
         a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32],
                                 target_callbacks=None,

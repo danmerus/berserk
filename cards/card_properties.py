@@ -27,7 +27,12 @@ class ActionTypes(enum.Enum):
     POPUP = 20
     TAP = 21
     NET = 22
-    OTHER = 23
+    DOBIVANIE = 23
+    OSOBII_UDAR = 24
+    OTHER = 25
+
+ATTACK_LIST = [ActionTypes.VYSTREL, ActionTypes.RAZRYAD, ActionTypes.METANIE, ActionTypes.ATAKA, ActionTypes.MAG_UDAR,
+               ActionTypes.UDAR_CHEREZ_RYAD, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR]
 
 @enum.unique
 class CreatureType(enum.Enum):
@@ -55,6 +60,7 @@ class CardColor(enum.Enum):
 @enum.unique
 class CardClass(enum.Enum):
     GNOME = 'гном'
+    ELF = 'эльф'
 
 @enum.unique
 class GameSet(enum.Enum):
@@ -80,6 +86,7 @@ class Condition(enum.Enum):
     ON_SELF_MOVING = 4
     ON_DEFENCE_BEFORE_DICE = 5
     PRI_ATAKE = 6
+    ON_TAKING_DAMAGE = 7
 
 class DefenceAction:
 
@@ -101,6 +108,7 @@ class DefaultMovementAction:
         self.move = move
         self.isinstant = False
         self.display = False
+        self.state_of_action = [GameStates.MAIN_PHASE]
        # self.txt = ''
 
 
@@ -183,7 +191,7 @@ class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
-                 reverse=False):
+                 reverse=False, target_restriction=[]):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -202,18 +210,22 @@ class SimpleCardAction:
         self.redirected = False
         self.reverse = reverse
         self.target_count = target_count
+        self.target_restriction = target_restriction
 
     def __str__(self):
         return self.txt
 
 class SelectCardAction():
 
-    def __init__(self, child_action, targets=None):
+    def __init__(self, child_action, targets=None, range_min=0, range_max=0, ranged=False):
         self.child_action = child_action
         self.state_of_action = child_action.state_of_action
         self.a_type = child_action.a_type
         self.isinstant = child_action.isinstant
         self.targets = targets
+        self.range_min = range_min
+        self.range_max = range_max
+        self.ranged = ranged
 
     def __str__(self):
         return self.txt

@@ -40,6 +40,7 @@ class Voin_hrama_1(Card):
 
     def a1_cb(self, ability):
         roll = self.gui.backend.get_roll_result()
+        print('voin hrama roll', roll)
         self.gui.draw_die(0, 0, roll, [])
         if roll > 4:
             b = BlockAction(ability)

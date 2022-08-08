@@ -126,6 +126,13 @@ class Board():
                     out.append((c, a))
         return out
 
+    def cards_callback(self, card, condition):
+        out = []
+        for a in card.abilities:
+            if isinstance(a, TriggerBasedCardAction) and a.condition == condition:
+                out.append(a)
+        return out
+
     def get_instants(self):
         all_cards = self.get_all_cards()
         out = []
@@ -202,7 +209,7 @@ class Board():
         return out
 
     def get_available_moves(self, card):
-        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0:
+        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or card.gui.backend.curr_game_state != GameStates.MAIN_PHASE:
             return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)

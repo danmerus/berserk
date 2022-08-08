@@ -15,6 +15,7 @@ class Ovrajnii_gnom_1(Card):
             vypusk=GameSet.VOYNA_STIHIY,
             rarity=Rarity.COMMON,
             color=CardColor.GORY,
+            card_class=CardClass.GNOME,
             pic='data/cards/Otvajnii_gnom_1.jpg',
             cost=(0, 3),  # gold, silver,
             defences=[],

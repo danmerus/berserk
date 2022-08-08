@@ -4,6 +4,8 @@ import berserk_gui
 import numpy.random as rng
 from game_properties import GameStates
 from kivy.clock import Clock
+from cards.card import *
+import placement
 
 
 # Config.set('graphics', 'fullscreen', 'auto')
@@ -83,13 +85,16 @@ class Game:
             res = res_dict[score]
         return res  # (attack, defence) list
 
+    def on_step_start(self):
+        if self.curr_game_state == GameStates.END_PHASE:
+            self.switch_curr_active_player()
+        if self.curr_game_state == GameStates.OPENING_PHASE:
+            self.on_start_opening_phase()
+
     def next_game_state(self, *args):
         self.passed_1 = False
         self.passed_2 = False
         self.passed_once = False
-        if self.curr_game_state == GameStates.END_PHASE:
-            self.switch_curr_active_player()
-#            game.gui.check_all_passed(None)
         next_state = self.curr_game_state.next_after_start()
         if next_state != GameStates.MAIN_PHASE:
             gui.disable_all_non_instant_actions()
@@ -101,9 +106,11 @@ class Game:
                     Clock.schedule_once(gui.process_stack)
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
+            self.on_step_start()
             game.gui.check_all_passed(None)
         else:
             self.curr_game_state = next_state
+            self.on_step_start()
             self.next_game_state()
 
     def switch_priority(self, *args):
@@ -125,12 +132,14 @@ class Game:
     def on_start_new_turn(self):
         self.turn += 1
         for card in self.board.get_all_cards():
-            if card.player == self.current_active_player:
-                card.actions_left = card.actions
-                card.curr_move = card.move
-                if card.tapped:
-                    game.gui.tap_card(card)
+            if card.player != self.current_active_player and CardEffect.NETTED in card.active_status:
+                card.active_status.remove(CardEffect.NETTED)
+                gui.add_defence_signs(card)
+        #game.gui.on_new_turn()
+
+    def on_start_opening_phase(self):
         game.gui.on_new_turn()
+
 
     def is_state_active(self, state):
         ret = False
@@ -156,8 +165,8 @@ if __name__ == '__main__':
         exec(imp)
 
     WINDOW_SIZE = (960, 540) # (1920, 1080) #
-    STACK_DURATION = 5
-    TURN_DURATION = 5
+    STACK_DURATION = 10
+    TURN_DURATION = 10
     game = Game()
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
@@ -172,11 +181,11 @@ if __name__ == '__main__':
 
     gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
     game.gui = gui
-    #game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
-    cards1 = [Necromant_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
+    # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
+    cards1 = [Otshelnik_1(player=1, location=13, gui=gui), Lovets_dush_1(player=1, location=18, gui=gui),
               Lovets_dush_1(player=1, location=0, gui=gui),
               Bjorn_1(player=1, location=21, gui=gui),
-              Cobold_1(player=1, location=27, gui=gui),
+              Elfiyskiy_voin_1(player=1, location=27, gui=gui),
               Gnom_basaarg_1(player=1, location=2, gui=gui),
               Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
               Mrazen_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]

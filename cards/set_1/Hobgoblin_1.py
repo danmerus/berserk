@@ -2,25 +2,25 @@ from cards.card import Card
 from cards.card_properties import *
 from game_properties import GameStates
 
-class Pauk_peresmeshnik_1(Card):
+class Hobgoblin_1(Card):
 
     def __init__(self, player=1, location=0, gui=None):
         super().__init__(
-            life=7,
+            life=18,
             move=1,
-            attack=(1, 2, 2),
-            name='Паук-пересмешник',
+            attack=(3, 4, 5),
+            name='Хобгоблин',
             vypusk=GameSet.VOYNA_STIHIY,
             rarity=Rarity.COMMON,
             color=CardColor.LES,
-            pic='data/cards/Pauk_peresmeshnik_1.jpg',
-            cost=(0, 4),  # gold, silver,
-            defences=[],
+            pic='data/cards/Hobgoblin_1.jpg',
+            cost=(8, 0),  # gold, silver,
+            defences=[ActionTypes.OTRAVLENIE],
             is_unique=False,
             type_=CreatureType.CREATURE,
             actions_left=1,
-            active_status=[CardEffect.FLYER_MAGNET],
-            description='',
+            active_status=[CardEffect.NAPRAVLENNY_UDAR],
+            description='В незапамятные времена некоторые племена гоблинов были вынуждены покинуть родные болота и поселиться в негостеприимных лесах Кронга...',
             curr_fishka=0,
             max_fishka=0,
             can_tap_for_fishka=False,
@@ -32,7 +32,5 @@ class Pauk_peresmeshnik_1(Card):
         self.gui = gui
 
     def _update_abilities(self):
-        a1 = SimpleCardAction(a_type=ActionTypes.NET, damage=0, range_min=0, range_max=2,
-                               txt=f'Бросок сети', target_restriction=['enemy', 'not flyer'],
-                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        self.abilities.append(a1)
+        pass
+
