@@ -39,7 +39,16 @@ class Otshelnik_1(Card):
                               target='all')
         self.abilities.append(a1)
 
-        # a31 = SimpleCardAction(a_type=ActionTypes.ZAKLINANIE, damage=1, range_min=1, range_max=6, txt='Ранить на 1',
-        #                        ranged=True, state_of_action=[GameStates.START_PHASE, GameStates.OPENING_PHASE,
-        #                                                     GameStates.END_PHASE, GameStates.MAIN_PHASE], target='enemy')
-        # self.abilities.append(a3)
+        self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
+                                         check=self.a1_check, # prep=self.a1_prep,
+                                         callback=self.a1_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
+        self.abilities.append(self.a2)
+
+    def a1_cb(self, card, victim, ability):
+        print(f'Распределить {ability.damage_make} урона')
+
+    def a1_check(self, card, victim, ability):
+        return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
+            not CardEffect.BESTELESNOE in victim.active_status and victim != self and victim.player == self.player
+
+

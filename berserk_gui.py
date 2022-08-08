@@ -125,7 +125,7 @@ class BerserkApp(App):
         for c in self.selection_flicker_dict.keys():
             self.base_overlays[c].remove_widget(self.selection_flicker_dict[c])
 
-    def check_displayable_crd_actions(self, card):
+    def check_displayable_card_actions(self, card):
         out = []
         for ability in card.abilities:
             if isinstance(ability, MultipleCardAction):
@@ -468,6 +468,8 @@ class BerserkApp(App):
             self.start_timer(STACK_DURATION)
 
     def start_stack_action(self, ability, card, victim, state=0, force=0):
+        self.destroy_target_rectangles()
+        self.destroy_target_marks()
         if (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO) and \
             not CardEffect.NAPRAVLENNY_UDAR in card.active_status:
             defenders = self.backend.board.get_defenders(card, victim)
@@ -656,6 +658,8 @@ class BerserkApp(App):
         if len(args) == 4 and not isinstance(args[0], tuple):
             args = tuple([args])
         for ability, card, victim, stage in args:
+            if not card in all_cards:
+                return
             if isinstance(ability, DefaultMovementAction):
                 if not card.tapped:
                     self.move_card(card, victim[0], victim[1])  # victim here is a move
@@ -684,9 +688,9 @@ class BerserkApp(App):
                 return
             if isinstance(ability, SelectCardAction):
                 self.disabled_actions = True
+                self.exit_stack = True
                 # self.eot_button_disabled = True
                 # self.eot_button.disabled = True
-                self.exit_stack = True
                 self.display_available_targets(self.backend.board, card, ability, 1, None)
                 return
             if ability.a_type == ActionTypes.VOZROJDENIE:
@@ -703,10 +707,12 @@ class BerserkApp(App):
                 self.cleanup_card(new_card)
                 new_card.loc = place
                 new_card.player = card.player
+                new_card.tapped = True
                 self.backend.board.populate_board([new_card])
                 self.reveal_cards([new_card])
-                if ability.is_tapped:
-                    self.tap_card(new_card)
+                # if ability.is_tapped:
+                #     if not new_card.tapped:
+                #         self.tap_card(new_card)
                 if isinstance(ability, FishkaCardAction):
                     self.remove_fishka(card, ability.cost_fishka)
                 uq = self.check_for_uniqueness(new_card.player)
@@ -910,6 +916,10 @@ class BerserkApp(App):
                 cb_abs = self.backend.board.cards_callback(victim, Condition.ON_TAKING_DAMAGE)
                 for cb_ab in cb_abs:
                     cb_ab.callback(card, ability)
+                cb = self.backend.board.get_all_cards_with_callback(Condition.ON_MAKING_DAMAGE_STAGE)
+                for c, a in cb:
+                    if a.check(card, victim, ability):
+                        a.callback(card, victim, ability)
                 if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
                     if card.can_hit_flyer and victim.type_ == CreatureType.FLYER:
                         card.can_hit_flyer = False
@@ -968,7 +978,7 @@ class BerserkApp(App):
 
             if isinstance(ability, FishkaCardAction):
                 self.remove_fishka(card, ability.cost_fishka)
-            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO and card in all_cards and victim in all_cards:
                 for ab in card.abilities:
                     if isinstance(ab, TriggerBasedCardAction) and ab.condition == Condition.PRI_ATAKE:
                         if ab.recieve_inc:
@@ -1132,7 +1142,7 @@ class BerserkApp(App):
     def handle_selection_action(self, ability, card, t, *args):  # cobold?
         self.timer_ability.unbind(on_complete=self.press_2)
         self.timer_ability.unbind(on_complete=self.restart_timer)
-        self.eot_button.unbind(on_press=self.press_2)
+        self.ph_button.unbind(on_press=self.press_2)
         self.backend.stack.append((ability.child_action, card, t, 0))
         self.destroy_target_rectangles()
         self.destroy_target_marks()
@@ -1175,12 +1185,16 @@ class BerserkApp(App):
             else:
                 targets = board.get_available_targets_flyer(card)
         if bind_ == 1:
-            self.timer_ability = Animation(duration=TURN_DURATION - 1)
-            self.press_2 = lambda *_: self.handle_selection_action(ability, card, ability.targets[0])
-            self.timer_ability.bind(on_complete=self.press_2)
-            self.timer_ability.bind(on_complete=self.restart_timer)
-            self.eot_button.bind(on_press=self.press_2)
-            self.timer_ability.start(self)  # TODO доделать что бы как по закрытому
+            if targets:
+                self.timer_ability = Animation(duration=TURN_DURATION - 1)
+                self.press_2 = lambda *_: self.handle_selection_action(ability, card, targets[0])
+                self.timer_ability.bind(on_complete=self.press_2)
+                self.timer_ability.bind(on_complete=self.restart_timer)
+                self.ph_button.bind(on_press=self.press_2)
+                self.timer_ability.start(self)  # TODO доделать что бы как по закрытому
+            else:
+                self.disabled_actions = False
+                self.exit_stack = False
         for t in targets:
             if isinstance(t, int):
                 pos = self.card_position_coords[t]
@@ -1308,7 +1322,7 @@ class BerserkApp(App):
                 and card.type_ == CreatureType.CREATURE and add_tap_for_flyer_flag:
             card.abilities.append(TapToHitFlyerAction())
 
-        displayable = self.check_displayable_crd_actions(card)
+        displayable = self.check_displayable_card_actions(card)
 
         for i, ab in enumerate(displayable):  #TODO Убрать show_slow
             ability, code = ab

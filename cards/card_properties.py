@@ -87,6 +87,7 @@ class Condition(enum.Enum):
     ON_DEFENCE_BEFORE_DICE = 5
     PRI_ATAKE = 6
     ON_TAKING_DAMAGE = 7
+    ON_MAKING_DAMAGE_STAGE = 8
 
 class DefenceAction:
 
@@ -226,9 +227,6 @@ class SelectCardAction():
         self.range_min = range_min
         self.range_max = range_max
         self.ranged = ranged
-
-    def __str__(self):
-        return self.txt
 
 class MultipleCardAction():
 
