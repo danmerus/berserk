@@ -1,6 +1,7 @@
 from cards.card import Card
 from cards.card_properties import *
 from game_properties import GameStates
+from functools import partial
 
 class Otshelnik_1(Card):
 
@@ -32,6 +33,7 @@ class Otshelnik_1(Card):
         self.loc = location
         self.gui = gui
 
+
     def _update_abilities(self):  # txt max length 17
         a1 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=1, range_min=0, range_max=6, txt='Лечение на 1',
                               ranged=True,  isinstant=True,
@@ -40,15 +42,38 @@ class Otshelnik_1(Card):
         self.abilities.append(a1)
 
         self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
-                                         check=self.a1_check, # prep=self.a1_prep,
+                                         check=self.a2_check, prep=self.a2_prep, recieve_all=True,
                                          callback=self.a1_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
         self.abilities.append(self.a2)
 
-    def a1_cb(self, card, victim, ability):
-        print(f'Распределить {ability.damage_make} урона')
+    def a1_cb(self, ability, card, victim):
+        N = ability.inc_ability.damage_make
+        if N < 1:
+            return
+        a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
+                               txt='Перераспределение ран simple',
+                               target=self.a3_trg,
+                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+        action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
+        action_list.append(a32)
+        a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
+                                action_list=action_list,
+                                target_callbacks=None,
+                                ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
+                                isinstant=False)
+        self.a2.disabled = True
+        self.a2.isinstant = False
+        self.gui.start_stack_action(a3, self, self, 0, -1)
 
-    def a1_check(self, card, victim, ability):
+    def a2_prep(self):
+         #(LambdaCardAction(func=self.a1_non_ins), None, None, 1)])
+        self.gui.start_flickering(self)
+
+    def a2_check(self, card, victim, ability):
         return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
-            not CardEffect.BESTELESNOE in victim.active_status and victim != self and victim.player == self.player
+            not CardEffect.BESTELESNOE in victim.active_status and victim != self and victim.player == self.player and not self.tapped and \
+               ability.damage_make > 0
 
-
+    def a3_trg(self):
+        all_ = self.gui.backend.board.get_all_cards()
+        return [x for x in all_ if x!=self and  not CardEffect.BESTELESNOE in x.active_status and x.player==self.player]

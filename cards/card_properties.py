@@ -29,7 +29,8 @@ class ActionTypes(enum.Enum):
     NET = 22
     DOBIVANIE = 23
     OSOBII_UDAR = 24
-    OTHER = 25
+    PERERASPREDELENIE_RAN = 25
+    OTHER = 26
 
 ATTACK_LIST = [ActionTypes.VYSTREL, ActionTypes.RAZRYAD, ActionTypes.METANIE, ActionTypes.ATAKA, ActionTypes.MAG_UDAR,
                ActionTypes.UDAR_CHEREZ_RYAD, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR]
@@ -115,15 +116,16 @@ class DefaultMovementAction:
 
 class TriggerBasedCardAction:
 
-    def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False,
-                 target=None, prep=None, actor=None, check=None):
+    def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False, recieve_all=False,
+                 target=None, prep=None, actor=None, check=None, isinstant=False):
         self.txt = txt
         self.callback = callback
         self.condition = condition
         self.display = display
-        self.isinstant = False
+        self.isinstant = isinstant
         self.a_type = ActionTypes.TRIGGER
         self.recieve_inc = recieve_inc
+        self.recieve_all = recieve_all
         self.tap_target = False
         self.disabled = True
         self.check = check

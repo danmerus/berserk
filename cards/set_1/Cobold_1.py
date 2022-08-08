@@ -65,6 +65,7 @@ class Cobold_1(Card):
         self.gui.tap_card(self)
         self.a1.isinstant = False
         self.a1.repeat = False
+        self.a1.disabled = True
         self.gui.destroy_flickering(self)
         self.gui.process_stack()
 
