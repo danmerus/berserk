@@ -78,8 +78,13 @@ class BerserkApp(App):
         self.title = 'Berserk Renewal'
 
     def destroy_x(self, list_, long=False):
-        for bt in list_:
-            self.root.remove_widget(bt)
+        if long==True:
+            for bt, a in list_:
+                self.root.remove_widget(bt)
+        else:
+            for bt in list_:
+                self.root.remove_widget(bt)
+
 
     def destroy_target_marks(self):
         for btn, card in self.target_marks_cards:
@@ -150,6 +155,39 @@ class BerserkApp(App):
                 out.append((ability, 1))
         displayable = [x for x in out if not (isinstance(x[0], TriggerBasedCardAction) and not x[0].display)]
         return displayable
+
+    def add_pereraspredelenie_marker(self, card):
+        ly = self.base_overlays[card]
+        if self.pereraspredelenie_label_dict[card] == 0:
+            self.pereraspredelenie_label_dict[card] += 1
+            rl = RelativeLayout()
+            with rl.canvas:
+                Color(0.8, 0, 0)
+                Rectangle(size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15), color=(1, 1, 1, 0.3),
+                          pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70))
+                Color(1, 1, 1)
+                Line(width=0.5, color=(1, 1, 1, 0),
+                     rectangle=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70, CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15))
+                lbl = Label(pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70), text=str(self.pereraspredelenie_label_dict[card]), color=(1, 1, 1, 1),
+                            size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
+                            font_size=Window.height * 0.02, valign='top')
+                self.garbage_dict[card] = lbl
+                ly.add_widget(rl)
+                self.pereraspredelenie_dict[card] = rl
+        else:
+            self.pereraspredelenie_label_dict[card] += 1
+            self.garbage_dict[card].text = str(self.pereraspredelenie_label_dict[card])
+
+    def remove_pereraspredelenie_ran(self):
+        all_cards = self.backend.board.get_all_cards()
+        try:
+            for card in all_cards:
+                if card in self.pereraspredelenie_dict.keys():
+                    ly = self.base_overlays[card]
+                    self.pereraspredelenie_label_dict[card] = 0
+                    ly.remove_widget(self.pereraspredelenie_dict[card])
+        except Exception as e:
+            print('Error on remove_pereraspredelenie_ran', e)
 
     def popup_attack_bind(self, result, ability, card, victim, *args):
         self.timer_ability.unbind(on_complete=self.press_1)
@@ -449,8 +487,16 @@ class BerserkApp(App):
         if isinstance(ability, MultipleCardAction):
             if len(self.multiple_targets_list) == len(ability.action_list):
                 out = []
+                if self.proxi_ability:
+                    if hasattr(ability, 'inc_ability'):
+                        ability.inc_ability = None
+                    self.backend.stack.remove(self.proxi_ability)
+                    if self.proxi_ability[1].actions_left <= 0:  # tap attacking creature and replace its attack on stack
+                        if not card.tapped:
+                            self.tap_card(self.proxi_ability[1])
+                    self.proxi_ability = None
                 if ability.take_all_targets:  # выполняем последний акшен
-                    print('stack', self.backend.stack)
+
                     out.append((ability.action_list[-1], card, self.multiple_targets_list, 0))
                 else:
                     for i, a in enumerate(ability.action_list):
@@ -458,21 +504,16 @@ class BerserkApp(App):
             else:
                 self.multiple_targets_list = []
                 self.start_timer(STACK_DURATION)
-                if self.proxi_ability:
-                    self.backend.stack.remove(self.proxi_ability)
-                    self.proxi_ability = None
                 self.handle_multiple_actions(ability, card, None)
                 return
         else:
             out = (ability, card, victim, 0)
-        print('out', card.actions_left, force, out)
         if (card.actions_left > 0 or force) and not force == -1:
             self.backend.stack.append(out)
             self.multiple_targets_list = []
             if ability.a_type != ActionTypes.MOVEMENT and not isinstance(ability, TriggerBasedCardAction):
                 card.actions_left -= 1
-            for b in self.selected_card_buttons:
-                b.disabled = True
+            self.able_selected(enable=False)
             self.start_timer(STACK_DURATION)
 
     def start_stack_action(self, ability, card, victim, state=0, force=0):
@@ -525,14 +566,23 @@ class BerserkApp(App):
             else:
                 if isinstance(ability, MultipleCardAction):
                     if len(self.multiple_targets_list) == len(ability.action_list):
+                        if self.proxi_ability:
+                            if self.proxi_ability[1].actions_left <= 0:
+                                if not card.tapped:
+                                    self.tap_card(self.proxi_ability[1])
+                            self.proxi_ability = None
                         if ability.take_all_targets:  # выполняем последний акшен
                             self.perform_card_action(ability.action_list[-1], card, self.multiple_targets_list, 0)
+                            self.multiple_targets_list = []
                         else:
                             for i, a in enumerate(ability.action_list):
                                 self.perform_card_action(a, card, self.multiple_targets_list[i], 0)
-                        self.multiple_targets_list = []
+                                self.multiple_targets_list = []
                         self.process_stack()
                     else:
+                        print('inc_ability')
+                        if hasattr(ability, 'inc_ability'):
+                            ability.inc_ability = None
                         self.handle_multiple_actions(ability, card, None)
                 else:
                     self.perform_card_action(ability, card, victim, 0)
@@ -630,6 +680,7 @@ class BerserkApp(App):
             del self.card_signs[new_card]
             del self.hp_label_dict[new_card]
             del self.move_label_dict[new_card]
+            del self.pereraspredelenie_label_dict[new_card]
             del self.fishka_label_dict[new_card]
             del self.fishka_dict[new_card]
         except:
@@ -758,13 +809,13 @@ class BerserkApp(App):
                 self.timer_ability.start(self)
                 return
             if ability.a_type == ActionTypes.PERERASPREDELENIE_RAN:  # Implicitly make it as 1 damage
+                self.remove_pereraspredelenie_ran()
                 if isinstance(victim, list):
                     for vi in victim:
                         if card in all_cards and vi in all_cards:
                             rana = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=0, range_max=6, txt='1 рана',
                                   ranged=False,  isinstant=False, state_of_action=[GameStates.MAIN_PHASE], target='all')
                             out.append((rana, card, vi, 1))
-                print('out', out)
                 instants = self.backend.board.get_instants()
                 if instants:
                     self.backend.passed_1 = False
@@ -836,10 +887,10 @@ class BerserkApp(App):
             for _ in range(num_die_rolls_attack+num_die_rolls_def):
                 ability.rolls.append(self.backend.get_roll_result())
             if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                bonus1 = card.exp_in_off
                 if ability.callback and ability.condition == Condition.ATTACKING:
                     ability.callback(victim)
                 if not victim.tapped and not card.player == victim.player:
-                    bonus1 = card.exp_in_off
                     bonus2 = victim.exp_in_def
                     roll_attack = max(ability.rolls[:num_die_rolls_attack]) + bonus1
                     roll_def = max(ability.rolls[num_die_rolls_attack:]) + bonus2
@@ -878,7 +929,7 @@ class BerserkApp(App):
                         #     on_complete=lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim))
                         return
                 else:
-                    roll1 = ability.rolls[0]
+                    roll1 = max(ability.rolls[:num_die_rolls_attack]) + bonus1
                     if roll1 <= 3:
                         d = ability.damage[0]
                     elif 4 <= roll1 <= 5:
@@ -946,6 +997,9 @@ class BerserkApp(App):
                             self.tap_card(c)
                             if isinstance(a, FishkaCardAction):
                                 self.remove_fishka(c, a.cost_fishka)
+            elif isinstance(ability, LambdaCardAction):
+                ability.func()
+                continue
             elif ability.a_type not in victim.defences and card in all_cards and victim in all_cards:
                 cb_abs = self.backend.board.cards_callback(victim, Condition.ON_TAKING_DAMAGE)
                 for cb_ab in cb_abs:
@@ -1031,7 +1085,9 @@ class BerserkApp(App):
             ability, card, victim, stage = args
         elif isinstance(args, tuple):
             a, c, v, stage = args[0]
-        if stage == 1:
+        if stage == 0:
+            self.perform_card_action_0(args)
+        elif stage == 1:
             ability, card, victim, stage = args[0]  # !
             if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
                 cb = self.backend.board.get_all_cards_with_callback(Condition.ON_DEFENCE_BEFORE_DICE)
@@ -1058,13 +1114,19 @@ class BerserkApp(App):
             for c, a in cb:
                 if (isinstance(args[0], tuple) or isinstance(args[0], list)):
                     for ability, card, victim, stage in args:
+                        print('a.repeat ', a.repeat)
                         if a.check(card, victim, ability):
                             a.disabled = False
-                            a.prep()
-                            self.proxi_ability = (ability, card, victim, 2)
-                            self.backend.stack.append(self.proxi_ability)
-                            a.inc_ability = ability
+                            a.repeat = True
                             a.isinstant = True
+                            a.inc_ability = ability
+                            a.prep()
+                            if hasattr(a, 'clear_cb'):
+                                temp = [(ability, card, victim, 2), (LambdaCardAction(func=a.clear_cb), self, None, 2)]
+                            else:
+                                temp = (ability, card, victim, 2)
+                            self.proxi_ability = (ability, card, victim, 2)
+                            self.backend.stack.append(temp)
                             self.backend.in_stack = True
                             self.eot_button.disabled = True
                             self.ph_button.disabled = False
@@ -1074,14 +1136,13 @@ class BerserkApp(App):
                             Clock.schedule_once(lambda x: self.restart_timer(STACK_DURATION))
                             return
             self.perform_card_action_2(args)
-        elif stage == 0:
-            self.perform_card_action_0(args)
 
     def on_new_turn(self):
+        self.garbage = []
+        self.garbage_dict = {}
         self.disabled_actions = False
         self.damage_marks = []
-        for b in self.selected_card_buttons:
-            b.disabled = True
+        self.able_selected(enable=False)
         self.destroy_target_marks()
         self.destroy_target_rectangles()
         for c, rl in self.cards_dict.items():
@@ -1111,7 +1172,7 @@ class BerserkApp(App):
         if self.selected_card:
             Clock.schedule_once(partial(self.draw_card_overlay, self.selected_card, 0))
         self.selected_card = card
-        self.destroy_x(self.selected_card_buttons)
+        self.destroy_x(self.selected_card_buttons, long=True)
         self.selected_card_buttons = []
         # Draw border
         self.draw_selection_border(instance.parent, card)
@@ -1153,8 +1214,7 @@ class BerserkApp(App):
             ch.size = (CARD_X_SIZE*0.84, CARD_Y_SIZE)
             self.draw_card_overlay(card, 1)
             card.tapped = True
-            for b in self.selected_card_buttons:
-                b.disabled = True
+            self.able_selected(enable=False)
         else:
             ch.background_normal = card.pic
             self.draw_card_overlay(card, 2)
@@ -1163,12 +1223,13 @@ class BerserkApp(App):
             card.tapped = False
             card.actions_left = card.actions
             card.curr_move = card.move
-            for b in self.selected_card_buttons:  # Re-activate card buttons on untap
-                b.disabled = False
+            self.able_selected(enable=True)
 
     def bind_multiple_actions(self, card, multiple_ability, ix, target, *args):
         if len(self.multiple_targets_list) > 0 and ix == 0:
             self.multiple_targets_list = []
+        if multiple_ability.action_list[-1].a_type == ActionTypes.PERERASPREDELENIE_RAN:
+            self.add_pereraspredelenie_marker(target)
         self.disabled_actions = True
         self.destroy_target_rectangles()
         self.destroy_target_marks()
@@ -1181,8 +1242,7 @@ class BerserkApp(App):
 
     def handle_multiple_actions(self, ability, card, instance):
         if ability.isinstant:
-            for b in self.selected_card_buttons:
-                b.disabled = True
+            self.able_selected(enable=False)
             self.display_card_actions(card, False, None)
         self.display_available_targets(self.backend.board, card, ability.action_list[0],
                                            partial(self.bind_multiple_actions, card, ability, 0),  None)
@@ -1371,7 +1431,6 @@ class BerserkApp(App):
             card.abilities.append(TapToHitFlyerAction())
 
         displayable = self.check_displayable_card_actions(card)
-
         for i, ab in enumerate(displayable):  #TODO Убрать show_slow
             ability, code = ab
             if self.backend.curr_priority == card.player:
@@ -1398,7 +1457,16 @@ class BerserkApp(App):
                 btn.bind(on_press=partial(self.start_stack_action, ability, card, ability.target))
             self.root.add_widget(btn)
             ability.button = btn
-            self.selected_card_buttons.append(btn)
+            self.selected_card_buttons.append((btn, ability))
+
+    def able_selected(self, enable=True):
+        if enable:
+            for b, a in self.selected_card_buttons:
+                if hasattr(a, 'stay_disabled') and not a.stay_disabled:
+                    b.disabled = False
+        else:
+            for b, a in self.selected_card_buttons:
+                b.disabled = True
 
     def draw_card_overlay(self, *args):
         card = args[0]
@@ -1705,8 +1773,7 @@ class BerserkApp(App):
         self.destroy_target_marks()
         self.destroy_target_rectangles()
         if self.selected_card.player not in cards:
-            for b in self.selected_card_buttons:
-                b.disabled = True
+            self.able_selected(enable=False)
         self.stack_cards = cards
 
     def disable_all_non_instant_actions(self):
@@ -1716,9 +1783,7 @@ class BerserkApp(App):
     def buttons_on_priority_switch(self):
         if self.selected_card and not self.selected_card.tapped and self.selected_card.actions_left > 0:
             if self.selected_card.player != self.backend.curr_priority:
-                for b in self.selected_card_buttons:
-                    if not b.disabled:
-                        b.disabled = True
+                self.able_selected(enable=False)
             else:
                 self.display_card_actions(self.selected_card, True, None)
 
@@ -1779,6 +1844,8 @@ class BerserkApp(App):
         self.target_marks_buttons = []
         self.hp_label_dict = {}
         self.move_label_dict = {}
+        self.pereraspredelenie_label_dict = defaultdict(int)
+        self.pereraspredelenie_dict = {}
         self.fishka_label_dict = {}
         self.cards_dict = {}
         self.fishka_dict = {}
@@ -1799,6 +1866,7 @@ class BerserkApp(App):
         self.grave_buttons_1 = []
         self.grave_buttons_2 = []
         self.garbage = []
+        self.garbage_dict = {}
 
         for i in range(5):
             for j in range(6):

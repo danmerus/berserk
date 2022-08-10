@@ -117,7 +117,7 @@ class DefaultMovementAction:
 class TriggerBasedCardAction:
 
     def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False, recieve_all=False,
-                 target=None, prep=None, actor=None, check=None, isinstant=False):
+                 target=None, prep=None, actor=None, check=None, isinstant=False, repeat=False):
         self.txt = txt
         self.callback = callback
         self.condition = condition
@@ -128,6 +128,7 @@ class TriggerBasedCardAction:
         self.recieve_all = recieve_all
         self.tap_target = False
         self.disabled = True
+        self.repeat = repeat
         self.check = check
         self.target = target
         self.prep = prep
