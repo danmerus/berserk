@@ -85,19 +85,20 @@ class SelectionApp(App):
             rect = Rectangle(pos=(1, 0), background_color=c,
                              size=size_,
                              font_size=Window.height * 0.02)
-            name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
+            name = (card.name[:12] + '..') if len(card.name) > 12 else card.name
             lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
                          size=size_,
                          font_size=Window.height * 0.02, )
             self.card_nameplates.append(lbl_)
             lyy.add_widget(ly)
 
+
     def display_draggable_cards(self):
         for card in self.hand:
             loc = self.empty_spots.pop()
             x, y = self.card_position_coords[loc]
             rl1 = DraggableRL(pos=(x, y), parent_=self, size=(CARD_X_SIZE, CARD_X_SIZE), size_hint=(None, None))
-            btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.2),
+            btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.2),  border=(0,0,0,0),
                           background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE * 0.8), size_hint=(None, None))
             rl1.add_widget(btn1)
             self.base_overlays[card] = RelativeLayout()

@@ -115,10 +115,8 @@ class Game:
             self.curr_game_state = next_state
             self.on_step_start()
             self.next_game_state()
-        if self.curr_game_state == GameStates.MAIN_PHASE:
-            gui.start_timer(TURN_DURATION)
-        else:
-            gui.start_timer(STACK_DURATION)
+
+
     def switch_priority(self, *args):
         if self.curr_priority == 1:
             self.curr_priority = 2
@@ -171,9 +169,11 @@ if __name__ == '__main__':
         exec(imp)
 
     WINDOW_SIZE = (960, 540) # (1920, 1080) #
-    STACK_DURATION = 10
-    TURN_DURATION = 10
+    STACK_DURATION = 5
+    TURN_DURATION = 5
     game = Game()
+    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
+    game.gui = gui
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
@@ -184,9 +184,6 @@ if __name__ == '__main__':
     # selection.run()
     # selection = placement.SelectionApp(game, WINDOW_SIZE, cards2, 2)
     # selection.run()
-
-    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
-    game.gui = gui
     # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Cobold_1(player=1, location=18, gui=gui),
               Gnom_basaarg_1(player=1, location=13, gui=gui),
@@ -195,7 +192,8 @@ if __name__ == '__main__':
               Elfiyskiy_voin_1(player=1, location=27, gui=gui),
               Gnom_basaarg_1(player=1, location=2, gui=gui),
               Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
-              Necromant_1(player=1, location=3, gui=gui), Draks_1(player=1, location=5, gui=gui)]
+              # Otshelnik_1(player=1, location=3, gui=gui),
+              Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14),
              Gnom_basaarg_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),

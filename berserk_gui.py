@@ -608,6 +608,7 @@ class BerserkApp(App):
                             ability.inc_ability = None
                         self.handle_multiple_actions(ability, card, None)
                 else:
+                    self.start_timer(self.timer.duration)
                     self.perform_card_action(ability, card, victim, 0)
                     # self.process_stack()
 
@@ -663,7 +664,7 @@ class BerserkApp(App):
                     self.eot_button.disabled = False
                 self.ph_button.disabled = True
                 if not hasattr(self, 'attack_popup'):
-                    self.restart_timer()
+                    self.start_timer(self.timer.duration)
                 if self.backend.curr_priority != self.backend.current_active_player:
                     self.backend.switch_priority()
             else:
@@ -684,7 +685,7 @@ class BerserkApp(App):
                 self.backend.passed_2 = False
             else:
                 if not hasattr(self, 'attack_popup'):
-                    self.start_timer(STACK_DURATION)
+                    self.start_timer(self.timer.duration)
                     return
                 if hasattr(self, 'attack_popup'):
                     try:
@@ -825,13 +826,9 @@ class BerserkApp(App):
                                                                     button_texts=ability.options,
                                                                     button_binds=ability.action_list)
                 self.press_1 = ability.action_list[0]
-                if self.curr_timer_left < 0.1:
-                    dur = self.timer.duration-1
-                else:
-                    dur = self.curr_timer_left-1
+                dur = self.timer.duration-1
                 self.timer_ability = Animation(duration=dur)
                 self.timer_ability.bind(on_complete=self.press_1)
-                # self.timer_ability.bind(on_complete=self.restart_timer)
                 self.timer_ability.start(self)
                 return
             if ability.a_type == ActionTypes.PERERASPREDELENIE_RAN:  # Implicitly make it as 1 damage
@@ -934,15 +931,10 @@ class BerserkApp(App):
                                                       partial(self.popup_attack_bind, outcome_list[1], ability, card, victim)])
 
                         self.press_1 = lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim)
-                        if self.curr_timer_left < 0.1:
-                            dur = self.timer.duration - 1
-                        else:
-                            dur = self.curr_timer_left - 1
+                        dur = self.timer.duration - 1
                         self.timer_ability = Animation(duration=dur)
                         self.timer_ability.bind(on_complete=self.press_1)
                         self.timer_ability.start(self)
-                        # self.timer.bind(
-                        #     on_complete=lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim))
                         return
                 else:
                     roll1 = max(ability.rolls[:num_die_rolls_attack]) + bonus1
@@ -1000,6 +992,7 @@ class BerserkApp(App):
             all_cards = self.backend.board.get_all_cards()
             if isinstance(ability, BlockAction):
                 to_block = ability.to_block
+                self.disabled_actions = False
                 for el in reversed(self.backend.stack):
                     for a, c, v, s in el:
                         if a == to_block:
@@ -1137,7 +1130,7 @@ class BerserkApp(App):
                             self.ph_button.disabled = False
                             self.backend.curr_priority = victim.player
                             self.reset_passage()
-                            Clock.schedule_once(lambda x: self.restart_timer(STACK_DURATION))
+                            Clock.schedule_once(lambda x: self.start_timer(STACK_DURATION))
                             return
             self.perform_card_action_2(args)
 
@@ -1254,13 +1247,14 @@ class BerserkApp(App):
 
     def handle_selection_action(self, ability, card, t, *args):  # cobold?
         self.timer_ability.unbind(on_complete=self.press_2)
+        self.ph_button.unbind(on_press=self.press_2)
         self.ph_button.disabled = True
         self.eot_button.disabled = True
-        self.start_stack_action(ability.child_action, card, t, 0)
         self.destroy_target_rectangles()
         self.destroy_target_marks()
-        self.disabled_actions = False
         self.exit_stack = False
+        self.disabled_actions = False
+        self.start_stack_action(ability.child_action, card, t, force=1)
         Clock.schedule_once(self.process_stack)
 
     def display_available_targets_helper(self, board, card, ability, bind_, *args):
@@ -1299,14 +1293,12 @@ class BerserkApp(App):
                 targets = board.get_available_targets_flyer(card)
         if bind_ == 1:
             if targets:
-                if self.curr_timer_left < 0.1:
-                    dur = self.timer.duration-1
-                else:
-                    dur = self.curr_timer_left-1
+                dur = self.timer.duration-1
                 self.timer_ability = Animation(duration=dur)
                 self.press_2 = lambda *_: self.handle_selection_action(ability, card, targets[0])
                 self.timer_ability.bind(on_complete=self.press_2)
-                self.ph_button.disabled = True
+                self.ph_button.bind(on_press=self.press_2)
+                # self.ph_button.disabled = True
                 self.eot_button.disabled = True
                 self.timer_ability.start(self)  # TODO доделать что бы как по закрытому
             else:
@@ -1574,7 +1566,7 @@ class BerserkApp(App):
             if card.type_ == CreatureType.FLYER:
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
                 btn1 = Button(disabled=False,
-                              background_normal=card.pic, pos=(0, CARD_Y_SIZE*0.16),
+                              background_normal=card.pic, pos=(0, CARD_Y_SIZE*0.16), border=(0,0,0,0),
                               size=(CARD_X_SIZE, CARD_Y_SIZE*0.84), size_hint=(None, None))
                 # update backend
                 self.backend.board.game_board[card.loc] = 0
@@ -1591,8 +1583,8 @@ class BerserkApp(App):
                 x, y = self.card_position_coords[loc]
                 rl1 = RelativeLayout(pos=(x, y))
                 btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.16),
-                          background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE*0.84)
-                          , size_hint=(None, None))
+                          background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE*0.84),  border=(0,0,0,0),
+                          size_hint=(None, None))
 
             btn1.bind(on_press=partial(self.on_click_on_card, card))
             rl1.add_widget(btn1)
@@ -1735,11 +1727,11 @@ class BerserkApp(App):
             else:
                 txt = game_properties.state_to_str[self.backend.curr_game_state]
         self.timer_label.text = txt + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
-
-    def restart_timer(self, *args):
-        if hasattr(self, 'timer'):
-            self.timer.cancel(self.timer_label)
-            self.timer.start(self.timer_label)
+    #
+    # def restart_timer(self, *args):
+    #     if hasattr(self, 'timer'):
+    #         self.timer.cancel(self.timer_label)
+    #         self.timer.start(self.timer_label)
 
     def start_timer(self, *args):
         duration = args[0]
@@ -1773,14 +1765,13 @@ class BerserkApp(App):
             self.timer.bind(on_complete=self.backend.player_passed)
             self.timer.bind(on_complete=Clock.schedule_once(self.check_all_passed))
             self.timer.bind(on_complete=partial(self.start_timer, STACK_DURATION))
-            #Clock.schedule_once(self.check_all_passed)
         else:
             if self.selected_card:
                 if self.backend.passed_once and self.backend.current_active_player == self.selected_card.player\
                         and self.backend.curr_game_state == GameStates.MAIN_PHASE and self.selected_card.actions_left > 0:
                     self.display_card_actions(self.selected_card, True, None)
             self.timer.bind(on_complete=self.backend.next_game_state)
-            #self.timer.bind(on_complete=partial(self.start_timer, duration))
+            self.timer.bind(on_complete=partial(self.start_timer, duration))
 
     def disable_all_buttons_except_instant(self, cards):
         self.destroy_target_marks()
