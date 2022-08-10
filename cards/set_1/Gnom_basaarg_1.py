@@ -60,12 +60,12 @@ class Gnom_basaarg_1(Card):
         closed_enemy = [x for x in adj if self.gui.backend.board.game_board[x] != 0]
         closed_enemy = [self.gui.backend.board.game_board[x] for x in closed_enemy if self.gui.backend.board.game_board[x].tapped and self.gui.backend.board.game_board[x].player != self.player]
         a = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=(self.attack[0]+1, self.attack[1]+1, self.attack[2]+1),
-                                  range_min=1, range_max=1,
+                                  range_min=1, range_max=1, can_be_redirected=False,
                                   txt=f'Атака {self.attack[0]+1}-{self.attack[1]+1}-{self.attack[2]+1}',
                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
         ch = SelectCardAction(child_action=a, targets=closed_enemy)
         if closed_enemy and self.actions_left > 0:
-            self.gui.backend.stack.append((ch, self, None, 0))
+            self.gui.start_stack_action(ch, self, self, 0)
 
     def stroy_in_cb(self):
         self.in_stroy = True

@@ -39,7 +39,7 @@ class Otshelnik_1(Card):
                               ranged=True,  isinstant=True,
                               state_of_action=[GameStates.OPENING_PHASE, GameStates.END_PHASE, GameStates.MAIN_PHASE],
                               target='all')
-        # self.abilities.append(a1)
+        self.abilities.append(a1)
 
         self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
                                          check=self.a2_check, prep=self.a2_prep, recieve_all=True,
@@ -58,19 +58,19 @@ class Otshelnik_1(Card):
                                ranged=False, state_of_action=[GameStates.MAIN_PHASE])
         action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
         action_list.append(a32)
-        print('N ', N)
         a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
                                 action_list=action_list,
                                 target_callbacks=None,
                                 ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
                                 isinstant=False)
+        self.a2.repeat = False
         self.a2.disabled = True
-        self.a2.isinstant = False
         self.a2.stay_disabled = True
+        self.a2.isinstant = False
+        self.a2.inc_ability = None
         self.gui.start_stack_action(a3, self, self, 0, -1)
 
     def a2_prep(self):
-         #(LambdaCardAction(func=self.a1_non_ins), None, None, 1)])
         self.gui.start_flickering(self)
 
     def a2_check(self, card, victim, ability):
@@ -80,11 +80,12 @@ class Otshelnik_1(Card):
 
     def a3_trg(self):
         all_ = self.gui.backend.board.get_all_cards()
-        return [x for x in all_ if x!=self and  not CardEffect.BESTELESNOE in x.active_status and x.player==self.player]
+        return [x for x in all_ if x != self and not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x!= self.a2.victim]
 
-    def a2_non_ins(self):
+    def a2_non_ins(self, *args):
         self.a2.repeat = False
         self.a2.disabled = True
         self.a2.stay_disabled = True
         self.a2.isinstant = False
-        self.a2.inc_ability = None
+        # self.gui.eot_button.disabled = False
+        #self.a2.inc_ability = None

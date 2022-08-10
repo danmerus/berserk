@@ -53,6 +53,6 @@ class Elfiyskiy_voin_1(Card):
                                    txt=f'Выстрел на 2',
                                    ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         ch = SelectCardAction(child_action=a, range_min=1, range_max=6, ranged=True)
-        self.gui.start_stack_action(ch, self, target, 0, force=1)
+        self.gui.backend.stack.append((ch, self, target, 0))
         self.gui.process_stack()
 

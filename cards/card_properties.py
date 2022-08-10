@@ -99,6 +99,8 @@ class DefenceAction:
         self.active = active
         self.state_of_action = [GameStates.MAIN_PHASE]
         self.isinstant = True
+        self.condition = None
+        self.disabled = True
 
     def __str__(self):
         return self.txt
@@ -195,7 +197,7 @@ class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
-                 reverse=False, target_restriction=[]):
+                 reverse=False, target_restriction=[], can_be_redirected=True):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -215,6 +217,7 @@ class SimpleCardAction:
         self.reverse = reverse
         self.target_count = target_count
         self.target_restriction = target_restriction
+        self.can_be_redirected = can_be_redirected
 
     def __str__(self):
         return self.txt
@@ -266,8 +269,8 @@ class PopupAction():
 class FishkaCardAction(SimpleCardAction):
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool, cost_fishka,
-                 state_of_action: [GameStates], isinstant=False, target=None, is_tapped=False):
-        super().__init__(a_type, damage, range_min, range_max, txt, ranged, state_of_action)
+                 state_of_action: [GameStates], isinstant=False, target=None, is_tapped=False, can_be_redirected=True):
+        super().__init__(a_type, damage, range_min, range_max, txt, ranged, state_of_action, can_be_redirected)
         self.cost_fishka = cost_fishka
         self.isinstant = isinstant
         self.targets = target
