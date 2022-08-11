@@ -98,7 +98,7 @@ class SelectionApp(App):
             loc = self.empty_spots.pop()
             x, y = self.card_position_coords[loc]
             rl1 = DraggableRL(pos=(x, y), parent_=self, size=(CARD_X_SIZE, CARD_X_SIZE), size_hint=(None, None))
-            btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.2),  border=(0,0,0,0),
+            btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.2),  border=(0,0,0,0),  background_down=card.pic,
                           background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE * 0.8), size_hint=(None, None))
             rl1.add_widget(btn1)
             self.base_overlays[card] = RelativeLayout()

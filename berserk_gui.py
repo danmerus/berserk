@@ -1566,7 +1566,8 @@ class BerserkApp(App):
             if card.type_ == CreatureType.FLYER:
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
                 btn1 = Button(disabled=False,
-                              background_normal=card.pic, pos=(0, CARD_Y_SIZE*0.16), border=(0,0,0,0),
+                              background_normal=card.pic, background_down=card.pic,
+                              pos=(0, CARD_Y_SIZE*0.16), border=(0,0,0,0),
                               size=(CARD_X_SIZE, CARD_Y_SIZE*0.84), size_hint=(None, None))
                 # update backend
                 self.backend.board.game_board[card.loc] = 0
@@ -1582,7 +1583,7 @@ class BerserkApp(App):
             else:
                 x, y = self.card_position_coords[loc]
                 rl1 = RelativeLayout(pos=(x, y))
-                btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.16),
+                btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.16), background_down=card.pic,
                           background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE*0.84),  border=(0,0,0,0),
                           size_hint=(None, None))
 
