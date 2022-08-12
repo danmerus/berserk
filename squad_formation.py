@@ -10,6 +10,7 @@ from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
+from kivy.uix.image import Image
 from game import Game
 import berserk_gui
 from game_properties import GameStates
@@ -27,22 +28,23 @@ class MainField(Widget):
 
 class FormationApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap):
-        super(FormationApp, self).__init__()
+    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, **kwargs):
+        super(FormationApp, self).__init__(**kwargs)
         Window.size = window_size
+        self.window_size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
-        global CARD_X_SIZE, CARD_Y_SIZE, STACK_DURATION, TURN_DURATION, DZ_SIZE
+        global CARD_X_SIZE, CARD_Y_SIZE
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
-        STACK_DURATION = 5
-        TURN_DURATION = 6
-        DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
+
 
         self.backend = backend
         self.hand = hand
+        self.hand = self.order_cost(hand)
         self.turn = turn
         self.title = 'Berserk Renewal'
+        self.deck = deck
         if turn == 2:
             gold_cap += 1
             silver_cap += 1
@@ -115,12 +117,19 @@ class FormationApp(App):
             self.gold_curr += card.cost[0]
             self.silver_curr += card.cost[1]
 
-    def cost_check(self, card):
+    def check(self, card):
+        if card.is_unique:
+            for c in self.cards_down:
+                if c.name == card.name:
+                    return False
+
         curr_cols = set([x.color for x in self.cards_down if x.color != CardColor.NEUTRAL])
         temp_penalty = self.penalty
         if card.color != CardColor.NEUTRAL and card.color not in curr_cols:
             temp_penalty += 1
-        return all([(self.gold_curr-card.cost[0]-temp_penalty) >= 0, (self.silver_curr-card.cost[1]) >= 0])
+
+        return all([(self.gold_curr-card.cost[0]-temp_penalty) >= 0, (self.silver_curr-card.cost[1]) >= 0,
+                  ])
 
     def update_labels(self):
         self.gold_lbl.text = str(self.gold_curr-self.penalty)
@@ -128,8 +137,11 @@ class FormationApp(App):
         self.silver_lbl.text = str(self.silver_curr)
 
     def move_card(self, card, *args):
+        with self.layout.canvas:
+            self.card_preview = Image(source=card.pic[:-4]+'_full.jpg', pos=(-0.025*Window.width, 0),
+                  size=(0.2*Window.width, 0.2*Window.width), opacity=1)
         if card in self.cards_up:
-            if self.cost_check(card):
+            if self.check(card):
                 l = len(self.cards_down)
                 x, y = self.card_position_coords_modified[l]
                 self.card_dict[card].pos = (x, y)
@@ -166,13 +178,20 @@ class FormationApp(App):
             self.cards_up.append(card)
             self.max_top += 1
 
+    def start_placement(self, *args):
+        self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn)
+        self.stop()
+        self.selection.run()
+
+    def order_cost(self, cards):
+        return sorted(cards, key=lambda x: (x.cost[1]+x.cost[0], x.cost[0]), reverse=True)
 
 
     def build(self):
         root = MainField()
         self.card_position_coords_initial = [None for x in range(18)]
         self.card_position_coords_modified = [None for x in range(18)]
-        self.layout = FloatLayout(size=(Window.width * 0.8, Window.height))
+        self.layout = FloatLayout(size=(Window.width, Window.height))
         self.base_overlays = {}
         self.card_dict = {}
         self.card_nameplates = []
@@ -184,6 +203,7 @@ class FormationApp(App):
         self.gold_curr = self.gold_cap
         self.silver_curr = self.silver_cap
         self.penalty = 0
+        self.card_preview = None
 
 
         with root.canvas:
@@ -200,20 +220,30 @@ class FormationApp(App):
             c1 = Color(0.5, 0, 0, 1)
             Line(color=c, points=(Window.width * 0.15, 0,
                        Window.width * 0.15, Window.height), width=4)
-            Line(color=c, points=(Window.width * 0.85, 0,
-                                  Window.width * 0.85, Window.height), width=4)
+            Line(color=c, points=(Window.width * 0.8, 0,
+                                  Window.width * 0.8, Window.height), width=4)
             Line(color=c, points=(Window.width*0.15, Window.height*0.5,
-                                  Window.width*0.85, Window.height*0.5), width=4)
+                                  Window.width*0.80, Window.height*0.5), width=4)
 
             self.gold_lbl = Label(pos=(0.88*Window.width, Window.height * 0.75), text=f'{self.gold_cap}', color=(1, 1, 1, 1),
                         size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
                         font_size=Window.height * 0.05, valign='top')
+            Image(source='data/icons/gold.png', pos=(0.83*Window.width, Window.height * 0.735),
+                  size=(0.025*Window.width, 0.025*Window.width), opacity=1)
             self.penalty_lbl = Label(pos=(0.93*Window.width, Window.height * 0.75), text=f'({self.penalty})', color=(1, 1, 1, 1),
                         size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
                         font_size=Window.height * 0.05, valign='top')
             self.silver_lbl = Label(pos=(0.88*Window.width, Window.height * 0.7), text=f'{self.silver_cap}', color=(1, 1, 1, 1),
                         size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
                         font_size=Window.height * 0.05, valign='top')
+            Image(source='data/icons/silver.png', pos=(0.83 * Window.width, Window.height * 0.685),
+                  size=(0.025 * Window.width, 0.025 * Window.width), opacity=1)
+
+            turn_str = 'первым' if self.turn ==1 else 'вторым'
+            self.turn_announcement = Label(pos=(0.9 * Window.width, Window.height * 0.6), text=f'Вы ходите {turn_str}!',
+                                    color=(1, 1, 1, 1),
+                                    size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
+                                    font_size=Window.height * 0.035, valign='top')
 
         for i in range(8):
             for j in range(2):
@@ -232,12 +262,12 @@ class FormationApp(App):
         root.add_widget(self.layout)
 
         self.ready_btn = Button(text="Готов",
-                                pos=(Window.width * 0.88, Window.height * 0.18), background_color=(1, 0, 0, 1),
+                                pos=(Window.width * 0.85, Window.height * 0.18), background_color=(1, 0, 0, 1),
                                 size=(Window.width * 0.1, Window.height * 0.04), size_hint=(None, None))
-        # self.ready_btn.bind(on_press=)
         self.layout.add_widget(self.ready_btn)
+        self.ready_btn.bind(on_press=self.start_placement)
         self.shuffle = Button(text="Сдать",
-                                pos=(Window.width * 0.88, Window.height * 0.14), background_color=(1, 0, 0, 1),
+                                pos=(Window.width * 0.85, Window.height * 0.14), background_color=(1, 0, 0, 1),
                                 size=(Window.width * 0.1, Window.height * 0.04), size_hint=(None, None))
         # self.shuffle.bind(on_press=)
         self.layout.add_widget(self.shuffle)
@@ -260,7 +290,7 @@ cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(
           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
 gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
+deck=None
 game.gui = gui
-f = FormationApp(game, WINDOW_SIZE, cards1, 1, 24, 22)
+f = FormationApp(game, WINDOW_SIZE, cards1, 1, 24, 22, deck)
 f.run()
-

@@ -168,7 +168,7 @@ if __name__ == '__main__':
     for imp in imports:
         exec(imp)
 
-    WINDOW_SIZE = (960, 540) # (1920, 1080) #
+    WINDOW_SIZE = (960, 540)  # (1920, 1080) #
     STACK_DURATION = 5
     TURN_DURATION = 5
     game = Game()
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     cards1 = [Cobold_1(player=1, location=18, gui=gui),
               Gnom_basaarg_1(player=1, location=13, gui=gui),
               Lovets_dush_1(player=1, location=0, gui=gui),
-              Bjorn_1(player=1, location=21, gui=gui),
+              Necromant_1(player=1, location=21, gui=gui),
               Elfiyskiy_voin_1(player=1, location=27, gui=gui),
               Gnom_basaarg_1(player=1, location=2, gui=gui),
               Pauk_peresmeshnik_1(player=1, location=4, gui=gui),

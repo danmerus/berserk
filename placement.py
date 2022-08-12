@@ -43,8 +43,8 @@ class DraggableRL(KXDraggableBehavior, KXDroppableBehavior, RelativeLayout):
 
 class SelectionApp(App):
 
-    def __init__(self, backend, window_size, hand, turn):
-        super(SelectionApp, self).__init__()
+    def __init__(self, backend, window_size, hand, turn, **kwargs):
+        super(SelectionApp, self).__init__(**kwargs)
         Window.size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
