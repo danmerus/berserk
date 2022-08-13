@@ -1069,6 +1069,7 @@ class BerserkApp(App):
             ability.rolls = []  # cleanup
             ability.damage_make = 0
             ability.damage_receive = 0
+            self.disabled_actions = False
 
     def perform_card_action(self, *args):
         try:
@@ -1208,6 +1209,7 @@ class BerserkApp(App):
                 ch = obj_
         if not card.tapped:
             ch.background_normal = card.pic[:-4]+'_rot90.jpg'
+            ch.background_down = card.pic[:-4] + '_rot90.jpg'
             ch.pos = (CARD_X_SIZE*0.16, 0)
             ch.size = (CARD_X_SIZE*0.84, CARD_Y_SIZE)
             self.draw_card_overlay(card, 1)
@@ -1215,6 +1217,7 @@ class BerserkApp(App):
             self.able_selected(enable=False)
         else:
             ch.background_normal = card.pic
+            ch.background_down = card.pic
             self.draw_card_overlay(card, 2)
             ch.pos = (0, CARD_Y_SIZE * 0.16)
             ch.size = (CARD_X_SIZE, CARD_Y_SIZE*0.84)

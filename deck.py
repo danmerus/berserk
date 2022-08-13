@@ -33,7 +33,7 @@ class Library:
         out = []
         for c_name, count in self.cards.items():
             cls_ = globals()[c_name]
-            out.append((cls_, count))
+            out.append((cls_(), count))
         return out
 
 
@@ -82,10 +82,10 @@ imports = [f"from cards.set_1 import {module}\nfrom cards.set_1.{module} import 
 for imp in imports:
     exec(imp)
 
-l = Library()
+# l = Library()
 # l.populate()
-l.load()
-print(l.get_cards())
+# l.load()
+# print(l.get_cards())
 # print(l.cards)
 # klass = globals()["Draks_1"]
 # instance = klass()

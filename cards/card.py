@@ -7,7 +7,7 @@ class Card:
                  vypusk, color, pic, cost, defences, is_unique,
                  type_, actions_left, active_status, description, curr_fishka, rarity,
                  max_fishka, can_tap_for_fishka, card_class=None,
-                 exp_in_def=0, exp_in_off=0):
+                 exp_in_def=0, exp_in_off=0, fake_init=False):
         self.curr_fishka = curr_fishka
         self.max_fishka = max_fishka
         self.start_fishka = curr_fishka

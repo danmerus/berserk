@@ -92,11 +92,11 @@ class MainMenuApp(App):
         x, y = self.future_res[0], self.future_res[1]
         self.stop()
         Window.size = (x, y)
-        Window.maximize()
+        #Window.maximize()
         Window.left = 0
         Window.top = 0
         # Window.borderless = True
-        Window.restore()
+        # Window.restore()
         self.run()
 
     def deck_bind(self, *args):

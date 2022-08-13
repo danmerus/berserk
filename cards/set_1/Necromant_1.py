@@ -30,8 +30,9 @@ class Necromant_1(Card):
         self.gui = gui
         self.player = player
         self.loc = location
-        self.add_default_abilities()
-        self._update_abilities()
+        if self.gui:
+            self.add_default_abilities()
+            self._update_abilities()
 
     def _update_abilities(self):  # txt max length 17
 
