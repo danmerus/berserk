@@ -48,6 +48,8 @@ class OmegaPopup(DragBehavior, Popup):
         self.drag_timeout = 10000000
         self.drag_distance = 10
         self.drag_rectangle = [self.x, self.y, self.width, self.height]
+        self.title = ''
+        self.separator_height = 0
 
     def on_pos(self, *args):
         self.drag_rectangle = [self.x, self.y, self.width, self.height]
@@ -714,14 +716,13 @@ class BerserkApp(App):
         new_card.alive = True
 
     def create_selection_popup(self, text, button_texts, button_binds):
-        popup_ = OmegaPopup(title='Berserk renewal',
-                                       width=310, height=150, background_color=(1, 0, 0, 1),
+        popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
                                        overlay_color=(0, 0, 0, 0), size_hint=(None, None),
                                        auto_dismiss=False)
         rl = RelativeLayout(size=popup_.size, size_hint=(None, None))
         popup_.content = rl
         with rl.canvas:
-            l = Label(pos=(70, 20), size_hint=(None, None), text=text)
+            l = Label(pos=(70, 20), size_hint=(None, None), text=text, valign='top')
             self.garbage.append(l)
 
         for i, b_text in enumerate(button_texts):

@@ -19,7 +19,7 @@ class Library:
     def populate(self):
         all_cards = self.get_all_cards()
         for card in all_cards:
-            self.cards[card] = 3
+            self.cards[card] = 6
 
     def save(self):
         with open('user_decks/library.blib', 'wb') as f:
@@ -46,7 +46,7 @@ class Deck:
     def save_deck(self, cards, name):
         txt = ''
         for c in cards:
-            code = self.card_num_map[c.__class__.__name__]
+            code = self.card_num_map[c.__name__]
             txt += f'{code:x}!'
             with open('user_decks/'+name+'.bdck', 'w') as f:
                 f.write(txt)
@@ -58,7 +58,8 @@ class Deck:
         for x in data.split('!'):
             if x:
                 code = int(x, 16)
-                deck.append(self.card_num_map_reversed[code])
+                cls_ = globals()[self.card_num_map_reversed[code]]
+                deck.append(cls_)
         return deck
 
     def create_card_mappings(self):
@@ -84,6 +85,7 @@ for imp in imports:
 
 # l = Library()
 # l.populate()
+# l.save()
 # l.load()
 # print(l.get_cards())
 # print(l.cards)

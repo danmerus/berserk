@@ -77,6 +77,7 @@ class CardEffect(enum.Enum):
     OTRAVLEN = 6
     FLYER_MAGNET = 7
     NETTED = 8
+    ORDA = 9
 
 @enum.unique
 class Condition(enum.Enum):
