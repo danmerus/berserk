@@ -11,6 +11,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
+import deck_selection
 
 
 class MainField(Widget):
@@ -43,11 +44,12 @@ class DraggableRL(KXDraggableBehavior, KXDroppableBehavior, RelativeLayout):
 
 class SelectionApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, **kwargs):
+    def __init__(self, backend, window_size, hand, turn, mode, **kwargs):
         super(SelectionApp, self).__init__(**kwargs)
-        Window.size = window_size
-        if window_size == (1920, 1080):
-            Window.maximize()
+        self.window_size = window_size
+        Window.size = self.window_size
+        # if window_size == (1920, 1080):
+        #     Window.maximize()
         global CARD_X_SIZE, CARD_Y_SIZE, STACK_DURATION, TURN_DURATION, DZ_SIZE
         CARD_X_SIZE = (Window.width * 0.084375)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
@@ -59,6 +61,7 @@ class SelectionApp(App):
         self.hand = hand
         self.turn = turn
         self.title = 'Berserk Renewal'
+        self.mode = mode
 
     def display_marks(self, where_):
         for el in self.red_dots.values():
@@ -122,6 +125,8 @@ class SelectionApp(App):
                 if self.turn == 1:
                     card.loc = v
                 else:
+                    if self.convert_coord(v) in [5, 11, 17, 23, 29]:
+                        card.hidden = True
                     card.loc = self.convert_coord(v)
                 out.append(card)
             if self.turn == 1:
@@ -129,6 +134,12 @@ class SelectionApp(App):
             elif self.turn == 2:
                 self.backend.cards_on_board2 = out
             self.stop()
+            if self.mode == 'single1':
+                d = deck_selection.DeckSelectionApp(self.window_size, mode='single2', backend=self.backend)
+                d.run()
+            elif self.mode == 'single2':
+                self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
+                self.backend.gui.run()
 
     def build(self):
         root = MainField()

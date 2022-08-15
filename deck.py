@@ -62,6 +62,21 @@ class Deck:
                 deck.append(cls_)
         return deck
 
+    def import_deck(self, string_):
+        deck = []
+        if not string_:
+            return []
+        for x in string_.split('!'):
+            if x:
+                try:
+                    code = int(x, 16)
+                    cls_ = globals()[self.card_num_map_reversed[code]]
+                    deck.append(cls_)
+                except:
+                    pass
+        return deck
+
+
     def create_card_mappings(self):
         self.card_num_map = {}
         self.card_num_map_reversed = {}

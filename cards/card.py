@@ -44,6 +44,7 @@ class Card:
         self.exp_in_def = exp_in_def
         self.exp_in_off = exp_in_off
         self.alive = True
+        self.hidden = False
 
     def add_default_abilities(self):
         self.abilities = []

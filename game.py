@@ -30,7 +30,7 @@ class Game:
         self.cards_on_board1 = []
         self.cards_on_board2 = []
 
-    def set_cards(self, cards_on_board1, cards_on_board2, gui):
+    def set_cards(self, cards_on_board1, cards_on_board2, gui):  # todo remove gui arg
         for card in cards_on_board1:
             card.gui = gui
         for card in cards_on_board2:
@@ -94,23 +94,23 @@ class Game:
 
     def next_game_state(self, *args):
         if self.stack:
-            gui.process_stack()
+            self.gui.process_stack()
         self.passed_1 = False
         self.passed_2 = False
         self.passed_once = False
         next_state = self.curr_game_state.next_after_start()
         if next_state != GameStates.MAIN_PHASE:
-            gui.disable_all_non_instant_actions()
+            self.gui.disable_all_non_instant_actions()
         if next_state == GameStates.MAIN_PHASE:
             cb = self.board.get_all_cards_with_callback(Condition.START_MAIN_PHASE)
             for c, a in cb:
                 if c.player == self.current_active_player and a.check():
-                    gui.start_stack_action(a, c, c, 0)
-                    Clock.schedule_once(gui.process_stack)
+                    self.gui.start_stack_action(a, c, c, 0)
+                    Clock.schedule_once(self.gui.process_stack)
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
             self.on_step_start()
-            game.gui.check_all_passed(None)
+            self.gui.check_all_passed(None)
         else:
             self.curr_game_state = next_state
             self.on_step_start()
@@ -122,7 +122,7 @@ class Game:
             self.curr_priority = 2
         else:
             self.curr_priority = 1
-        gui.buttons_on_priority_switch()
+        self.gui.buttons_on_priority_switch()
 
     def switch_curr_active_player(self):
         if self.current_active_player == 1:
@@ -138,11 +138,11 @@ class Game:
         for card in self.board.get_all_cards():
             if card.player != self.current_active_player and CardEffect.NETTED in card.active_status:
                 card.active_status.remove(CardEffect.NETTED)
-                gui.add_defence_signs(card)
+                self.gui.add_defence_signs(card)
         #game.gui.on_new_turn()
 
     def on_start_opening_phase(self):
-        game.gui.on_new_turn()
+        self.gui.on_new_turn()
 
 
     def is_state_active(self, state):
@@ -185,21 +185,22 @@ if __name__ == '__main__':
     # selection = placement.SelectionApp(game, WINDOW_SIZE, cards2, 2)
     # selection.run()
     # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
-    cards1 = [Cobold_1(player=1, location=18, gui=gui),
-              Gnom_basaarg_1(player=1, location=13, gui=gui),
-              Lovets_dush_1(player=1, location=0, gui=gui),
-              Necromant_1(player=1, location=21, gui=gui),
-              Elfiyskiy_voin_1(player=1, location=27, gui=gui),
-              Gnom_basaarg_1(player=1, location=2, gui=gui),
-              Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
-              # Otshelnik_1(player=1, location=3, gui=gui),
-              Draks_1(player=1, location=5, gui=gui)]
+    cards1 = [Ovrajnii_gnom_1(player=1, location=18, gui=gui),]
+              # Ovrajnii_gnom_1(player=1, location=13, gui=gui),
+              # Lovets_dush_1(player=1, location=0, gui=gui),
+              # Necromant_1(player=1, location=21, gui=gui),
+              # Elfiyskiy_voin_1(player=1, location=27, gui=gui),
+              # Gnom_basaarg_1(player=1, location=2, gui=gui),
+              # Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
+              # # Otshelnik_1(player=1, location=3, gui=gui),
+              # Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
         PovelitelMolniy_1(player=2, location=14),
-             Gnom_basaarg_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
-              # Lovets_dush_1(player=2, location=12, gui=gui),
-              Ar_gull_1(player=2, location=15, gui=gui),
-              Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)]
+             # Gnom_basaarg_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
+             #  # Lovets_dush_1(player=2, location=12, gui=gui),
+             #  Ar_gull_1(player=2, location=15, gui=gui),
+             #  Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)
+            ]
     game.set_cards(cards1, cards2, gui)
 
     game.gui.run()

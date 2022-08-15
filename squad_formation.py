@@ -18,6 +18,7 @@ from cards.card import *
 import placement
 import os
 import copy
+import random
 from functools import partial
 
 
@@ -28,7 +29,7 @@ class MainField(Widget):
 
 class FormationApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, **kwargs):
+    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, mode, **kwargs):
         super(FormationApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
@@ -38,13 +39,14 @@ class FormationApp(App):
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
 
-
         self.backend = backend
         self.hand = hand
         self.hand = self.order_cost(hand)
+        self.mul_no = 0
         self.turn = turn
         self.title = 'Berserk Renewal'
         self.deck = deck
+        self.mode = mode
         if turn == 2:
             gold_cap += 1
             silver_cap += 1
@@ -162,8 +164,8 @@ class FormationApp(App):
             self.max_top += 1
             self.redraw_down()
 
-    def display_cards(self):
-        for i, card in enumerate(self.hand):
+    def display_cards(self, hand):
+        for i, card in enumerate(hand):
             x, y = self.card_position_coords_initial[i]
             rl1 = RelativeLayout(pos=(x, y), size=(CARD_X_SIZE, CARD_X_SIZE), size_hint=(None, None))
             btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.18), background_down=card.pic,
@@ -179,13 +181,28 @@ class FormationApp(App):
             self.max_top += 1
 
     def start_placement(self, *args):
-        self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn)
+        self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode)
         self.stop()
         self.selection.run()
 
+    def muligan(self, *args):
+        self.mul_no += 1
+        self.cards_up = []
+        self.cards_down = []
+        self.penalty = self.mul_no
+        self.max_top = 0
+        self.max_bottom = 0
+        self.gold_curr = self.gold_cap
+        self.silver_curr = self.silver_cap
+        for card in self.card_dict.keys():
+            self.layout.remove_widget(self.card_dict[card])
+        new_hand = random.sample(self.deck, 15)
+        self.hand = self.order_cost(new_hand)
+        self.display_cards(self.hand)
+        self.update_labels()
+
     def order_cost(self, cards):
         return sorted(cards, key=lambda x: (x.cost[1]+x.cost[0], x.cost[0]), reverse=True)
-
 
     def build(self):
         root = MainField()
@@ -269,28 +286,28 @@ class FormationApp(App):
         self.shuffle = Button(text="Сдать",
                                 pos=(Window.width * 0.85, Window.height * 0.14), background_color=(1, 0, 0, 1),
                                 size=(Window.width * 0.1, Window.height * 0.04), size_hint=(None, None))
-        # self.shuffle.bind(on_press=)
+        self.shuffle.bind(on_press=self.muligan)
         self.layout.add_widget(self.shuffle)
 
-        self.display_cards()
+        self.display_cards(self.hand)
 
         return root
 
-filedir = 'cards/set_1'
-modules = [f[:-3] for f in os.listdir(filedir) if
-           os.path.isfile(os.path.join(filedir, f)) and f.endswith('.py') and f != '__init__.py']
-imports = [f"from cards.set_1 import {module}\nfrom cards.set_1.{module} import *" for module in sorted(modules)]
-for imp in imports:
-    exec(imp)
-WINDOW_SIZE = (960, 540) #(1920, 1080) #
-STACK_DURATION = 5
-TURN_DURATION = 5
-game = Game()
-cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),
-          Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
-          Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
-gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
-deck=None
-game.gui = gui
-f = FormationApp(game, WINDOW_SIZE, cards1, 1, 24, 22, deck)
-f.run()
+# filedir = 'cards/set_1'
+# modules = [f[:-3] for f in os.listdir(filedir) if
+#            os.path.isfile(os.path.join(filedir, f)) and f.endswith('.py') and f != '__init__.py']
+# imports = [f"from cards.set_1 import {module}\nfrom cards.set_1.{module} import *" for module in sorted(modules)]
+# for imp in imports:
+#     exec(imp)
+# WINDOW_SIZE = (960, 540) #(1920, 1080) #
+# STACK_DURATION = 5
+# TURN_DURATION = 5
+# game = Game()
+# cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),
+#           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
+#           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
+# gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
+# deck=None
+# game.gui = gui
+# f = FormationApp(game, WINDOW_SIZE, cards1, 1, 24, 22, deck)
+# f.run()

@@ -52,23 +52,23 @@ class Ovrajnii_gnom_1(Card):
 
 
     def a2_cb(self, target):
-        a21 = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=2, range_min=1, range_max=1,
-                                   txt=f'2 урона', target=target,
-                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        a22 = SimpleCardAction(a_type=ActionTypes.TAP, damage=0, range_min=1, range_max=6,
-                             txt='Закрыть атакуемого', target=target,
-                             ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        a21_action = partial(self.a_action, a22, target, 0)
-        a22_action = partial(self.a_action, a21, target, 0)
-        pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
-                         a_type=ActionTypes.POPUP, txt='Закрыться?')
-        self.gui.perform_card_action(pp, self, self, 0)
-        # self.gui.backend.passed_1 = True
-        # self.gui.backend.passed_2 = True
+        if not target.tapped:
+            a21 = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=2, range_min=1, range_max=1,
+                                       txt=f'2 урона', target=target,
+                                       ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+            a22 = SimpleCardAction(a_type=ActionTypes.TAP, damage=0, range_min=1, range_max=6,
+                                 txt='Закрыть атакуемого', target=target,
+                                 ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+            a21_action = partial(self.a_action, a22, target, 0)
+            a22_action = partial(self.a_action, a21, target, 0)
+            pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
+                             a_type=ActionTypes.POPUP, txt='Закрыться?')
+            self.gui.perform_card_action(pp, self, self, 0)
+            # self.gui.backend.passed_1 = True
+            # self.gui.backend.passed_2 = True
 
     def a_action(self, a, target, state, *args):
         self.gui.timer_ability.unbind(on_complete=self.gui.press_1)
-        self.gui.timer_ability.unbind(on_complete=self.gui.restart_timer)
         self.gui.start_stack_action(a, self, target, state, force=1)
         self.gui.process_stack()
 

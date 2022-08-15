@@ -63,7 +63,7 @@ class OmegaPopup(DragBehavior, Popup):
 
 class BerserkApp(App):
 
-    def __init__(self, backend, window_size, stack_duration, turn_duration ):
+    def __init__(self, backend, window_size, stack_duration=30, turn_duration=60):
         super(BerserkApp, self).__init__()
         self.backend = backend
         Window.size = window_size
@@ -341,19 +341,19 @@ class BerserkApp(App):
     def check_game_end(self):
         cards = self.backend.board.get_all_cards()
         if not cards:
-            popup = Popup(title='Berserk renewal',
-                      content=Label(text='Ничья!'),
-                      size_hint=(None, None), size=(400, 400))
+            popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
+                      content=Label(text='Ничья!', font_size=Window.height*0.07), background_color=(1, 0, 0, 1),
+                      size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
             popup.open()
         elif len([c for c in cards if c.player == 1]) == 0:
-            popup = Popup(title='Berserk renewal',
-                          content=Label(text='Победа игрока 2!'),
-                          size_hint=(None, None), size=(400, 400))
+            popup = OmegaPopup(title='', separator_height=0,overlay_color=(0, 0, 0, 0),
+                          content=Label(text='Победа игрока 2!', font_size=Window.height*0.07),background_color=(1, 0, 0, 1),
+                          size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
             popup.open()
         elif len([c for c in cards if c.player == 2]) == 0:
-            popup = Popup(title='Berserk renewal',
-                          content=Label(text='Победа игрока 1!'),
-                          size_hint=(None, None), size=(400, 400))
+            popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
+                          content=Label(text='Победа игрока 1!', font_size=Window.height*0.07),background_color=(1, 0, 0, 1),
+                               size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
             popup.open()
 
     def handle_PRI_ATAKE(self, ability, card, victim, *args):
@@ -1216,6 +1216,15 @@ class BerserkApp(App):
             self.draw_card_overlay(card, 1)
             card.tapped = True
             self.able_selected(enable=False)
+            if card.player == self.backend.current_active_player:
+                end_turn = True
+                all_cards = self.backend.board.get_all_cards()
+                # for c in all_cards:
+                #     if not c.tapped and c.player == self.backend.current_active_player:
+                #         end_turn = False
+                # if end_turn:
+                #     print('there')
+                #     self.backend.next_game_state()
         else:
             ch.background_normal = card.pic
             ch.background_down = card.pic
@@ -1479,6 +1488,7 @@ class BerserkApp(App):
     def draw_card_overlay(self, *args):
         card = args[0]
         turned = args[1]  # 0 - initial, 1 - tapped, 2 - untapped
+        name = (card.name[:11] + '..') if len(card.name) > 11 else card.name
         if turned == 3:
             size_ = (CARD_X_SIZE-2, CARD_Y_SIZE * 0.16)
             lyy = self.base_overlays[card]
@@ -1493,7 +1503,6 @@ class BerserkApp(App):
                 rect = Rectangle(pos=(1, 0), background_color=c,
                                  size=size_,
                                  font_size=Window.height * 0.02)
-                name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
                 lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
                              size=size_,
                              font_size=Window.height * 0.02, )
@@ -1534,7 +1543,7 @@ class BerserkApp(App):
                     rect = Rectangle(pos=(1, 0), background_color=c,
                                  size=size_,
                                  font_size=Window.height * 0.02)
-                    name = (card.name[:12] + '..') if len(card.name) > 14 else card.name
+                    # name = (card.name[:12] + '..') if len(card.name) > 12 else card.name
                     lbl_ = Label(pos=(0, 0), text=f'{name}', color=c1,
                                  size=size_,
                                  font_size=Window.height * 0.02,)
@@ -1567,10 +1576,14 @@ class BerserkApp(App):
     def reveal_cards(self, cards):
         for card in cards:
             loc = card.loc
+            if card.hidden:
+                pic = 'data/cards/cardback.jpg'
+            else:
+                pic = card.pic
             if card.type_ == CreatureType.FLYER:
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
                 btn1 = Button(disabled=False,
-                              background_normal=card.pic, background_down=card.pic,
+                              background_normal=pic, background_down=pic,
                               pos=(0, CARD_Y_SIZE*0.16), border=(0,0,0,0),
                               size=(CARD_X_SIZE, CARD_Y_SIZE*0.84), size_hint=(None, None))
                 # update backend
@@ -1587,8 +1600,8 @@ class BerserkApp(App):
             else:
                 x, y = self.card_position_coords[loc]
                 rl1 = RelativeLayout(pos=(x, y))
-                btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.16), background_down=card.pic,
-                          background_normal=card.pic, size=(CARD_X_SIZE, CARD_Y_SIZE*0.84),  border=(0,0,0,0),
+                btn1 = Button(disabled=False,  pos=(0, CARD_Y_SIZE*0.16), background_down=pic,
+                          background_normal=pic, size=(CARD_X_SIZE, CARD_Y_SIZE*0.84),  border=(0,0,0,0),
                           size_hint=(None, None))
 
             btn1.bind(on_press=partial(self.on_click_on_card, card))
@@ -1715,7 +1728,7 @@ class BerserkApp(App):
         except ZeroDivisionError:
             minutes = 0
             rem_m = 0
-        total_min = duration//60
+        total_min = (duration-1)//60
         self.curr_timer_left = duration - completion_ratio*duration
         seconds = completion_ratio * duration - minutes * 60
         # Weired bar behaviour for low width values

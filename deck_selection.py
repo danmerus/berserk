@@ -22,12 +22,14 @@ from game import Game
 import berserk_gui
 from game_properties import GameStates
 from cards.card import *
-import placement
 import os
 import copy
 import re
+import random
 from functools import partial
-from deck import *
+import deck
+import main_menu
+import squad_formation
 
 class MainField(Widget):
     def __init__(self, **kwargs):
@@ -35,17 +37,17 @@ class MainField(Widget):
 
 class DeckSelectionApp(App):
 
-    def __init__(self, window_size, mode='building', **kwargs):
+    def __init__(self, window_size, mode='building', backend=None, **kwargs):
         super(DeckSelectionApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
-        global CARD_X_SIZE, CARD_Y_SIZE, STACK_DURATION, TURN_DURATION, DZ_SIZE
+        global CARD_X_SIZE, CARD_Y_SIZE
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
         self.title = 'Berserk Renewal'
-        l = Library()
+        l = deck.Library()
         l.load()
         self.all_cards = []
         self.card_count_down_dict = defaultdict(int)
@@ -53,8 +55,9 @@ class DeckSelectionApp(App):
         vals = l.get_cards()
         self.all_cards = vals
         self.reset_dicts()
-        self.deck_obj = Deck()
+        self.deck_obj = deck.Deck()
         self.mode = mode
+        self.backend = backend
 
     def reset_dicts(self):
         for card, count in self.all_cards :
@@ -212,21 +215,24 @@ class DeckSelectionApp(App):
                     self.draw_card_count(rl1, inst, up=False)
             self.deck_lbl.text = f'Ваша дека, {len(deck_)} карт'
 
-    def activate_save(self, save=True, *args):
+    def activate_input(self, mode='save', *args):
         self.tinput.opacity = 1
         self.tinput.disabled = False
         self.tinput.focus = True
         self.tinput.select_all()
         self.okbtn.opacity = 1
         self.okbtn.disabled = False
-        if save:
+        if mode=='save':
             self.tinput.text = 'Название деки'
             self.okbtn.bind(on_release=self.bindok)
-        else:
-            self.okbtn.bind(on_release=self.deactivate_save)
-        Window.bind(on_key_down=self.save_deck_enter)
+            Window.bind(on_key_down=self.save_deck_enter)
+        elif mode=='import':
+            self.okbtn.bind(on_release=self.import_deck_helper)
+            Window.bind(on_key_down=self.import_deck_enter)
+        elif mode=='show':
+            self.okbtn.bind(on_release=self.deactivate_input)
 
-    def deactivate_save(self, *args):
+    def deactivate_input(self, *args):
         self.tinput.opacity = 0
         self.tinput.disabled = True
         self.tinput.focus = False
@@ -234,8 +240,11 @@ class DeckSelectionApp(App):
         self.okbtn.disabled = True
         try:
             self.okbtn.unbind(on_release=self.bindok)
+            self.okbtn.unbind(on_release=self.import_deck_helper)
+            Window.unbind(on_key_down=self.import_deck_enter)
+            Window.unbind(on_key_down=self.save_deck_enter)
         except:
-            print('rttt')
+            pass
         Window.unbind(on_key_down=self.save_deck_enter)
 
     def deck_check(self, cards):
@@ -274,12 +283,12 @@ class DeckSelectionApp(App):
         if chk and deck_name:
             self.deck_obj.save_deck(cards=cards, name=deck_name)
             self.tinput.text = ''
-            self.deactivate_save()
+            self.deactivate_input()
             self.filechoser._update_files()
         elif text:
             self.tinput.text = ''
-            self.deactivate_save()
-            p = Popup(title='Berserk renewal',
+            self.deactivate_input()
+            p = Popup(title='', separator_height=0,
                     content=Label(text=text), background_color=(1, 0, 0, 1),
                     size_hint=(None, None), size=(Window.width/3, Window.height/3))
             p.open()
@@ -316,16 +325,91 @@ class DeckSelectionApp(App):
         if keycode == 40:
             self.save_deck()
 
+    def import_deck_enter(self, instance, keyboard, keycode, text, modifiers):
+        if keycode == 40:
+            self.import_deck_helper()
+
     def show_export(self, *args):
         if self.filechoser.selection:
             try:
                 with open(self.filechoser.selection[0], 'r') as f:
                     text = f.read()
-                    self.activate_save(False)
+                    self.activate_input(mode='show')
                     self.tinput.text = text
                     self.tinput.select_all()
             except Exception as e:
                 print(e)
+
+    def import_deck(self, *args):
+        self.tinput.text = ''
+        self.activate_input(mode='import')
+
+    def import_deck_helper(self, *args):
+        if self.tinput.text:
+            deck_ = self.deck_obj.import_deck(self.tinput.text)
+            self.reset_dicts()
+            self.gl2.clear_widgets()
+            for c in deck_:
+                self.card_count_down_dict[c] += 1
+                self.card_count_up_dict[c] -= 1
+            for k, v in self.cards_up_dict.items():
+                self.draw_card_count(v, k())
+            for cardcls, count in self.card_count_down_dict.items():
+                if count > 0:
+                    inst = cardcls()
+                    rl1 = self.create_card_widget(inst)
+                    self.base_overlays[rl1] = RelativeLayout()
+                    rl1.add_widget(self.base_overlays[rl1])
+                    self.draw_card_overlay(rl1, inst)
+                    self.cards_down.append(rl1)
+                    self.gl2.add_widget(rl1)
+                    self.cards_down_dict[cardcls] = rl1
+                    self.draw_card_count(rl1, inst, up=False)
+            self.deck_lbl.text = f'Ваша дека, {len(deck_)} карт'
+            self.tinput.text = ''
+            self.deactivate_input()
+
+    def on_new(self, *args):
+        self.reset_dicts()
+        self.gl2.clear_widgets()
+        self.deck_lbl.text = f'Ваша дека, {sum(self.card_count_down_dict.values())} карт'
+
+    def exit_to_menu(self, *args):
+        self.stop()
+        m = main_menu.MainMenuApp(self.window_size)
+        m.run()
+
+    def propagate_to_squad_formation(self, *args):
+        cards = []
+        for key, vals in self.card_count_down_dict.items():
+            cards.extend([key for x in range(vals)])
+        chk, text = self.deck_check(cards)
+        if chk:
+            if not hasattr(self, 'backend'):
+                game = Game()
+                game.gui = berserk_gui.BerserkApp(game, self.window_size)
+                self.backend = game
+            elif not self.backend:
+                game = Game()
+                game.gui = berserk_gui.BerserkApp(game, self.window_size)
+                self.backend = game
+            if self.mode == 'single1':
+                deck = [x(gui=self.backend.gui) for x in cards]
+                hand = random.sample(deck, 15)
+                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=1, gold_cap=24, silver_cap=22,
+                                                 deck=deck, mode=self.mode)
+                f.run()
+            elif self.mode == 'single2':
+                deck = [x(gui=self.backend.gui) for x in cards]
+                hand = random.sample(deck, 15)
+                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=2, gold_cap=24, silver_cap=22,
+                                                 deck=deck, mode=self.mode)
+                f.run()
+        elif text:
+            p = Popup(title='', separator_height=0,
+                    content=Label(text=text), background_color=(1, 0, 0, 1),
+                    size_hint=(None, None), size=(Window.width/3, Window.height/3))
+            p.open()
 
     def on_entry_added_(self, *args):
         if (args[1].path)==os.getcwd():
@@ -408,22 +492,24 @@ class DeckSelectionApp(App):
         self.filechoser.filters = ['*.bdck']
         self.filechoser.path = './user_decks'
 
-        btn2 = Button(text='Загрузить', pos=(Window.width * 0.81, Window.height * 0.51), background_color=(1, 0, 0, 1),
+        btn2 = Button(text='Загрузить', pos=(Window.width * 0.81, Window.height * 0.51), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                                 size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn2.bind(on_release=partial(self.open_deck, self.filechoser.path, self.filechoser.selection))
-        btn3 = Button(text='Сохранить', pos=(Window.width * 0.9, Window.height * 0.51), background_color=(1, 0, 0, 1),
+        btn3 = Button(text='Сохранить', pos=(Window.width * 0.9, Window.height * 0.51), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
-        btn3.bind(on_release=partial(self.activate_save, True))
-        btn5 = Button(text='Удалить', pos=(Window.width * 0.81, Window.height * 0.41), background_color=(1, 0, 0, 1),
+        btn3.bind(on_release=partial(self.activate_input, 'save'))
+        btn5 = Button(text='Удалить', pos=(Window.width * 0.81, Window.height * 0.41), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn5.bind(on_release=partial(self.del_deck))
-        btn6 = Button(text='Экспорт', pos=(Window.width * 0.9, Window.height * 0.46), background_color=(1, 0, 0, 1),
+        btn6 = Button(text='Экспорт', pos=(Window.width * 0.9, Window.height * 0.46), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
-        btn7 = Button(text='Импорт', pos=(Window.width * 0.81, Window.height * 0.46), background_color=(1, 0, 0, 1),
+        btn7 = Button(text='Импорт', pos=(Window.width * 0.81, Window.height * 0.46), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
-        btn8 = Button(text='Новая', pos=(Window.width * 0.9, Window.height * 0.41), background_color=(1, 0, 0, 1),
+        btn8 = Button(text='Новая', pos=(Window.width * 0.9, Window.height * 0.41), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn6.bind(on_release=partial(self.show_export))
+        btn7.bind(on_release=partial(self.import_deck))
+        btn8.bind(on_release=partial(self.on_new))
         self.layout.add_widget(self.filechoser)
         self.layout.add_widget(btn2)
         self.layout.add_widget(btn3)
@@ -445,14 +531,19 @@ class DeckSelectionApp(App):
             self.ready_btn = Button(text="В меню",
                                     pos=(Window.width * 0.83, Window.height * 0.18), background_color=(1, 0, 0, 1),
                                     size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
-
+            self.ready_btn.bind(on_release=self.exit_to_menu)
             self.layout.add_widget(self.ready_btn)
-
+        if self.mode == 'single1' or self.mode == 'single2':
+            self.ready_btn = Button(text="Далее",
+                                    pos=(Window.width * 0.83, Window.height * 0.18), background_color=(1, 0, 0, 1),
+                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
+            self.ready_btn.bind(on_release=self.propagate_to_squad_formation)
+            self.layout.add_widget(self.ready_btn)
         root.add_widget(self.layout)
         self.display_cards()
         return root
 
-
-WINDOW_SIZE = (960, 540) #(1920, 1080)
-f = DeckSelectionApp(WINDOW_SIZE)
-f.run()
+# if __name__ == '__main__':
+#     WINDOW_SIZE = (960, 540) #(1920, 1080)
+#     f = DeckSelectionApp(WINDOW_SIZE)
+#     f.run()
