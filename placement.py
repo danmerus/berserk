@@ -135,9 +135,11 @@ class SelectionApp(App):
                 self.backend.cards_on_board2 = out
             self.stop()
             if self.mode == 'single1':
+                self.stop()
                 d = deck_selection.DeckSelectionApp(self.window_size, mode='single2', backend=self.backend)
                 d.run()
             elif self.mode == 'single2':
+                self.stop()
                 self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
                 self.backend.gui.run()
 

@@ -186,6 +186,13 @@ class BerserkApp(App):
             self.pereraspredelenie_label_dict[card] += 1
             self.garbage_dict[card].text = str(self.pereraspredelenie_label_dict[card])
 
+    def unhide(self, card):
+        if hasattr(card, 'hidden') and card.hidden:
+            card.hidden = False
+            rl = self.cards_dict[card]
+            self.layout.remove_widget(rl)
+            self.reveal_cards([card])
+
     def remove_pereraspredelenie_ran(self):
         all_cards = self.backend.board.get_all_cards()
         try:
@@ -422,7 +429,7 @@ class BerserkApp(App):
         Clock.schedule_once(partial(self.destroy_x, self.die_pics), 2)
 
     def get_pos(self, card):
-        if card.type_ == CreatureType.CREATURE and card.alive:
+        if card.type_ == CreatureType.CREATURE and card.alive or card.hidden:
             return self.cards_dict[card].pos
         elif not card.alive:
             if card.player == 1:
@@ -1082,8 +1089,13 @@ class BerserkApp(App):
             return
         if len(args) == 4 and not isinstance(args[0], tuple):
             ability, card, victim, stage = args
+            self.unhide(card)
+            self.unhide(victim)
         elif isinstance(args, tuple):
-            a, c, v, stage = args[0]
+            ability, card, victim, stage = args[0]
+            for a, c, v, s in args:
+                self.unhide(c)
+                self.unhide(v)
         if stage == 0:
             self.perform_card_action_0(args)
         elif stage == 1:
@@ -1578,6 +1590,15 @@ class BerserkApp(App):
             loc = card.loc
             if card.hidden:
                 pic = 'data/cards/cardback.jpg'
+                x, y = self.card_position_coords[loc]
+                rl1 = RelativeLayout(pos=(x, y))
+                btn1 = Button(disabled=False, pos=(0, 0), background_down=pic,
+                              background_normal=pic, size=(CARD_X_SIZE, CARD_Y_SIZE), border=(0, 0, 0, 0),
+                              size_hint=(None, None))
+                rl1.add_widget(btn1)
+                self.layout.add_widget(rl1)
+                self.cards_dict[card] = rl1
+                continue
             else:
                 pic = card.pic
             if card.type_ == CreatureType.FLYER:
@@ -1612,10 +1633,10 @@ class BerserkApp(App):
                 # Life
                 Color(0, 0.3, 0.1)
                 Rectangle(size=(CARD_X_SIZE*0.33, CARD_Y_SIZE*0.15), color=(1,1,1,0.3),
-                          pos=(0, CARD_Y_SIZE*0.85)) #pos_hint={'x':0, 'y':0.8}
+                          pos=(1, CARD_Y_SIZE*0.85)) #pos_hint={'x':0, 'y':0.8}
                 Color(1, 1, 1)
-                Line(width=0.5, color=(1,1,1,0), rectangle=(0,CARD_Y_SIZE*0.85, CARD_X_SIZE*0.33, CARD_Y_SIZE*0.15))
-                lbl = Label(pos=(0, CARD_Y_SIZE*0.85), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.15),
+                Line(width=0.5, color=(1,1,1,0), rectangle=(1, CARD_Y_SIZE*0.85, CARD_X_SIZE*0.33, CARD_Y_SIZE*0.15))
+                lbl = Label(pos=(3, CARD_Y_SIZE*0.85), text=f'{card.life}/{card.life}', color=(1, 1, 1, 1), size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.15),
                    font_size=Window.height*0.02, valign='top')
                 self.hp_label_dict[card] = lbl
                 # Movement

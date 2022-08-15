@@ -181,9 +181,10 @@ class FormationApp(App):
             self.max_top += 1
 
     def start_placement(self, *args):
-        self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode)
-        self.stop()
-        self.selection.run()
+        if self.cards_down:
+            self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode)
+            self.stop()
+            self.selection.run()
 
     def muligan(self, *args):
         self.mul_no += 1
@@ -279,12 +280,12 @@ class FormationApp(App):
         root.add_widget(self.layout)
 
         self.ready_btn = Button(text="Готов",
-                                pos=(Window.width * 0.85, Window.height * 0.18), background_color=(1, 0, 0, 1),
+                                pos=(Window.width * 0.85, Window.height * 0.13), background_color=(1, 0, 0, 1),
                                 size=(Window.width * 0.1, Window.height * 0.04), size_hint=(None, None))
         self.layout.add_widget(self.ready_btn)
         self.ready_btn.bind(on_press=self.start_placement)
         self.shuffle = Button(text="Сдать",
-                                pos=(Window.width * 0.85, Window.height * 0.14), background_color=(1, 0, 0, 1),
+                                pos=(Window.width * 0.85, Window.height * 0.18), background_color=(1, 0, 0, 1),
                                 size=(Window.width * 0.1, Window.height * 0.04), size_hint=(None, None))
         self.shuffle.bind(on_press=self.muligan)
         self.layout.add_widget(self.shuffle)

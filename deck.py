@@ -22,12 +22,18 @@ class Library:
             self.cards[card] = 6
 
     def save(self):
-        with open('user_decks/library.blib', 'wb') as f:
-            pickle.dump(self.cards, f)
+        try:
+            with open('user_decks/library.blib', 'wb') as f:
+                pickle.dump(self.cards, f)
+        except:
+            pass
 
     def load(self):
-        with open('user_decks/library.blib', 'rb') as f:
-            self.cards = pickle.load(f)
+        try:
+            with open('user_decks/library.blib', 'rb') as f:
+                self.cards = pickle.load(f)
+        except:
+            pass
 
     def get_cards(self):
         out = []
@@ -48,18 +54,24 @@ class Deck:
         for c in cards:
             code = self.card_num_map[c.__name__]
             txt += f'{code:x}!'
+        try:
             with open('user_decks/'+name+'.bdck', 'w') as f:
                 f.write(txt)
+        except:
+            pass
 
     def load_deck(self, path):
         deck = []
-        with open(path) as f:
-            data = f.read()
-        for x in data.split('!'):
-            if x:
-                code = int(x, 16)
-                cls_ = globals()[self.card_num_map_reversed[code]]
-                deck.append(cls_)
+        try:
+            with open(path) as f:
+                data = f.read()
+            for x in data.split('!'):
+                if x:
+                    code = int(x, 16)
+                    cls_ = globals()[self.card_num_map_reversed[code]]
+                    deck.append(cls_)
+        except:
+            pass
         return deck
 
     def import_deck(self, string_):

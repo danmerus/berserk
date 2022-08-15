@@ -68,10 +68,8 @@ class MainMenuApp(App):
         super(MainMenuApp, self).__init__()
         self.window_size = window_size
         Window.size = self.window_size
-        if window_size == (1920, 1080):
-            Window.maximize()
-        # Window.left = (Window.width - self.window_size[0]) / 2
-        # Window.top = (Window.height - self.window_size[1]) / 2
+        # if window_size == (1920, 1080):
+        #     Window.maximize()
         global CARD_X_SIZE, CARD_Y_SIZE, STACK_DURATION, TURN_DURATION, DZ_SIZE
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
@@ -100,8 +98,8 @@ class MainMenuApp(App):
         p.open()
 
     def start_for_single(self, *args):
-        d = deck_selection.DeckSelectionApp(self.window_size, mode='single1')
         self.stop()
+        d = deck_selection.DeckSelectionApp(self.window_size, mode='single1')
         d.run()
 
     def new_net_game_bind(self, *args):
@@ -233,7 +231,7 @@ class MainMenuApp(App):
 #           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1()]
 # gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
 # game.gui = gui
-WINDOW_SIZE = (960, 540) #(1920, 1080) #
 if __name__ == '__main__':
+    WINDOW_SIZE = (960, 540)  # (1920, 1080) #
     m = MainMenuApp(WINDOW_SIZE)
     m.run()

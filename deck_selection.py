@@ -396,12 +396,14 @@ class DeckSelectionApp(App):
             if self.mode == 'single1':
                 deck = [x(gui=self.backend.gui) for x in cards]
                 hand = random.sample(deck, 15)
+                self.stop()
                 f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=1, gold_cap=24, silver_cap=22,
                                                  deck=deck, mode=self.mode)
                 f.run()
             elif self.mode == 'single2':
                 deck = [x(gui=self.backend.gui) for x in cards]
                 hand = random.sample(deck, 15)
+                self.stop()
                 f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=2, gold_cap=24, silver_cap=22,
                                                  deck=deck, mode=self.mode)
                 f.run()
@@ -535,8 +537,8 @@ class DeckSelectionApp(App):
             self.layout.add_widget(self.ready_btn)
         if self.mode == 'single1' or self.mode == 'single2':
             self.ready_btn = Button(text="Далее",
-                                    pos=(Window.width * 0.83, Window.height * 0.18), background_color=(1, 0, 0, 1),
-                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
+                                    pos=(Window.width * 0.81, Window.height * 0.03), background_color=(1, 0, 0, 1),
+                                    size=(Window.width * 0.18, Window.height * 0.05), size_hint=(None, None))
             self.ready_btn.bind(on_release=self.propagate_to_squad_formation)
             self.layout.add_widget(self.ready_btn)
         root.add_widget(self.layout)
