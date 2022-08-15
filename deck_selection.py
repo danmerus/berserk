@@ -35,7 +35,7 @@ class MainField(Widget):
 
 class DeckSelectionApp(App):
 
-    def __init__(self, window_size, **kwargs):
+    def __init__(self, window_size, mode='building', **kwargs):
         super(DeckSelectionApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
@@ -54,6 +54,7 @@ class DeckSelectionApp(App):
         self.all_cards = vals
         self.reset_dicts()
         self.deck_obj = Deck()
+        self.mode = mode
 
     def reset_dicts(self):
         for card, count in self.all_cards :
@@ -401,7 +402,7 @@ class DeckSelectionApp(App):
         self.filechoser.bind(on_submit=partial(self.open_deck, self.filechoser.path, self.filechoser.selection))
         with root.canvas:
             Color(0, 0, 0, 0.4)
-            self.background_rect = Rectangle(size=(Window.width*0.2, Window.height*0.6),  pos=(Window.width*0.8025, Window.height*0.45))
+            self.background_rect = Rectangle(size=(Window.width*0.2, Window.height*0.65),  pos=(Window.width*0.8025, Window.height*0.4))
 
         self.filechoser.bind(on_entry_added=self.on_entry_added_)
         self.filechoser.filters = ['*.bdck']
@@ -413,10 +414,14 @@ class DeckSelectionApp(App):
         btn3 = Button(text='Сохранить', pos=(Window.width * 0.9, Window.height * 0.51), background_color=(1, 0, 0, 1),
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn3.bind(on_release=partial(self.activate_save, True))
-        btn5 = Button(text='Удалить', pos=(Window.width * 0.81, Window.height * 0.46), background_color=(1, 0, 0, 1),
+        btn5 = Button(text='Удалить', pos=(Window.width * 0.81, Window.height * 0.41), background_color=(1, 0, 0, 1),
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn5.bind(on_release=partial(self.del_deck))
         btn6 = Button(text='Экспорт', pos=(Window.width * 0.9, Window.height * 0.46), background_color=(1, 0, 0, 1),
+                      size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
+        btn7 = Button(text='Импорт', pos=(Window.width * 0.81, Window.height * 0.46), background_color=(1, 0, 0, 1),
+                      size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
+        btn8 = Button(text='Новая', pos=(Window.width * 0.9, Window.height * 0.41), background_color=(1, 0, 0, 1),
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         btn6.bind(on_release=partial(self.show_export))
         self.layout.add_widget(self.filechoser)
@@ -424,15 +429,24 @@ class DeckSelectionApp(App):
         self.layout.add_widget(btn3)
         self.layout.add_widget(btn5)
         self.layout.add_widget(btn6)
+        self.layout.add_widget(btn7)
+        self.layout.add_widget(btn8)
 
         self.tinput = TextInput(text='Название деки', size=(Window.width * 0.18, Window.height * 0.05), font_size=Window.height*0.024,
                                 multiline=False,
-                                pos=(Window.width * 0.81, Window.height * 0.39), size_hint=(None, None), opacity=0, disabled=True)
+                                pos=(Window.width * 0.81, Window.height * 0.35), size_hint=(None, None), opacity=0, disabled=True)
         self.layout.add_widget(self.tinput)
-        self.okbtn = Button(text='Ок', pos=(Window.width * 0.81, Window.height * 0.34), background_color=(1, 0, 0, 1),
+        self.okbtn = Button(text='Ок', pos=(Window.width * 0.81, Window.height * 0.31), background_color=(1, 0, 0, 1),
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None), opacity=0, disabled=True)
         self.bindok = partial(self.save_deck, self.filechoser.path, self.filechoser.selection)
         self.layout.add_widget(self.okbtn)
+
+        if self.mode == 'building':
+            self.ready_btn = Button(text="В меню",
+                                    pos=(Window.width * 0.83, Window.height * 0.18), background_color=(1, 0, 0, 1),
+                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
+
+            self.layout.add_widget(self.ready_btn)
 
         root.add_widget(self.layout)
         self.display_cards()
