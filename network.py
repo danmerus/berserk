@@ -32,5 +32,14 @@ def start_waiting(host, port, *args):
         print(e)
     return res
 
+def client_left(host, port, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'client_left')
+    except Exception as e:
+        print(e)
+    return res
 
 

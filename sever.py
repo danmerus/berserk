@@ -8,13 +8,18 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # self.request is the TCP socket connected to the client
-        self.data = self.request.recv(1024).strip()
+        self.data = self.request.recv(8192).strip()
         print(self.data)
         if self.data.decode().startswith('get_waiting_clients'):
             clients_b = pickle.dumps(self.server.clients)
             self.request.sendall(clients_b)
         elif self.data.decode().startswith('start_waiting'):
-            self.server.clients.append(self.client_address)
+            if not self.client_address[0] in self.server.clients:
+                self.server.clients.append(self.client_address[0])
+        elif self.data.decode().startswith('client_left'):
+            print('here', self.server.clients, self.client_address)
+            self.server.clients.remove(self.client_address[0])
+
 
 class MainServer:
 

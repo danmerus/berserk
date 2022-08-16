@@ -167,11 +167,14 @@ class MainMenuApp(App):
             print(players)
             self.gl.clear_widgets()
             for player in players:
-                btn1 = Button(text=str(player[0]), disabled=False, opacity=1,
+                btn1 = Button(text=str(player), disabled=False, opacity=1,
                               pos=(0, 0), size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
                 self.gl.add_widget(btn1)
         except Exception as e:
             print(e)
+
+    def on_request_close(self, *args):
+        network.client_left(self.host, self.port)
 
 
     def settings_bind(self, *args):
@@ -223,6 +226,7 @@ class MainMenuApp(App):
 
     def build(self):
         root = MainField()
+        Window.bind(on_request_close=self.on_request_close)
         self.all_buttons = []
         self.layout = FloatLayout(size=(Window.width, Window.height))
         self.future_res = self.window_size
