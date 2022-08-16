@@ -190,6 +190,10 @@ class BerserkApp(App):
         if hasattr(card, 'hidden') and card.hidden:
             card.hidden = False
             rl = self.cards_dict[card]
+            try:
+                del self.base_overlays[card]
+            except:
+                pass
             self.layout.remove_widget(rl)
             self.reveal_cards([card])
 
@@ -1228,9 +1232,9 @@ class BerserkApp(App):
             self.draw_card_overlay(card, 1)
             card.tapped = True
             self.able_selected(enable=False)
-            if card.player == self.backend.current_active_player:
-                end_turn = True
-                all_cards = self.backend.board.get_all_cards()
+            # if card.player == self.backend.current_active_player:
+            #     end_turn = True
+            #     all_cards = self.backend.board.get_all_cards()
                 # for c in all_cards:
                 #     if not c.tapped and c.player == self.backend.current_active_player:
                 #         end_turn = False
@@ -1588,19 +1592,21 @@ class BerserkApp(App):
     def reveal_cards(self, cards):
         for card in cards:
             loc = card.loc
-            if card.hidden:
-                pic = 'data/cards/cardback.jpg'
-                x, y = self.card_position_coords[loc]
-                rl1 = RelativeLayout(pos=(x, y))
-                btn1 = Button(disabled=False, pos=(0, 0), background_down=pic,
-                              background_normal=pic, size=(CARD_X_SIZE, CARD_Y_SIZE), border=(0, 0, 0, 0),
-                              size_hint=(None, None))
-                rl1.add_widget(btn1)
-                self.layout.add_widget(rl1)
-                self.cards_dict[card] = rl1
-                continue
-            else:
-                pic = card.pic
+            # if card.hidden:
+            #     pic = 'data/cards/cardback.jpg'
+            #     x, y = self.card_position_coords[loc]
+            #     rl1 = RelativeLayout(pos=(x, y))
+            #     btn1 = Button(disabled=False, pos=(0, 0), background_down=pic,
+            #                   background_normal=pic, size=(CARD_X_SIZE, CARD_Y_SIZE), border=(0, 0, 0, 0),
+            #                   size_hint=(None, None))
+            #     rl1.add_widget(btn1)
+            #     self.layout.add_widget(rl1)
+            #     self.cards_dict[card] = rl1
+            #     self.base_overlays[card] = RelativeLayout()
+            #     btn1.bind(on_press=partial(self.on_click_on_card, card))
+            #     continue
+            # else:
+            pic = card.pic
             if card.type_ == CreatureType.FLYER:
                 rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
                 btn1 = Button(disabled=False,

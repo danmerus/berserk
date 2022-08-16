@@ -109,15 +109,25 @@ class FormationApp(App):
             curr_cols = set([x.color for x in self.cards_down if x.color != CardColor.NEUTRAL])
             if card.color != CardColor.NEUTRAL and card.color not in curr_cols and len(curr_cols) > 0:
                 self.penalty += 1
-            self.gold_curr -= card.cost[0]
-            self.silver_curr -= card.cost[1]
+            if card.cost[1] > 0 and (self.silver_curr - card.cost[1]) < 0 and self.gold_curr > 0:
+                self.gold_curr -= (card.cost[0] + card.cost[1] - self.silver_curr)
+                self.silver_curr = 0
+            else:
+                self.gold_curr -= card.cost[0]
+                self.silver_curr -= card.cost[1]
         elif dir_ == 'up':
             new_down = self.cards_down.copy()
             new_down.remove(card)
             curr_cols = set([x.color for x in new_down if x.color != CardColor.NEUTRAL])
-            self.penalty = len(curr_cols)-1
+            self.penalty = max(self.mul_no, len(curr_cols)-1+self.mul_no)  # 0, 1 colors -> penalty = 0
             self.gold_curr += card.cost[0]
-            self.silver_curr += card.cost[1]
+            if self.silver_curr + card.cost[1] > self.silver_cap:
+                delta = card.cost[1] - (self.silver_cap - self.silver_curr)
+                print(delta)
+                self.gold_curr += delta
+                self.silver_curr = self.silver_cap
+            else:
+                self.silver_curr += card.cost[1]
 
     def check(self, card):
         if card.is_unique:
@@ -130,7 +140,10 @@ class FormationApp(App):
         if card.color != CardColor.NEUTRAL and card.color not in curr_cols:
             temp_penalty += 1
 
-        return all([(self.gold_curr-card.cost[0]-temp_penalty) >= 0, (self.silver_curr-card.cost[1]) >= 0,
+        if card.cost[1] > 0 and (self.silver_curr-card.cost[1]) < 0 and self.gold_curr > 0:
+            return (self.gold_curr-card.cost[0]-temp_penalty) + (self.silver_curr-card.cost[1]) >= 0
+        else:
+            return all([(self.gold_curr-card.cost[0]-temp_penalty) >= 0, (self.silver_curr-card.cost[1]) >= 0,
                   ])
 
     def update_labels(self):

@@ -1,34 +1,17 @@
-import kivy
-
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.lang import Builder
-
-import os
-
-Builder.load_string("""
-<MyWidget>:
-    id: my_widget
-    Button
-        text: "open"
-        on_release: my_widget.open(filechooser.path, filechooser.selection)
-    FileChooserListView:
-        id: filechooser
-        on_selection: my_widget.selected(filechooser.selection)
-""")
-
-class MyWidget(BoxLayout):
-    def open(self, path, filename):
-        with open(os.path.join(path, filename[0])) as f:
-            print(f.read())
-
-    def selected(self, filename):
-        print("selected: %s" % filename[0])
+import time
+import threading
 
 
-class MyApp(App):
-    def build(self):
-        return MyWidget()
+class BaseThread(threading.Thread):
+    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
+        target = kwargs.pop('target')
+        super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
+        self.callback = callback
+        self.method = target
+        self.callback_args = callback_args
 
-if __name__ == '__main__':
-    MyApp().run()
+    def target_with_callback(self):
+        self.method()
+        if self.callback is not None:
+            self.callback(*self.callback_args)
+

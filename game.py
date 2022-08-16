@@ -197,8 +197,9 @@ if __name__ == '__main__':
               # # Otshelnik_1(player=1, location=3, gui=gui),
               # Draks_1(player=1, location=5, gui=gui)]
     cards2 = [
-        Draks_1(player=2, location=14),
-             # Gnom_basaarg_1(player=2, location=20, gui=gui),Bjorn_1(player=2, location=19, gui=gui),
+        Otshelnik_1(player=2, location=14),
+                Gnom_basaarg_1(player=2, location=20, gui=gui),
+             #  Bjorn_1(player=2, location=19, gui=gui),
              #  # Lovets_dush_1(player=2, location=12, gui=gui),
              #  Ar_gull_1(player=2, location=15, gui=gui),
              #  Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)

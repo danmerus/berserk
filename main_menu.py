@@ -1,4 +1,5 @@
 import sys
+
 """
 returns Monitor size x and y in pixels for desktop platforms, or None for
 mobile platforms
@@ -40,6 +41,9 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy.utils import get_color_from_hex
@@ -47,14 +51,18 @@ from kivy.clock import Clock
 from kivy.uix.dropdown import DropDown
 from kivy.lang import Builder
 import placement
+from concurrent import futures
+from multiprocessing import Pool
 import os
 import copy
+import threading
 from functools import partial
 import deck_selection
 from game_properties import GameStates
 from cards.card import *
 from game import Game
 import berserk_gui
+import network
 
 SUPPORTED_RESOLUTIONS = [(1920, 1080), (1536, 864), (1440, 900), (1366, 768), (960, 540)]
 
@@ -88,6 +96,7 @@ class MainMenuApp(App):
                     y=Window.height * 0.06, font_size=Window.height*0.03)
         rl.add_widget(lbl)
         btn1 = Button(text='Ок', pos=(Window.width * 0.22, Window.height * 0.01), background_color=(1, 0, 0, 1),
+                      font_size=Window.height * 0.03,
                       size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))
         rl.add_widget(btn1)
         p = Popup(title='', separator_height=0,
@@ -103,7 +112,67 @@ class MainMenuApp(App):
         d.run()
 
     def new_net_game_bind(self, *args):
-        print('net')
+        rl = RelativeLayout()
+        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.25, Window.height * 0.05),
+                                font_size=Window.height * 0.024,
+                                multiline=False,
+                                pos=(Window.width * 0.065, Window.height * 0.24), size_hint=(None, None))
+        rl.add_widget(self.server_input)
+        btn1 = Button(text='Подключиться к серверу', pos=(Window.width * 0.09, Window.height * 0.17), background_color=(1, 0, 0, 1),
+                      font_size=Window.height * 0.03,
+                      size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(btn1)
+        btn2 = Button(text='Создать свой сервер', pos=(Window.width * 0.09, Window.height * 0.07),
+                      background_color=(1, 0, 0, 1), font_size=Window.height * 0.03,
+                      size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(btn2)
+        p = Popup(title='', separator_height=0,
+                  content=rl, background_color=(1, 0, 0, 1), overlay_color=(0, 0, 0, 0),
+                  size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.38))
+        btn1.bind(on_press=p.dismiss)
+        btn2.bind(on_press=p.dismiss)
+        btn1.bind(on_press=self.server_popup)
+        p.open()
+
+    def server_popup(self, *args):
+        self.host, self.port = self.server_input.text.split(':')
+        self.update_serverlist()
+        self.gl = GridLayout(cols=1, spacing=(0, 5), size_hint_y=None)
+        rl = RelativeLayout()
+        sv = ScrollView(size_hint=(None, None), size=(Window.width*0.21, Window.height * 0.45),
+                              always_overscroll=False, pos=(Window.width * 0.08, Window.height * 0.1))
+        self.gl.bind(minimum_height=self.gl.setter('height'))
+        sv.add_widget(self.gl)
+        rl.add_widget(sv)
+        create_table = Button(text='Создать стол', disabled=False, opacity=1,
+                                pos=(Window.width * 0.02, Window.height * 0.02),
+                                size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
+        create_table.bind(on_press=partial(network.start_waiting, self.host, self.port))
+        create_table.bind(on_press=self.update_serverlist)
+        rl.add_widget(create_table)
+        start_game_btn = Button(text='Подключиться', disabled=False, opacity=1,
+                      pos=(Window.width * 0.18, Window.height * 0.02), size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(start_game_btn)
+        p = Popup(title='', separator_height=0,
+                  content=rl, background_color=(1, 0, 0, 1), overlay_color=(0, 0, 0, 0),
+                  size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.7))
+        p.open()
+
+    def update_serverlist(self, *args):
+        t = threading.Thread(target=network.get_waiting_players, args=(self.host, self.port, self), daemon=True)
+        t.start()
+
+    def update_serverlist_gui(self, players):
+        try:
+            print(players)
+            self.gl.clear_widgets()
+            for player in players:
+                btn1 = Button(text=str(player[0]), disabled=False, opacity=1,
+                              pos=(0, 0), size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
+                self.gl.add_widget(btn1)
+        except Exception as e:
+            print(e)
+
 
     def settings_bind(self, *args):
         popup = Popup(title='', separator_height=0,
@@ -140,8 +209,6 @@ class MainMenuApp(App):
         self.stop()
         Window.size = (x, y)
         #Window.maximize()
-        # Window.left = 0
-        # Window.top = 0
         Window.left = (screenx - self.window_size[0]) / 2
         Window.top = (screeny - self.window_size[1]) / 2
         # Window.borderless = True
@@ -166,7 +233,7 @@ class MainMenuApp(App):
 
         # Buttons:
         self.new_net_game_btn = Button(pos=(Window.width * 0.37, Window.height * 0.78), text='Игра по сети',
-                                          color=self.c1, disabled=True,
+                                          color=self.c1, #disabled=True,
                                           size=(Window.width * 0.24, Window.height * 0.11), size_hint=(None, None),
                                           background_color=(0, 0, 0, 0),
                                           font_size=Window.height * 0.05, font_name='data/fonts/RuslanDisplay-Regular.ttf')
