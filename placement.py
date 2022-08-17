@@ -63,6 +63,9 @@ class SelectionApp(App):
         self.title = 'Berserk Renewal'
         self.mode = mode
 
+    def open_settings(self, *largs):
+        pass
+
     def display_marks(self, where_):
         for el in self.red_dots.values():
             self.layout.remove_widget(el)

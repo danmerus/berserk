@@ -25,7 +25,7 @@ class MainServer:
 
     def __init__(self):
         HOST, PORT = socket.gethostname(), 12345
-        print(HOST, PORT)
+        print(socket.gethostbyname(HOST), PORT)
         self.server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
         self.clients = []
         self.server.clients = self.clients

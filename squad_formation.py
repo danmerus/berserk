@@ -146,6 +146,9 @@ class FormationApp(App):
             return all([(self.gold_curr-card.cost[0]-temp_penalty) >= 0, (self.silver_curr-card.cost[1]) >= 0,
                   ])
 
+    def open_settings(self, *largs):
+        pass
+
     def update_labels(self):
         self.gold_lbl.text = str(self.gold_curr-self.penalty)
         self.penalty_lbl.text = '('+('' if self.penalty == 0 else '-')+str(self.penalty)+')'

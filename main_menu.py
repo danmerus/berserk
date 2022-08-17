@@ -27,13 +27,15 @@ else:
     # For mobile devices, use full screen
     screenx,screeny = 800,600  # return something
 # print(screenx, screeny, sys.platform)
+import os
+os.environ['KIVY_AUDIO'] = 'sdl2'
 import kivy
 kivy.require('2.0.1')
 from kivy import Config
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 Config.set('graphics', 'resizable', '0')
 Config.set('graphics', 'maxfps', '144')
-# Config.set('kivy', 'exit_on_escape', '0')
+Config.set('kivy', 'exit_on_escape', '0')
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
@@ -53,7 +55,6 @@ from kivy.lang import Builder
 import placement
 from concurrent import futures
 from multiprocessing import Pool
-import os
 import copy
 import threading
 from functools import partial
@@ -82,6 +83,9 @@ class MainMenuApp(App):
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
         self.title = 'Berserk Renewal'
+
+    def open_settings(self, *largs):
+        pass
 
     def darker_col_on_touch_down(self, instance, *args):
         instance.color = get_color_from_hex('#FF9933')

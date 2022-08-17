@@ -112,7 +112,7 @@ class Board():
             else:
                 candidates = self.extra2
             candidates = candidates + c1
-        out = [x for x in candidates if not x.tapped]
+        out = [x for x in candidates if not x.tapped and not CardEffect.NETTED in x.active_status]
         out = [x for x in out if x.can_defend]
         out = [x for x in out if x.player == victim.player]
         return out
@@ -138,7 +138,7 @@ class Board():
         out = []
         for c in all_cards:
             for a in c.abilities:
-                if a.isinstant and not isinstance(a, DefenceAction):
+                if a.isinstant and not isinstance(a, DefenceAction) and not c.tapped:
                     out.append((c, a))
         return out
 

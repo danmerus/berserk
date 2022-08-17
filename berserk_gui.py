@@ -1,3 +1,4 @@
+import os
 import kivy
 kivy.require('2.0.1')
 from kivy import Config
@@ -79,6 +80,9 @@ class BerserkApp(App):
         DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
         self.title = 'Berserk Renewal'
 
+    def open_settings(self, *largs):
+        pass
+
     def destroy_x(self, list_, long=False):
         if long==True:
             for bt, a in list_:
@@ -158,6 +162,8 @@ class BerserkApp(App):
             elif isinstance(ability, TriggerBasedCardAction) and ability.disabled:
                 out.append((ability, 0))
             elif isinstance(ability, DefenceAction) and ability.disabled:
+                out.append((ability, 0))
+            elif card.actions_left < 0:
                 out.append((ability, 0))
             else:
                 out.append((ability, 1))
@@ -293,15 +299,18 @@ class BerserkApp(App):
                         self.card_popup_obj.open()
 
     def play_attack_sound(self, dmg):
-        if abs(dmg) < 3:
-            sound = SoundLoader.load('data/sound/weak_punch.wav')
-        elif 3 <= abs(dmg) < 5:
-            sound = SoundLoader.load('data/sound/med_punch.wav')
-        elif abs(dmg) >= 5:
-            sound = SoundLoader.load('data/sound/hard_punch.wav')
-        else:
-            return
-        sound.play()
+        try:
+            if abs(dmg) < 3:
+                sound = SoundLoader.load('data/sound/weak_punch.wav')
+            elif 3 <= abs(dmg) < 5:
+                sound = SoundLoader.load('data/sound/med_punch.wav')
+            elif abs(dmg) >= 5:
+                sound = SoundLoader.load('data/sound/hard_punch.wav')
+            else:
+                return
+            sound.play()
+        except Exception as e:
+            print(e)
 
     def card_popup_destr(self, window, pos):
         if hasattr(self, 'card_popup_obj'):
@@ -1089,7 +1098,8 @@ class BerserkApp(App):
             del self.attack_popup
         except:
             pass
-        if self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
+        inst = self.backend.board.get_instants()
+        if inst and self.backend.in_stack and not (self.backend.passed_1 and self.backend.passed_2):
             return
         if len(args) == 4 and not isinstance(args[0], tuple):
             ability, card, victim, stage = args
@@ -1178,6 +1188,7 @@ class BerserkApp(App):
 
     def on_click_on_card(self, card, instance):
         # print('Опыт в защите: ', card.defences)
+        # print(card.actions_left)
         if self.disabled_actions:
             return
         self.destroy_target_marks()

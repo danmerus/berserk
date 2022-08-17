@@ -321,6 +321,9 @@ class DeckSelectionApp(App):
             btn1.bind(on_press=p.dismiss)
             p.open()
 
+    def open_settings(self, *largs):
+        pass
+
     def save_deck_enter(self, instance, keyboard, keycode, text, modifiers):
         if keycode == 40:
             self.save_deck()
