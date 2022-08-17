@@ -12,7 +12,8 @@ from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
 import deck_selection
-
+import berserk_gui
+from game import Game
 
 class MainField(Widget):
     def __init__(self, **kwargs):
@@ -25,19 +26,73 @@ class DraggableRL(KXDraggableBehavior, KXDroppableBehavior, RelativeLayout):
         self.drag_distance = 10
         self.parent_ = parent_
 
+    def get_right_spots(self):
+        len_occupied = len([x for x in self.parent_.occupied.values() if x != -1])
+        spots = []
+        if (self.parent_.turn == 1 and len_occupied < 9) or (self.parent_.turn == 2 and len_occupied < 11):
+            spots = self.parent_.spots_for_placement
+        elif self.parent_.turn == 1 and 9 <= len_occupied < 13:
+            spots = self.parent_.spots_for_placement1
+        elif self.parent_.turn == 2 and len_occupied >= 11:
+            spots = self.parent_.spots_for_placement1
+        else:
+            spots = self.parent_.spots_for_placement2
+        return spots
+
+    def extra_check(self, i, spots, obj_):
+        prev = self.parent_.occupied[obj_]
+        if self.parent_.turn == 2:
+            new_places = set(self.parent_.spots_for_placement1)-set(self.parent_.spots_for_placement)
+            if spots == self.parent_.spots_for_placement1 and i in new_places and prev in self.parent_.spots_for_placement:
+                return False
+        elif self.parent_.turn == 1:
+            new_places1 = set(self.parent_.spots_for_placement1) - set(self.parent_.spots_for_placement)
+            if spots == self.parent_.spots_for_placement1 and i in new_places1 and prev in self.parent_.spots_for_placement:
+                return False
+            new_places2 = set(self.parent_.spots_for_placement2) - set(self.parent_.spots_for_placement1)
+            if spots == self.parent_.spots_for_placement2 and i in new_places2 and \
+                (prev in self.parent_.spots_for_placement1 or prev in self.parent_.spots_for_placement):
+                return False
+        return True
+
+    def extra_check1(self, spots, obj_):
+        len_occupied = len([x for x in self.parent_.occupied.values() if x != -1])
+        prev = self.parent_.occupied[obj_]
+        if self.parent_.turn == 2:
+            if prev in self.parent_.spots_for_placement and spots == self.parent_.spots_for_placement1 \
+                    and len_occupied > len(self.parent_.spots_for_placement):
+                return False
+        elif self.parent_.turn == 1:
+            if prev in self.parent_.spots_for_placement and spots == self.parent_.spots_for_placement1 \
+                    and len_occupied > len(self.parent_.spots_for_placement):
+                return False
+            elif (prev in self.parent_.spots_for_placement or prev in self.parent_.spots_for_placement1) and spots == self.parent_.spots_for_placement2 \
+                    and len_occupied > len(self.parent_.spots_for_placement1):
+                return False
+        return True
+
+
     def on_drag_end(self, touch):
+        spots = self.get_right_spots()
         for i, el in enumerate(self.parent_.card_position_coords):
             if abs(touch.pos[0]-el[0]-CARD_X_SIZE / 2 ) < CARD_X_SIZE/2 and abs(touch.pos[1]-el[1]-CARD_X_SIZE / 2 ) < CARD_X_SIZE/2:
-                if i in self.parent_.spots_for_placement and i not in self.parent_.occupied.values():
-                    self.pos = el
-                    self.parent_.occupied[self] = i
-                    self.parent_.layout.remove_widget(self.parent_.red_dots[i])
-                    self.parent_.display_marks([x for x in self.parent_.spots_for_placement if x not in self.parent_.occupied.values()])
-                    return
+                if i in spots and i not in self.parent_.occupied.values():
+                    if not self.extra_check(i, spots, self):
+                        return
+                    else:
+                        self.pos = el
+                        self.parent_.occupied[self] = i
+                        self.parent_.layout.remove_widget(self.parent_.red_dots[i])
+                        spots = self.get_right_spots()
+                        self.parent_.display_marks([x for x in spots if x not in self.parent_.occupied.values()])
+                        return
+        if not self.extra_check1(spots, self):
+            return
         self.pos = self.parent_.initial_loc_dict[self]
         self.parent_.occupied[self] = -1
+        spots = self.get_right_spots()
         self.parent_.display_marks(
-            [x for x in self.parent_.spots_for_placement if x not in self.parent_.occupied.values()])
+            [x for x in spots if x not in self.parent_.occupied.values()])
 
     def on_touch_down(self, touch):
         return super(DraggableRL, self).on_touch_down(touch)
@@ -177,7 +232,7 @@ class SelectionApp(App):
                                    Window.height * 0.03 + j * CARD_Y_SIZE),
                               size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
                 self.card_position_coords.append((btn1.x, btn1.y))
-                # self.layout.add_widget(btn1)
+                #self.layout.add_widget(btn1)
 
         self.ready_btn = Button(text="Готов",
                                 pos=(Window.width * 0.83, Window.height * 0.18), background_color=(1, 0, 0, 1),
@@ -185,15 +240,40 @@ class SelectionApp(App):
         self.ready_btn.bind(on_press=self.lock_and_loaded)
         self.layout.add_widget(self.ready_btn)
 
-        if self.turn == 1 and len(self.hand) <= 9:
+        if self.turn == 1:
             self.spots_for_placement = [6, 7, 8, 12, 13, 14, 18, 19, 20]
-        elif self.turn == 1 and 9 < len(self.hand) <= 13:
-            self.spots_for_placement = [6, 7, 8, 12, 13, 14, 18, 19, 20, 0, 1, 24, 25]
-        elif self.turn == 2 and len(self.hand) <= 11:
+            self.spots_for_placement1 = [6, 7, 8, 12, 13, 14, 18, 19, 20, 0, 1, 24, 25]
+            self.spots_for_placement2 = [6, 7, 8, 12, 13, 14, 18, 19, 20, 0, 1, 24, 25, 2, 26]
+        elif self.turn == 2:
             self.spots_for_placement = [6, 7, 8, 12, 13, 14, 18, 19, 20, 2, 26]
-        else:
-            self.spots_for_placement = [6, 7, 8, 12, 13, 14, 18, 19, 20, 0, 1, 24, 25, 2, 26]
+            self.spots_for_placement1 = [6, 7, 8, 12, 13, 14, 18, 19, 20, 0, 1, 24, 25, 2, 26]
         self.display_marks(self.spots_for_placement)
         root.add_widget(self.layout)
         self.display_draggable_cards()
         return root
+
+# import os
+# filedir = 'cards/set_1'
+# modules = [f[:-3] for f in os.listdir(filedir) if
+#            os.path.isfile(os.path.join(filedir, f)) and f.endswith('.py') and f != '__init__.py']
+# imports = [f"from cards.set_1 import {module}\nfrom cards.set_1.{module} import *" for module in sorted(modules)]
+# for imp in imports:
+#     exec(imp)
+#
+# WINDOW_SIZE = (960, 540)  # (1920, 1080) #
+# STACK_DURATION = 5
+# TURN_DURATION = 5
+# game = Game()
+# gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
+# game.gui = gui
+# cards1 = [
+#           Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),
+#           Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
+#           Lovets_dush_1(), PovelitelMolniy_1(),
+#           #Draks_1()
+#           ]
+# game = Game()
+# gui = berserk_gui.BerserkApp(game, (960, 540), 123, 123)
+# game.gui = gui
+# s = SelectionApp(game, (960, 540), cards1, 2, 'single1')
+# s.run()
