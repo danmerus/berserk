@@ -1,3 +1,4 @@
+import socket
 import sys
 
 """
@@ -87,6 +88,13 @@ class MainMenuApp(App):
     def open_settings(self, *largs):
         pass
 
+    def set_connect_btn(self, *args):
+        self.start_game_btn.disabled = True
+        self.create_table.disabled = True
+        # for b in self.gl.children:
+        #     b.disabled = True
+
+
     def darker_col_on_touch_down(self, instance, *args):
         instance.color = get_color_from_hex('#FF9933')
         Clock.schedule_once(partial(self.default_col_on_release, instance), 1)
@@ -117,7 +125,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='172.17.32.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
+        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
@@ -135,18 +143,27 @@ class MainMenuApp(App):
                       background_color=(1, 0, 0, 1), font_size=Window.height * 0.03,
                       size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
         rl.add_widget(btn2)
-        p = Popup(title='', separator_height=0,
+        self.conn_popup = Popup(title='', separator_height=0,
                   content=rl, background_color=(1, 0, 0, 1), overlay_color=(0, 0, 0, 0),
                   size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.38))
-        btn1.bind(on_press=p.dismiss)
-        btn2.bind(on_press=p.dismiss)
+        # btn1.bind(on_press=p.dismiss)
+        # btn2.bind(on_press=p.dismiss)
         btn1.bind(on_press=self.server_popup)
-        p.open()
+        self.conn_popup.open()
 
     def server_popup(self, *args):
         self.host, self.port = self.server_input.text.split(':')
-        network.join_server(self.host, self.port, self.nickname_input.text)
-        self.update_serverlist()
+        code = network.join_server(self.host, self.port, self.nickname_input.text)
+        if code == -1:
+            p = Popup(title='', separator_height=0, background='',
+                      content=Label(text='Не удалось подключиться'), background_color=(0.8, 0.3, 0, 1), overlay_color=(0, 0, 0, 0),
+                      size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.38))
+            p.open()
+            Clock.schedule_once(lambda x: p.dismiss(), 1)
+            return
+        else:
+            self.conn_popup.dismiss()
+        #Clock.schedule_interval(self.update_serverlist, 3)
         self.gl = GridLayout(cols=1, spacing=(0, 5), size_hint_y=None)
         rl = RelativeLayout()
         sv = ScrollView(size_hint=(None, None), size=(Window.width*0.21, Window.height * 0.45),
@@ -154,25 +171,27 @@ class MainMenuApp(App):
         self.gl.bind(minimum_height=self.gl.setter('height'))
         sv.add_widget(self.gl)
         rl.add_widget(sv)
-        create_table = Button(text='Создать стол', disabled=False, opacity=1,
+        self.create_table = Button(text='Создать стол', disabled=False, opacity=1,
                                 pos=(Window.width * 0.02, Window.height * 0.02),
                                 size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
-        create_table.bind(on_press=partial(network.start_waiting, self.host, self.port))
-        create_table.bind(on_press=self.update_serverlist)
-        rl.add_widget(create_table)
-        start_game_btn = Button(text='Подключиться', disabled=False, opacity=1,
+        self.create_table.bind(on_press=partial(network.start_waiting, self.host, self.port, self))
+        self.create_table.bind(on_press=Clock.schedule_once(self.update_serverlist, 1))
+        self.create_table.bind(on_press=self.set_connect_btn)
+        rl.add_widget(self.create_table)
+        self.start_game_btn = Button(text='Подключиться', disabled=False, opacity=1,
                       pos=(Window.width * 0.18, Window.height * 0.02), size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
-        start_game_btn.bind(on_press=lambda x: network.accept_game(self.host, self.port, self.game_ip))
-        rl.add_widget(start_game_btn)
+        self.start_game_btn.bind(on_press=self.accept_game)
+        self.start_game_btn.bind(on_press=self.set_connect_btn)
+        rl.add_widget(self.start_game_btn)
         p = Popup(title='', separator_height=0,
                   content=rl, background_color=(1, 0, 0, 1), overlay_color=(0, 0, 0, 0),
                   size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.7))
+        p.bind(on_dismiss=self.remove_client)
         p.open()
 
     def update_serverlist(self, *args):
         t = threading.Thread(target=network.get_waiting_players, args=(self.host, self.port, self), daemon=True)
         t.start()
-        # t.join()
 
     def update_serverlist_gui(self, players):
         try:
@@ -182,21 +201,60 @@ class MainMenuApp(App):
                               pos=(0, 0), size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
                 self.gl.add_widget(btn1)
                 btn1.bind(on_press=lambda x: self.set_game_ip(player[0], btn1))
+                btn1.bind(on_touch_down=self.join_double_click)
         except Exception as e:
             print(e)
 
-    def handle_start_game_response(self):
-        pass
+    def join_double_click(self, btn, touch, *args):
+        if touch.is_double_tap:
+            self.accept_game()
+            self.set_connect_btn()
+
+    def accept_game(self, *args):
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip != self.game_ip:
+            res = network.accept_game(self.host, self.port, self, self.game_ip)  # if res == -1 >?
+
+    def handle_start_game_response(self, game_id, *args):
+        rl = RelativeLayout()
+        lbl = Label(text=f'Начнём игру?\nid:{game_id}',
+                    y=Window.height * 0.06, font_size=Window.height * 0.03)
+        rl.add_widget(lbl)
+        btn2 = Button(text='Го!', pos=(Window.width * 0.09, Window.height * 0.07),
+                      background_color=(0.6, 0.6, 0, 1), font_size=Window.height * 0.03,
+                      size=(Window.width * 0.1, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(btn2)
+        btn2.bind(on_press=partial(self.start_for_constra_net, game_id))
+        #btn2.bind(on_press=lambda x: p.dismiss)
+        p = Popup(title='', separator_height=0, background='',
+                  content=rl, background_color=(0.4, 0, 0.1, 1), overlay_color=(0, 0, 0, 0),
+                  size_hint=(None, None), size=(Window.width * 0.3, Window.height * 0.3))
+        p.open()
+
+    def start_for_constra_net(self, game_id, *args):
+        #self.stop()
+        network.start_constr_game(self.host, self.port, self, game_id)
+        #self.remove_client
+        # d = deck_selection.DeckSelectionApp(self.window_size, mode='single1')
+        # d.run()
+
+    def start_for_constra(self, turn, ip, port):
+        self.stop()
+        d = deck_selection.DeckSelectionApp(self.window_size, mode='constr', server_ip=ip, server_port=port, turn=int(turn))
+        d.run()
 
     def set_game_ip(self, ip, instance):
         instance.disabled = False
         self.game_ip = ip
 
-    def on_request_close(self, source=None, *args):
+    def remove_client(self, *args):
         try:
             network.client_left(self.host, self.port)
         except Exception as e:
             print(e)
+
+    def on_request_close(self, source=None, *args):
+        self.remove_client()
 
     def settings_bind(self, *args):
         popup = Popup(title='', separator_height=0,

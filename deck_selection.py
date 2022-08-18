@@ -37,7 +37,7 @@ class MainField(Widget):
 
 class DeckSelectionApp(App):
 
-    def __init__(self, window_size, mode='building', backend=None, **kwargs):
+    def __init__(self, window_size, mode='building', backend=None, server_ip=None, server_port=None, turn=None, **kwargs):
         super(DeckSelectionApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
@@ -58,6 +58,9 @@ class DeckSelectionApp(App):
         self.deck_obj = deck.Deck()
         self.mode = mode
         self.backend = backend
+        self.server_ip = server_ip
+        self.server_port = server_port
+        self.turn = turn
 
     def reset_dicts(self):
         for card, count in self.all_cards :
@@ -410,6 +413,14 @@ class DeckSelectionApp(App):
                 f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=2, gold_cap=24, silver_cap=22,
                                                  deck=deck, mode=self.mode)
                 f.run()
+            elif self.mode == 'constr':
+                deck = [x(gui=self.backend.gui) for x in cards]
+                hand = random.sample(deck, 15)
+                self.stop()
+                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=self.turn, gold_cap=24,
+                                                 silver_cap=22, deck=deck,
+                                                 mode=self.mode, server_ip=self.server_ip, server_port=self.server_port)
+                f.run()
         elif text:
             p = Popup(title='', separator_height=0,
                     content=Label(text=text), background_color=(1, 0, 0, 1),
@@ -538,7 +549,7 @@ class DeckSelectionApp(App):
                                     size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
             self.ready_btn.bind(on_release=self.exit_to_menu)
             self.layout.add_widget(self.ready_btn)
-        if self.mode == 'single1' or self.mode == 'single2':
+        elif self.mode == 'single1' or self.mode == 'single2' or self.mode == 'constr':
             self.ready_btn = Button(text="Далее",
                                     pos=(Window.width * 0.81, Window.height * 0.03), background_color=(1, 0, 0, 1),
                                     size=(Window.width * 0.18, Window.height * 0.05), size_hint=(None, None))

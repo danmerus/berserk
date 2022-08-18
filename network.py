@@ -8,14 +8,6 @@ import threading
 from kivy.clock import mainthread
 
 
-def get_free_port():
-    out = 12333
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        out = s.getsockname()[1]
-    return out
-
-# @mainthread
 def get_waiting_players(host, port, parent, *args):
     res = []
     try:
@@ -44,68 +36,85 @@ def join_server(host, port, nick, *args):
         print(e)
     return res
 
-# @mainthread
-def start_waiting_helper(sock):
+
+def start_waiting_helper(sock, parent):
     while True:
         conn, address = sock.accept()
         datachunk = conn.recv(8192)
         if datachunk:
-            # print('recieved!:', datachunk)
-            start_waiting_cb(datachunk)
+            start_waiting_cb(datachunk, parent)
             sock.close()
             break
 
 @mainthread
-def start_waiting_cb(data):
-    print('recieved!:', data)
+def start_waiting_cb(data, parent):
+    parent.handle_start_game_response(data.decode('utf-8'))
 
-def start_waiting(host, port, *args):
+def start_waiting(host, port, parent, *args):
     res = -1
     # try:
 
     s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s2.bind(('', 0))
+    s2.bind((socket.gethostname(), 0))
     ip, h = s2.getsockname()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
         # s1.settimeout(100)
         s1.connect((host, int(port)))
-        res = s1.sendall(b'start_waiting'+str(h).encode())
+        res = s1.sendall(b'start_waiting'+(str(ip)+'#'+str(h)).encode())
     s2.listen(1)
-    print('starting loop', s2.getsockname())
-    t = threading.Thread(target=start_waiting_helper, args=([s2]), daemon=True)
+    print('starting loop creater', s2.getsockname())
+    t = threading.Thread(target=start_waiting_helper, args=([s2, parent]), daemon=True)
     t.start()
-    # while True:
-    #     conn, address = s2.accept()
-    #     datachunk = conn.recv(8192)
-    #     if datachunk:
-    #         print('recieved!:', datachunk)
-    #         s2.close()
-    #         break
-    # except Exception as e:
-    #     print('start_waiting: ', e)
     return res
 
-# def start_waiting_listener(parent):
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     s.listen(1)
-#     conn, address = s.accept()
-#     while True:
-#         datachunk = conn.recv(8192)
-#         if not datachunk:
-#             break
-#     conn.close()
-#     parent.update_serverlist_gui()
-
-def accept_game(host, port, ip, *args):
+def accept_game(host, port, parent, ip_to_join, *args):
     res = -1
     try:
+        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s2.bind((socket.gethostname(), 0))
+        ip, h = s2.getsockname()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
-            res = s1.sendall(b'start_game' + str(ip).encode('utf-8'))
+            res = s1.sendall(b'accept_game'+(str(ip)+'#'+str(h)+'#'+str(ip_to_join)).encode())
+        s2.listen(1)
+        print('starting loop accepter', s2.getsockname())
+        t = threading.Thread(target=start_waiting_helper, args=([s2, parent]), daemon=True)
+        t.start()
     except Exception as e:
         print(e)
     return res
+
+
+def start_constr_game(host, port, parent, game_id, *args):
+    res = -1
+    try:
+        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s2.bind((socket.gethostname(), 0))
+        ip, h = s2.getsockname()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'start_constr'+(str(ip)+'#'+str(h)+'#'+str(game_id)).encode())
+        s2.listen(1)
+        t = threading.Thread(target=start_constr_helper, args=([s2, parent]), daemon=True)
+        t.start()
+    except Exception as e:
+        print(e)
+    return res
+
+def start_constr_helper(sock, parent):
+    while True:
+        conn, address = sock.accept()
+        datachunk = conn.recv(8192)
+        if datachunk.decode().startswith('game_server'):
+            constr_cb1(datachunk[len('game_server'):], parent)
+    sock.close()
+
+
+@mainthread
+def constr_cb1(data, parent):
+    turn, ip, port = data.decode('utf-8').split('#')
+    parent.start_for_constra(turn, ip, port)
+    # print('got server addr!', data)
 
 def client_left(host, port, *args):
     res = -1

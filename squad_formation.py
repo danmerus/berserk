@@ -29,7 +29,7 @@ class MainField(Widget):
 
 class FormationApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, mode, **kwargs):
+    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, mode, server_ip=None, server_port=None, **kwargs):
         super(FormationApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
@@ -47,11 +47,13 @@ class FormationApp(App):
         self.title = 'Berserk Renewal'
         self.deck = deck
         self.mode = mode
-        if turn == 2:
+        if self.turn == 2:
             gold_cap += 1
             silver_cap += 1
         self.gold_cap = gold_cap
         self.silver_cap = silver_cap
+        self.server_ip = server_ip
+        self.server_port = server_port
 
     def draw_card_overlay(self, card):
         size_ = (CARD_X_SIZE-2, CARD_Y_SIZE * 0.18)
@@ -273,7 +275,7 @@ class FormationApp(App):
             Image(source='data/icons/silver.png', pos=(0.83 * Window.width, Window.height * 0.685),
                   size=(0.025 * Window.width, 0.025 * Window.width), opacity=1)
 
-            turn_str = 'первым' if self.turn ==1 else 'вторым'
+            turn_str = 'первым' if self.turn == 1 else 'вторым'
             self.turn_announcement = Label(pos=(0.9 * Window.width, Window.height * 0.6), text=f'Вы ходите {turn_str}!',
                                     color=(1, 1, 1, 1),
                                     size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
