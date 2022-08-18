@@ -183,8 +183,8 @@ class SelectionApp(App):
                 if self.turn == 1:
                     card.loc = v
                 else:
-                    if self.convert_coord(v) in [5, 11, 17, 23, 29]:
-                        card.hidden = True
+                    # if self.convert_coord(v) in [5, 11, 17, 23, 29]:
+                    #     card.hidden = True
                     card.loc = self.convert_coord(v)
                 out.append(card)
             if self.turn == 1:

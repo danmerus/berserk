@@ -26,7 +26,7 @@ elif sys.platform == 'darwin':
     screeny = frame_size.height
 else:
     # For mobile devices, use full screen
-    screenx,screeny = 800,600  # return something
+    screenx,screeny = 800, 600  # return something
 # print(screenx, screeny, sys.platform)
 import os
 os.environ['KIVY_AUDIO'] = 'sdl2'
@@ -84,6 +84,7 @@ class MainMenuApp(App):
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
         self.title = 'Berserk Renewal'
+        self.icon = 'data/icons/Berserk_icon.ico'
 
     def open_settings(self, *largs):
         pass
@@ -125,7 +126,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
+        self.server_input = TextInput(text='172.17.32.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
@@ -153,7 +154,7 @@ class MainMenuApp(App):
 
     def server_popup(self, *args):
         self.host, self.port = self.server_input.text.split(':')
-        code = network.join_server(self.host, self.port, self.nickname_input.text)
+        code = network.join_server(self.host, self.port, self.nickname_input.text)  # ToDO thread
         if code == -1:
             p = Popup(title='', separator_height=0, background='',
                       content=Label(text='Не удалось подключиться'), background_color=(0.8, 0.3, 0, 1), overlay_color=(0, 0, 0, 0),
@@ -212,8 +213,8 @@ class MainMenuApp(App):
 
     def accept_game(self, *args):
         ip = socket.gethostbyname(socket.gethostname())
-        if ip != self.game_ip:
-            res = network.accept_game(self.host, self.port, self, self.game_ip)  # if res == -1 >?
+        # if ip != self.game_ip:
+        res = network.accept_game(self.host, self.port, self, self.game_ip)  # if res == -1 >?
 
     def handle_start_game_response(self, game_id, *args):
         rl = RelativeLayout()

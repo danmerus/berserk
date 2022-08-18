@@ -870,11 +870,15 @@ class BerserkApp(App):
                     if not victim.tapped:
                         self.tap_card(victim)
                     return
-                if (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO ) and\
+                if (ability.a_type in ATTACK_LIST) and\
                     CardEffect.NETTED in victim.active_status:
                     victim.active_status.remove(CardEffect.NETTED)
                     victim.actions_left = victim.actions
                     victim.curr_move = victim.move
+                    card.actions_left -= 1
+                    if card.actions_left <= 0:
+                        if not card.tapped:
+                            self.tap_card(card)
                     self.move_label_dict[victim].text = f'{victim.curr_move}/{victim.move}'
                     self.add_defence_signs(victim)
                     self.destroy_target_rectangles()

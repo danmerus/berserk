@@ -46,4 +46,5 @@ class Snejnii_gull_1(Card):
         targets = self.gui.backend.board.get_ground_targets_min_max(card_pos_no=self.loc,
                                                    range_max=1, range_min=0,
                                                    ability=self.a1)
-        return [t for t in targets if t.curr_life <= self.a2.damage and CardEffect.BESTELESNOE not in t.active_status]
+        return [t for t in targets if t.curr_life <= self.a2.damage and CardEffect.BESTELESNOE not in t.active_status and
+                t.type_==CreatureType.CREATURE]

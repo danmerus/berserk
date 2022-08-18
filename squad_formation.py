@@ -11,8 +11,8 @@ from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy.uix.image import Image
-from game import Game
-import berserk_gui
+# from game import Game
+# import berserk_gui
 from game_properties import GameStates
 from cards.card import *
 import placement

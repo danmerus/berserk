@@ -416,10 +416,10 @@ class DeckSelectionApp(App):
             elif self.mode == 'constr':
                 deck = [x(gui=self.backend.gui) for x in cards]
                 hand = random.sample(deck, 15)
-                self.stop()
                 f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=self.turn, gold_cap=24,
                                                  silver_cap=22, deck=deck,
                                                  mode=self.mode, server_ip=self.server_ip, server_port=self.server_port)
+                self.stop()
                 f.run()
         elif text:
             p = Popup(title='', separator_height=0,
