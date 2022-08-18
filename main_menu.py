@@ -117,7 +117,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
+        self.server_input = TextInput(text='172.17.32.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
@@ -172,13 +172,12 @@ class MainMenuApp(App):
     def update_serverlist(self, *args):
         t = threading.Thread(target=network.get_waiting_players, args=(self.host, self.port, self), daemon=True)
         t.start()
-        t.join()
+        # t.join()
 
     def update_serverlist_gui(self, players):
         try:
             self.gl.clear_widgets()
             for player in players:
-                print('player ', player)
                 btn1 = Button(text=player[1].decode('utf-8'), disabled=False, opacity=1,
                               pos=(0, 0), size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
                 self.gl.add_widget(btn1)
