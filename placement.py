@@ -99,7 +99,7 @@ class DraggableRL(KXDraggableBehavior, KXDroppableBehavior, RelativeLayout):
 
 class SelectionApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, mode, **kwargs):
+    def __init__(self, backend, window_size, hand, turn, mode, server_ip=None, server_port=None, **kwargs):
         super(SelectionApp, self).__init__(**kwargs)
         self.window_size = window_size
         Window.size = self.window_size
@@ -117,6 +117,8 @@ class SelectionApp(App):
         self.turn = turn
         self.title = 'Berserk Renewal'
         self.mode = mode
+        self.server_ip = server_ip
+        self.server_port = server_port
 
     def open_settings(self, *largs):
         pass

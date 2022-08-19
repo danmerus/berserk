@@ -200,7 +200,8 @@ class FormationApp(App):
 
     def start_placement(self, *args):
         if self.cards_down:
-            self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode)
+            self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode,
+                                                    server_ip=self.server_ip, server_port=self.server_port)
             self.stop()
             self.selection.run()
 
