@@ -37,6 +37,8 @@ Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 Config.set('graphics', 'resizable', '0')
 Config.set('graphics', 'maxfps', '144')
 Config.set('kivy', 'exit_on_escape', '0')
+Config.remove_option('input', 'wm_pen')
+Config.remove_option('input', 'wm_touch')
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
@@ -126,7 +128,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
+        self.server_input = TextInput(text='172.17.32.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
