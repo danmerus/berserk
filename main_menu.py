@@ -128,7 +128,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='172.17.32.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
+        self.server_input = TextInput(text='192.168.56.1:12345', size=(Window.width * 0.15, Window.height * 0.05),
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
@@ -227,19 +227,16 @@ class MainMenuApp(App):
                       background_color=(0.6, 0.6, 0, 1), font_size=Window.height * 0.03,
                       size=(Window.width * 0.1, Window.height * 0.05), size_hint=(None, None))
         rl.add_widget(btn2)
-        btn2.bind(on_press=partial(self.start_for_constra_net, game_id))
-        #btn2.bind(on_press=lambda x: p.dismiss)
         p = Popup(title='', separator_height=0, background='',
                   content=rl, background_color=(0.4, 0, 0.1, 1), overlay_color=(0, 0, 0, 0),
                   size_hint=(None, None), size=(Window.width * 0.3, Window.height * 0.3))
         p.open()
+        btn2.bind(on_press=partial(self.start_for_constra_net, game_id))
+        btn2.bind(on_press=partial(Popup.dismiss, p))
 
     def start_for_constra_net(self, game_id, *args):
         #self.stop()
         network.start_constr_game(self.host, self.port, self, game_id)
-        #self.remove_client
-        # d = deck_selection.DeckSelectionApp(self.window_size, mode='single1')
-        # d.run()
 
     def start_for_constra(self, turn, ip, port):
         self.stop()

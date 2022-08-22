@@ -47,13 +47,15 @@ class MainHandler(socketserver.BaseRequestHandler):
                 s1.sendall(str(game_id).encode('utf-8'))
         elif self.data.decode().startswith('start_constr'):
             ip_, port_, game_id = self.data[len('start_constr'):].decode('utf-8').split('#')
-            print('ip_, port_, game_id ', self.client_address[0], port_, game_id, self.server.clients)
             self.server.game_id_ip_dict[game_id].append((ip_, port_, self.server.clients[self.client_address[0]]))
             if len(self.server.game_id_ip_dict[game_id]) == 2:
                 print(f'game {game_id} sobrana!')
                 ip1, port1, nick1 = self.server.game_id_ip_dict[game_id][0]
                 ip2, port2, nick2 = self.server.game_id_ip_dict[game_id][1]
                 gs = GameServer(game_id, ip1, port1, ip2, port2, nick1, nick2)
+                t = threading.Thread(target=gs.start, args=(), daemon=True)
+                t.start()
+                # gs.start()
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'game_server'+(str(gs.turn_rng) +'#'+gs.server_address[0]+'#'+str(gs.server_address[1])).encode('utf-8'))
@@ -65,7 +67,38 @@ class MainHandler(socketserver.BaseRequestHandler):
 class GameHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
-        pass
+        self.data = self.request.recv(8192).strip()
+        print('Game_server:', self.data)
+        if self.data.startswith(b'in_placement'):
+            ip, port, turn = self.data[len('in_placement'):].decode('utf-8').split('#')
+            turn = int(turn)
+            ip1, port1, nick1 = self.server.player1
+            ip2, port2, nick2 = self.server.player2
+            if turn == 2:
+               with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                   s1.connect((ip2, int(port2)))
+                   s1.sendall(b'close')
+               self.server.player2 = (ip, port, nick1)
+            elif turn == 1:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip1, int(port1)))
+                    s1.sendall(b'close')
+                self.server.player2 = (ip, port, nick2)
+        elif self.data.startswith(b'placement_ready'):
+            turn = int(self.data[len('placement_ready'):len('placement_ready') + 1].decode('utf-8'))
+            ip1, port1, nick1 = self.server.player1
+            ip2, port2, nick2 = self.server.player2
+            if turn == 2:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip1, int(port1)))
+                    s1.sendall(b'ready'+('#').encode('utf-8')+nick2)
+            elif turn == 1:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip2, int(port2)))
+                    s1.sendall(b'ready'+('#').encode('utf-8')+nick1)
+
+
+
 
 class GameServer:
     def __init__(self, game_id, ip1, port1, ip2, port2, nick1='Унгар1', nick2='Унгар1'):
@@ -78,9 +111,13 @@ class GameServer:
         if self.turn_rng == 1:
             self.player1 = (ip1, port1, nick1)
             self.player2 = (ip2, port2, nick2)
+            self.server.player1 = self.player1
+            self.server.player2 = self.player2
         else:
             self.player2 = (ip1, port1, nick1)
             self.player1 = (ip2, port2, nick2)
+            self.server.player1 = self.player1
+            self.server.player2 = self.player2
 
 
 

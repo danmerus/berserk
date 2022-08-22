@@ -12,6 +12,7 @@ from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
 import deck_selection
+import network
 import berserk_gui
 from game import Game
 
@@ -119,6 +120,7 @@ class SelectionApp(App):
         self.mode = mode
         self.server_ip = server_ip
         self.server_port = server_port
+        network.on_entering_placement(self.server_ip, self.server_port, self.turn, self)
 
     def open_settings(self, *largs):
         pass
@@ -176,6 +178,13 @@ class SelectionApp(App):
     def convert_coord(self, coord):
         return 29 - coord
 
+    def on_ready_to_start(self, nick, *args):
+        print('there!!')
+        self.ready_info = Label(text='Игрок '+nick+' уже готов!',
+                                pos=(Window.width * 0.83, Window.height * 0.28),
+                                size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
+        self.layout.add_widget(self.ready_info)
+
     def lock_and_loaded(self, *args):
         if -1 not in self.occupied.values():
             out = []
@@ -188,12 +197,12 @@ class SelectionApp(App):
                     # if self.convert_coord(v) in [5, 11, 17, 23, 29]:
                     #     card.hidden = True
                     card.loc = self.convert_coord(v)
+                card.gui = None
                 out.append(card)
             if self.turn == 1:
                 self.backend.cards_on_board1 = out
             elif self.turn == 2:
                 self.backend.cards_on_board2 = out
-            self.stop()
             if self.mode == 'single1':
                 self.stop()
                 d = deck_selection.DeckSelectionApp(self.window_size, mode='single2', backend=self.backend)
@@ -202,6 +211,8 @@ class SelectionApp(App):
                 self.stop()
                 self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
                 self.backend.gui.run()
+            elif self.mode == 'constr':
+                network.placement_ready(self.server_ip, self.server_port, self.turn, out)
 
     def build(self):
         root = MainField()

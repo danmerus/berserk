@@ -1,6 +1,5 @@
 import os
 import socket
-import threading
 import socketserver
 import pickle
 import time
@@ -105,10 +104,19 @@ def start_constr_helper(sock, parent):
     while True:
         conn, address = sock.accept()
         datachunk = conn.recv(8192)
-        if datachunk.decode().startswith('game_server'):
+        if datachunk.startswith(b'game_server'):
             constr_cb1(datachunk[len('game_server'):], parent)
+        elif datachunk.startswith(b'close'):
+            break
+        elif datachunk.startswith(b'ready'):
+            nick = datachunk[len('ready'):].decode('utf-8')
+            constr_cb2(nick, parent)
     sock.close()
 
+
+@mainthread
+def constr_cb2(nick, parent):
+    parent.on_ready_to_start(nick)
 
 @mainthread
 def constr_cb1(data, parent):
@@ -122,6 +130,33 @@ def client_left(host, port, *args):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
             res = s1.sendall(b'client_left')
+    except Exception as e:
+        print(e)
+    return res
+
+def on_entering_placement(host, port, turn, parent, *args):
+    res = -1
+    try:
+        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s2.bind((socket.gethostname(), 0))
+        ip, h = s2.getsockname()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'in_placement' + (str(ip)+'#'+str(h)+'#'+str(turn)).encode())
+        s2.listen(1)
+        t = threading.Thread(target=start_constr_helper, args=([s2, parent]), daemon=True)
+        t.start()
+    except Exception as e:
+        print(e)
+    return res
+
+def placement_ready(host, port, turn, data, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            byte_data = pickle.dumps(data)
+            res = s1.sendall(b'placement_ready'+(str(turn)).encode()+byte_data)
     except Exception as e:
         print(e)
     return res
