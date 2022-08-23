@@ -88,11 +88,11 @@ class GameHandler(socketserver.BaseRequestHandler):
             turn = int(self.data[len('placement_ready'):len('placement_ready') + 1].decode('utf-8'))
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
-            if turn == 2:
+            if (turn == 2 and self.server.turn_rng==1) or (turn == 1 and self.server.turn_rng==2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'ready'+('#').encode('utf-8')+nick2)
-            elif turn == 1:
+            elif (turn == 1 and self.server.turn_rng==1) or (turn == 2 and self.server.turn_rng==2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ready'+('#').encode('utf-8')+nick1)
@@ -108,6 +108,7 @@ class GameServer:
         self.server_address = self.server.server_address
         self.game_id = game_id
         self.turn_rng = random.randint(1, 2)
+        self.server.turn_rng = self.turn_rng
         if self.turn_rng == 1:
             self.player1 = (ip1, port1, nick1)
             self.player2 = (ip2, port2, nick2)

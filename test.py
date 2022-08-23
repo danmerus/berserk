@@ -1,17 +1,13 @@
-import time
-import threading
+max_seq = 0 
+curr_max = 0	
+in_ = "1\n2\n2"
+for val in input().split():
+	if int(val) == 0:
+		break
+	elif int(val) > curr_max:
+		curr_max = int(val)
+		max_seq = 1
+	elif int(val) == curr_max:
+		max_seq += 1
 
-
-class BaseThread(threading.Thread):
-    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
-        target = kwargs.pop('target')
-        super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
-        self.callback = callback
-        self.method = target
-        self.callback_args = callback_args
-
-    def target_with_callback(self):
-        self.method()
-        if self.callback is not None:
-            self.callback(*self.callback_args)
-
+print(str(max_seq))

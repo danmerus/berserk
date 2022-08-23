@@ -176,7 +176,7 @@ if __name__ == '__main__':
     STACK_DURATION = 5
     TURN_DURATION = 5
     game = Game()
-    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION)
+    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION, pow=2)
     game.gui = gui
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),
@@ -193,7 +193,7 @@ if __name__ == '__main__':
               # Ovrajnii_gnom_1(player=1, location=13, gui=gui),
               # Lovets_dush_1(player=1, location=0, gui=gui),
               # Necromant_1(player=1, location=21, gui=gui),
-              #Elfiyskiy_voin_1(player=1, location=12, gui=gui),
+              Elfiyskiy_voin_1(player=1, location=12, gui=gui),
                Gnom_basaarg_1(player=1, location=2, gui=gui),
               Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
               Bjorn_1(player=1, location=3, gui=gui),
