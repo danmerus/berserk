@@ -64,9 +64,10 @@ class OmegaPopup(DragBehavior, Popup):
 
 class BerserkApp(App):
 
-    def __init__(self, backend, window_size, stack_duration=30, turn_duration=60):
+    def __init__(self, backend, window_size, stack_duration=30, turn_duration=60, pow_player=1):
         super(BerserkApp, self).__init__()
         self.backend = backend
+        self.pow_player = pow_player
         Window.size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
@@ -1939,7 +1940,7 @@ class BerserkApp(App):
                                    Window.height * 0.03 + j * CARD_Y_SIZE),
                               size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
                 self.card_position_coords.append((btn1.x, btn1.y))
-                #self.layout.add_widget(btn1)
+                self.layout.add_widget(btn1)
 
         # when user clicked on square outside red move marks
         Window.bind(on_touch_down=self.delete_move_marks_on_unfocus)
