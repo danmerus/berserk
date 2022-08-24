@@ -89,7 +89,7 @@ class GameHandler(socketserver.BaseRequestHandler):
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
             self.server.ready_count.add(turn)
-            print('card_data:', pickle.loads(card_data))
+            # print('card_data:', pickle.loads(card_data))
             if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
                 self.server.player2_cards = card_data
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
@@ -101,7 +101,7 @@ class GameHandler(socketserver.BaseRequestHandler):
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ready' + nick1)
             if len(self.server.ready_count) == 2:
-                print('all ready!')
+                # print('all ready!')
                 if self.server.turn_rng == 1:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))
