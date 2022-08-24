@@ -111,12 +111,20 @@ def start_constr_helper(sock, parent):
         elif datachunk.startswith(b'ready'):
             nick = datachunk[len('ready'):].decode('utf-8')
             constr_cb2(nick, parent)
+        elif datachunk.startswith(b'start_constr'):
+            card_data = datachunk[len('start_constr'):]
+            print('card_data:', pickle.loads(card_data))
+            print('start_constr!')
+
     sock.close()
 
 
 @mainthread
 def constr_cb2(nick, parent):
-    parent.on_ready_to_start(nick)
+    try:
+        parent.on_ready_to_start(nick)
+    except:
+        pass
 
 @mainthread
 def constr_cb1(data, parent):

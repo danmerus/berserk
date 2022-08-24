@@ -180,10 +180,15 @@ class SelectionApp(App):
 
     def on_ready_to_start(self, nick, *args):
         print('there!!')
-        self.ready_info = Label(text='Игрок '+nick+' уже готов!',
+        self.ready_info = Label(text=nick+' уже готов!',
                                 pos=(Window.width * 0.83, Window.height * 0.28),
                                 size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         self.layout.add_widget(self.ready_info)
+
+    def on_game_start(self, *args):
+        self.stop()
+        self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
+        self.backend.gui.run()
 
     def lock_and_loaded(self, *args):
         if -1 not in self.occupied.values():

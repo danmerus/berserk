@@ -55,7 +55,6 @@ class MainHandler(socketserver.BaseRequestHandler):
                 gs = GameServer(game_id, ip1, port1, ip2, port2, nick1, nick2)
                 t = threading.Thread(target=gs.start, args=(), daemon=True)
                 t.start()
-                # gs.start()
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'game_server'+(str(gs.turn_rng) +'#'+gs.server_address[0]+'#'+str(gs.server_address[1])).encode('utf-8'))
@@ -74,28 +73,49 @@ class GameHandler(socketserver.BaseRequestHandler):
             turn = int(turn)
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
-            if turn == 2:
+            if (turn == 2 and self.server.turn_rng==1) or (turn == 1 and self.server.turn_rng==2):
                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                    s1.connect((ip2, int(port2)))
                    s1.sendall(b'close')
                self.server.player2 = (ip, port, nick1)
-            elif turn == 1:
+            elif (turn == 1 and self.server.turn_rng==1) or (turn == 2 and self.server.turn_rng==2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'close')
-                self.server.player2 = (ip, port, nick2)
+                self.server.player1 = (ip, port, nick2)
         elif self.data.startswith(b'placement_ready'):
             turn = int(self.data[len('placement_ready'):len('placement_ready') + 1].decode('utf-8'))
+            card_data = self.data[len('placement_ready')+1:]
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
-            if (turn == 2 and self.server.turn_rng==1) or (turn == 1 and self.server.turn_rng==2):
+            self.server.ready_count.add(turn)
+            print('card_data:', pickle.loads(card_data))
+            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
+                self.server.player2_cards = card_data
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
-                    s1.sendall(b'ready'+('#').encode('utf-8')+nick2)
-            elif (turn == 1 and self.server.turn_rng==1) or (turn == 2 and self.server.turn_rng==2):
+                    s1.sendall(b'ready' + nick2)
+            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
+                self.server.player1_cards = card_data
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip2, int(port2)))
-                    s1.sendall(b'ready'+('#').encode('utf-8')+nick1)
+                    s1.sendall(b'ready' + nick1)
+            if len(self.server.ready_count) == 2:
+                print('all ready!')
+                if self.server.turn_rng == 1:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                        s1.connect((ip1, int(port1)))
+                        s1.sendall(b'start_constr'+self.server.player2_cards)
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                        s1.connect((ip2, int(port2)))
+                        s1.sendall(b'start_constr'+self.server.player1_cards)
+                elif self.server.turn_rng == 2:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                        s1.connect((ip1, int(port1)))
+                        s1.sendall(b'start_constr' + self.server.player1_cards)
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                        s1.connect((ip2, int(port2)))
+                        s1.sendall(b'start_constr' + self.server.player2_cards)
 
 
 
@@ -109,17 +129,17 @@ class GameServer:
         self.game_id = game_id
         self.turn_rng = random.randint(1, 2)
         self.server.turn_rng = self.turn_rng
-        if self.turn_rng == 1:
-            self.player1 = (ip1, port1, nick1)
-            self.player2 = (ip2, port2, nick2)
-            self.server.player1 = self.player1
-            self.server.player2 = self.player2
-        else:
-            self.player2 = (ip1, port1, nick1)
-            self.player1 = (ip2, port2, nick2)
-            self.server.player1 = self.player1
-            self.server.player2 = self.player2
-
+        # if self.turn_rng == 1:
+        self.player1 = (ip1, port1, nick1)
+        self.player2 = (ip2, port2, nick2)
+        self.server.player1 = self.player1
+        self.server.player2 = self.player2
+        self.ready_count = set()
+        self.server.ready_count = self.ready_count
+        self.player1_cards = []
+        self.player2_cards = []
+        self.server.player1_cards = self.player1_cards
+        self.server.player2_cards = self.player2_cards
 
 
 
