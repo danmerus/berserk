@@ -101,7 +101,7 @@ class GameHandler(socketserver.BaseRequestHandler):
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ready' + nick1)
             if len(self.server.ready_count) == 2:
-                # print('all ready!')
+                    # print('all ready!')
                 if self.server.turn_rng == 1:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))

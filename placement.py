@@ -179,15 +179,19 @@ class SelectionApp(App):
         return 29 - coord
 
     def on_ready_to_start(self, nick, *args):
-        print('there!!')
         self.ready_info = Label(text=nick+' уже готов!',
                                 pos=(Window.width * 0.83, Window.height * 0.28),
                                 size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         self.layout.add_widget(self.ready_info)
 
-    def on_game_start(self, *args):
+    def on_game_start(self, cards, *args):
         self.stop()
-        self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
+        if self.turn == 1:
+            print(self.backend.cards_on_board1, cards)
+            self.backend.set_cards(self.backend.cards_on_board1, cards, self.backend.gui)
+        else:
+            print(self.backend.cards_on_board2, cards)
+            self.backend.set_cards(cards, self.backend.cards_on_board2, self.backend.gui)
         self.backend.gui.run()
 
     def lock_and_loaded(self, *args):

@@ -113,11 +113,17 @@ def start_constr_helper(sock, parent):
             constr_cb2(nick, parent)
         elif datachunk.startswith(b'start_constr'):
             card_data = datachunk[len('start_constr'):]
-            print('card_data:', pickle.loads(card_data))
-            print('start_constr!')
+            try:
+                constr_cb3(pickle.loads(card_data), parent)
+            except:
+                print('error in decoding cards!')
+            print('starting constracted game!')
 
     sock.close()
 
+@mainthread
+def constr_cb3(cards, parent):
+    parent.on_game_start(cards)
 
 @mainthread
 def constr_cb2(nick, parent):

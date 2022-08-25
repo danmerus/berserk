@@ -425,6 +425,7 @@ class DeckSelectionApp(App):
             elif self.mode == 'constr':
                 deck = [x(gui=self.backend.gui) for x in cards]
                 hand = random.sample(deck, 15)
+                self.backend.pow = self.turn
                 self.stop()
                 reset()
                 f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=self.turn, gold_cap=24,
