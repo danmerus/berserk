@@ -208,6 +208,13 @@ class Board():
         out = list(chain(gr, self.symb1, self.symb2, extr1, extr2))
         return out
 
+    def get_card_by_id(self, id_):
+        all_cards = self.get_all_cards()
+        for c in all_cards:
+            if c.id_on_board == id_:
+                return c
+        raise('Not found card!', id_)
+
     def get_available_moves(self, card):
         if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or card.gui.backend.curr_game_state != GameStates.MAIN_PHASE:
             return []

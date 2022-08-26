@@ -1,13 +1,9 @@
 max_seq = 0 
 curr_max = 0	
-in_ = "1\n2\n2"
-for val in input().split():
-	if int(val) == 0:
-		break
-	elif int(val) > curr_max:
-		curr_max = int(val)
-		max_seq = 1
-	elif int(val) == curr_max:
-		max_seq += 1
-
-print(str(max_seq))
+with open('input.txt', 'r', encoding='utf-8') as f:
+	data = f.read()
+func_ = lambda x: list(map(int, x.splitlines())).count(max(map(int, x.splitlines())))
+max_seq = func_(data)
+print(max_seq)
+with open('output.txt', 'w', encoding='utf-8') as out:
+	out.write(str(max_seq))

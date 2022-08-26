@@ -45,6 +45,7 @@ class Card:
         self.exp_in_off = exp_in_off
         self.alive = True
         self.hidden = False
+        self.id_on_board = -1
 
     def add_default_abilities(self):
         self.abilities = []
@@ -64,4 +65,3 @@ class Card:
             a1 = DefenceAction(a_type=ActionTypes.ZASCHITA, active=True)
             self.abilities.insert(1, a1)
             self.defence_action = a1
-

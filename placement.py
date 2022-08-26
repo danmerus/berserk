@@ -120,7 +120,7 @@ class SelectionApp(App):
         self.mode = mode
         self.server_ip = server_ip
         self.server_port = server_port
-        network.on_entering_placement(self.server_ip, self.server_port, self.turn, self)
+        network.on_entering_next_screen(self.server_ip, self.server_port, self.turn, self)
 
     def open_settings(self, *largs):
         pass
@@ -186,11 +186,15 @@ class SelectionApp(App):
 
     def on_game_start(self, cards, *args):
         self.stop()
+        self.backend.turn = self.turn
+        self.backend.mode = 'online'
+        self.backend.server_ip = self.server_ip
+        self.backend.server_port = self.server_port
         if self.turn == 1:
-            print(self.backend.cards_on_board1, cards)
+            # print('1', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
             self.backend.set_cards(self.backend.cards_on_board1, cards, self.backend.gui)
         else:
-            print(self.backend.cards_on_board2, cards)
+            # print('2', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
             self.backend.set_cards(cards, self.backend.cards_on_board2, self.backend.gui)
         self.backend.gui.run()
 

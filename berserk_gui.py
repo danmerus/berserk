@@ -24,6 +24,7 @@ from kivy.uix.image import Image
 from kivy.graphics.vertex_instructions import BorderImage
 import game_properties
 import operator
+import network
 from cards.card_properties import *
 from copy import copy
 from collections import defaultdict
@@ -77,6 +78,9 @@ class BerserkApp(App):
 
         STACK_DURATION = stack_duration
         TURN_DURATION = turn_duration
+
+        self.turn_duration = turn_duration
+        self.stack_duration = stack_duration
 
         DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
         self.title = 'Berserk Renewal'
@@ -329,8 +333,8 @@ class BerserkApp(App):
                 c = Color(0.2, 0.2, 0.8, 1)
             self.card_border = (Line(width=1, color=c, rectangle=(0, 0, CARD_X_SIZE, CARD_Y_SIZE)), instance)
 
-    def move_card(self, card, move, instance):
-        x, y = instance.parent.x, instance.parent.y
+    def move_card(self, card, move, x, y):
+        # x, y = instance.parent.x, instance.parent.y
         anim = Animation(x=x, y=y, duration=0.5)
         anim.start(self.cards_dict[card])
         self.destroy_x(self.nav_buttons)
@@ -559,7 +563,22 @@ class BerserkApp(App):
             self.able_selected(enable=False)
             self.start_timer(STACK_DURATION)
 
-    def start_stack_action(self, ability, card, victim, state=0, force=0):
+    def start_stack_action(self, ability, card, victim, state=0, force=0, imposed=False): #, movement_tuple=None):
+        if self.backend.mode == 'online' and not imposed:
+            network.ability_pressed(self.backend.server_ip, self.backend.server_port, self.backend.turn, ability, card, victim, state, force)
+        else:
+            pass
+            # import pickle
+            # ability.button = None
+            # if isinstance(state,  kivy.uix.button.Button):
+            #     state = 0
+            # if hasattr(victim, 'id_on_board'):
+            #     v = victim.id_on_board
+            # else:
+            #     v = victim
+            # print(ability, card.id_on_board, v, state, force)
+            # pickle.dumps([ability, card.id_on_board, v, state, force])
+
         self.destroy_target_rectangles()
         self.destroy_target_marks()
         if (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO) and \
@@ -767,7 +786,7 @@ class BerserkApp(App):
                 return
             if isinstance(ability, DefaultMovementAction):
                 if not card.tapped:
-                    self.move_card(card, victim[0], victim[1])  # victim here is a move
+                    self.move_card(card, victim[0], victim[1][0], victim[1][1])  # victim here is a move
                 else:
                     pass
                 return
@@ -1199,6 +1218,8 @@ class BerserkApp(App):
     def on_click_on_card(self, card, instance):
         # print('Опыт в защите: ', card.defences)
         # print(card.actions_left)
+        if self.backend.mode == 'online' and card.player != self.pow:
+            return
         if self.disabled_actions:
             return
         self.destroy_target_marks()
@@ -1231,12 +1252,12 @@ class BerserkApp(App):
             x, y = self.card_position_coords[move][0], self.card_position_coords[move][1]
             rl = RelativeLayout(pos=(x, y), size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
             btn = Button(size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_color=(0, 0, 0, 0))
+            rl.add_widget(btn)
             ability = DefaultMovementAction(move=move)
-            btn.bind(on_press=partial(self.start_stack_action, ability, card, (move, btn)))
+            btn.bind(on_press=partial(self.start_stack_action, ability, card, (move, (btn.parent.x, btn.parent.y))))
             with rl.canvas:
                 Color(1, 0, 0, 1)
                 Ellipse(pos=(CARD_X_SIZE / 2 - 10, CARD_Y_SIZE / 2 - 10), size=(20, 20))
-            rl.add_widget(btn)
             self.root.add_widget(rl)
             self.nav_buttons.append(rl)
 
@@ -1611,6 +1632,8 @@ class BerserkApp(App):
 
     def reveal_cards(self, cards):
         for card in cards:
+            card.id_on_board = self.curr_id_on_bord
+            self.curr_id_on_bord += 1
             loc = card.loc
             # if card.hidden:
             #     pic = 'data/cards/cardback.jpg'
@@ -1798,8 +1821,14 @@ class BerserkApp(App):
     #         self.timer.cancel(self.timer_label)
     #         self.timer.start(self.timer_label)
 
-    def start_timer(self, *args):
-        duration = args[0]
+    def start_timer(self, duration, *args):
+        if args:
+            imposed = args[0]
+            if not isinstance(imposed, bool) and self.backend.mode == 'online':
+                network.timer_pressed(self.backend.server_ip, self.backend.server_port, duration, self.backend.turn)
+        # elif self.backend.mode == 'online':
+        #     imposed = False
+        #     network.timer_pressed(self.backend.server_ip, self.backend.server_port, duration, self.backend.turn)
         if hasattr(self, 'timer'):
             self.timer.cancel(self.timer_label)
         if hasattr(self, 'timer_ly'):
@@ -1892,6 +1921,8 @@ class BerserkApp(App):
         self.root.add_widget(butt)
 
     def build(self):
+        if self.backend.mode == 'online':
+            network.on_entering_next_screen(self.backend.server_ip, self.backend.server_port, self.backend.turn, self)
         root = MainField()
         with root.canvas:
             root.bg_rect = Rectangle(source='data/bg/dark_bg_7.jpg', pos=root.pos, size=Window.size)
@@ -1926,7 +1957,7 @@ class BerserkApp(App):
         self.card_nameplates_dict = defaultdict(RelativeLayout)
         self.base_overlays = {}
         self.damage_marks = []
-        self.count_of_flyers_1 = 0
+        self.curr_id_on_bord = 0
         self.selection_flicker_dict = {}
         self.card_signs = defaultdict(list)
         self.card_signs_imgs = {}
@@ -1979,7 +2010,7 @@ class BerserkApp(App):
 
         self.timer_label = Label()
         self.backend.start()
-        Clock.schedule_once(lambda x: self.start_timer(TURN_DURATION))  # BUGGY?
+        #Clock.schedule_once(lambda x: self.start_timer(TURN_DURATION))  # BUGGY?
 
         # Extra zones sliders
         self.dop_zone_1_buttons = []

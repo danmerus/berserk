@@ -13,13 +13,13 @@ from functools import partial
 
 class Game:
 
-    def __init__(self, ):
+    def __init__(self, server_ip=None, server_port=None):
         """"
         cards_on_board is a cards list
         """
         self.board = board.Board()
         self.curr_game_state = GameStates.VSKRYTIE
-        self.turn = 1
+        self.turn_count = 1
         self.current_active_player = 1
         self.curr_priority = 1
         self.in_stack = False
@@ -29,6 +29,9 @@ class Game:
         self.passed_once = False
         self.cards_on_board1 = []
         self.cards_on_board2 = []
+        self.mode = 'offline'
+        self.server_ip = server_ip
+        self.server_port = server_port
 
     def set_cards(self, cards_on_board1, cards_on_board2, gui):  # todo remove gui arg
         for card in cards_on_board1:
@@ -134,14 +137,14 @@ class Game:
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
-        self.turn += 1
+        self.turn_count += 1
         for card in self.board.get_all_cards():
             if card.player != self.current_active_player and CardEffect.NETTED in card.active_status:
                 card.active_status.remove(CardEffect.NETTED)
                 if not card.tapped:
                     card.actions_left = 1
                 self.gui.add_defence_signs(card)
-            if self.turn > 1 and card.hidden:
+            if self.turn_count > 1 and card.hidden:
                 self.gui.unhide(card)
         #game.gui.on_new_turn()
 
@@ -158,6 +161,7 @@ class Game:
         return ret
 
     def start(self, *args):
+        Clock.schedule_once(lambda x: self.gui.start_timer(self.gui.turn_duration, True))
         if not self.is_state_active(GameStates.VSKRYTIE):
             self.next_game_state()
 
@@ -176,7 +180,7 @@ if __name__ == '__main__':
     STACK_DURATION = 5
     TURN_DURATION = 5
     game = Game()
-    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION, pow=2)
+    gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION, pow=1)
     game.gui = gui
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
     #           # Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),Lovets_dush_1(), PovelitelMolniy_1(), Draks_1(),

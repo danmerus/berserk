@@ -68,8 +68,8 @@ class GameHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(8192).strip()
         print('Game_server:', self.data)
-        if self.data.startswith(b'in_placement'):
-            ip, port, turn = self.data[len('in_placement'):].decode('utf-8').split('#')
+        if self.data.startswith(b'next_screen'):
+            ip, port, turn = self.data[len('next_screen'):].decode('utf-8').split('#')
             turn = int(turn)
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
@@ -89,7 +89,6 @@ class GameHandler(socketserver.BaseRequestHandler):
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
             self.server.ready_count.add(turn)
-            # print('card_data:', pickle.loads(card_data))
             if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
                 self.server.player2_cards = card_data
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
@@ -101,7 +100,6 @@ class GameHandler(socketserver.BaseRequestHandler):
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ready' + nick1)
             if len(self.server.ready_count) == 2:
-                    # print('all ready!')
                 if self.server.turn_rng == 1:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))
@@ -112,12 +110,37 @@ class GameHandler(socketserver.BaseRequestHandler):
                 elif self.server.turn_rng == 2:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))
-                        s1.sendall(b'start_constr' + self.server.player1_cards)
+                        s1.sendall(b'start_constr' + self.server.player2_cards)
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip2, int(port2)))
-                        s1.sendall(b'start_constr' + self.server.player2_cards)
-
-
+                        s1.sendall(b'start_constr' + self.server.player1_cards)
+        elif self.data.startswith(b'timer_pressed'):
+            duration, turn = self.data[len('timer_pressed'):].decode('utf-8').split('#')
+            turn = int(turn)
+            ip1, port1, nick1 = self.server.player1
+            ip2, port2, nick2 = self.server.player2
+            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip1, int(port1)))
+                    s1.sendall(b'timer_pressed' + duration.encode('utf-8'))
+            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip2, int(port2)))
+                    s1.sendall(b'timer_pressed' + duration.encode('utf-8'))
+        elif self.data.startswith(b'ability_pressed'):
+            turn = self.data[len('ability_pressed'):len('ability_pressed')+1].decode('utf-8')
+            turn = int(turn)
+            data = self.data[len('ability_pressed')+1:]
+            ip1, port1, nick1 = self.server.player1
+            ip2, port2, nick2 = self.server.player2
+            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip1, int(port1)))
+                    s1.sendall(b'ability_pressed' + data)
+            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip2, int(port2)))
+                    s1.sendall(b'ability_pressed' + data)
 
 
 class GameServer:
