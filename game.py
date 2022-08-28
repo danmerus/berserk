@@ -2,6 +2,8 @@ import os
 import board
 import berserk_gui
 import numpy.random as rng
+
+import network
 from game_properties import GameStates
 from kivy.clock import Clock
 from cards.card import *
@@ -17,9 +19,10 @@ class Game:
         """"
         cards_on_board is a cards list
         """
-        self.board = board.Board()
+        self.board = board.Board(self)
         self.curr_game_state = GameStates.VSKRYTIE
         self.turn_count = 1
+        self.turn = 1
         self.current_active_player = 1
         self.curr_priority = 1
         self.in_stack = False
@@ -36,8 +39,12 @@ class Game:
     def set_cards(self, cards_on_board1, cards_on_board2, gui):  # todo remove gui arg
         for card in cards_on_board1:
             card.gui = gui
+            for i, a in enumerate(card.abilities):
+                a.index = i
         for card in cards_on_board2:
             card.gui = gui
+            for i, a in enumerate(card.abilities):
+                a.index = i
         self.input_cards1 = cards_on_board1
         self.input_cards2 = cards_on_board2
         self.populate_cards()
@@ -54,9 +61,14 @@ class Game:
                 self.passed_2 = True
             self.switch_priority()
 
-    def get_roll_result(self, mod_1=0):
-        x1 = rng.randint(1, 7) + mod_1
-        return x1
+    def get_roll_result(self,  count):
+        res = []
+        if self.mode == 'online':
+            res = network.get_rolls(self.server_ip, self.server_port, count)
+        else:
+            for _ in range(count):
+                res.append(rng.randint(1, 7))
+        return res
 
     def get_fight_result(self, roll1, roll2):
         """
@@ -134,6 +146,10 @@ class Game:
         else:
             self.current_active_player = 1
             self.curr_priority = 1
+        if self.gui.pow == self.current_active_player and self.mode == 'online':
+            self.gui.eot_button.disabled = False
+        elif self.gui.pow != self.current_active_player and self.mode == 'online':
+            self.gui.eot_button.disabled = True
         self.on_start_new_turn()
 
     def on_start_new_turn(self):
@@ -195,11 +211,11 @@ if __name__ == '__main__':
     # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Mrazen_1(player=1, location=27, gui=gui),
               # Ovrajnii_gnom_1(player=1, location=13, gui=gui),
-              # Lovets_dush_1(player=1, location=0, gui=gui),
+               Lovets_dush_1(player=1, location=0, gui=gui),
               # Necromant_1(player=1, location=21, gui=gui),
               Elfiyskiy_voin_1(player=1, location=12, gui=gui),
-               Gnom_basaarg_1(player=1, location=2, gui=gui),
-              Pauk_peresmeshnik_1(player=1, location=4, gui=gui),
+               Leshii_1(player=1, location=2),
+              Otshelnik_1(player=1, location=4, gui=gui),
               Bjorn_1(player=1, location=3, gui=gui),
               # Draks_1(player=1, location=5, gui=gui)
         ]

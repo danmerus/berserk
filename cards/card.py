@@ -65,3 +65,10 @@ class Card:
             a1 = DefenceAction(a_type=ActionTypes.ZASCHITA, active=True)
             self.abilities.insert(1, a1)
             self.defence_action = a1
+
+    def get_ability_by_id(self, id_):
+        for a in self.abilities:
+            if a.index == id_:
+                return a
+        return None
+

@@ -7,6 +7,7 @@ import threading
 from copy import copy
 from kivy.clock import mainthread
 import kivy.uix.button
+from cards.card_properties import *
 
 
 def get_waiting_players(host, port, parent, *args):
@@ -137,23 +138,36 @@ def placement_ready(host, port, turn, data, *args):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
             byte_data = pickle.dumps(data)
+            print('card data length: ', len(byte_data))
             res = s1.sendall(b'placement_ready'+(str(turn)).encode()+byte_data)
     except Exception as e:
         print(e)
     return res
 
-def timer_pressed(host, port, duration, turn):
+def eot_pressed(host, port, turn, *args):
     res = -1
     #print('timer pressed!', turn)
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
-            res = s1.sendall(b'timer_pressed' + (str(duration)+'#' + str(turn)).encode())
+            res = s1.sendall(b'eot_pressed' + (str(turn)).encode())
+    except Exception as e:
+        print(e)
+    return res
+
+def ph_pressed(host, port, turn, *args):
+    res = -1
+    #print('skip pressed!', turn)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'ph_pressed' + (str(turn)).encode())
     except Exception as e:
         print(e)
     return res
 
 def ability_to_pickle(ability, card, victim, state, force):
+    print('pre-pickling:', ability, card, victim, state, force)
     ability.button = None
     ability1 = copy(ability)
     card1 = copy(card)
@@ -164,16 +178,27 @@ def ability_to_pickle(ability, card, victim, state, force):
         v = victim1.id_on_board
     else:
         v = victim1
-    print(ability1, card1.id_on_board, v, state, force)
-    return pickle.dumps([ability1, card1.id_on_board, v, state, force])
+    if hasattr(ability1, 'index'):
+        a = ability1.index
+    else:
+        a = ability1
+    print('pickling:', a, card1.id_on_board, v, state, force)
+    return pickle.dumps([a, card1.id_on_board, v, state, force])
 
 def pickle_to_ability(data, parent):
     ability, card, victim, state, force = pickle.loads(data)
     card = parent.backend.board.get_card_by_id(card)
-    try:
-        victim = parent.backend.board.get_card_by_id(victim)
-    except:
+    print('recieved, ', ability, card, victim, state, force)
+    if isinstance(ability, DefaultMovementAction):
         victim = victim
+    else:
+        try:
+            victim = parent.backend.board.get_card_by_id(victim)
+        except Exception as e:
+            #print('unpickle victim error:', e, victim)
+            victim = victim
+    if isinstance(ability, int):
+        ability = card.get_ability_by_id(ability)
     return ability, card, victim, state, force
 
 
@@ -186,6 +211,19 @@ def ability_pressed(host, port, turn, ability, card, victim, state, force):
             data = ability_to_pickle(ability, card, victim, state, force)
             byte_data = pickle.dumps(data)
             res = s1.sendall(b'ability_pressed' + (str(turn)).encode() + byte_data)
+    except Exception as e:
+        print(e)
+    return res
+
+def get_rolls(host, port, count):
+    res = -1
+    # print('ability pressed!', turn)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            s1.sendall(b'get_roll' + (str(count)).encode())
+            data = s1.recv(8192)
+            res = pickle.loads(data)
     except Exception as e:
         print(e)
     return res
@@ -209,9 +247,10 @@ def start_constr_helper(sock, parent):
             except:
                 print('error in decoding cards!')
             print('starting constracted game!')
-        elif datachunk.startswith(b'timer_pressed'):
-            duration = int(datachunk[len('timer_pressed'):].decode('utf-8'))
-            constr_cb4(duration, parent)
+        elif datachunk.startswith(b'eot_pressed'):
+            constr_cb4(parent)
+        elif datachunk.startswith(b'ph_pressed'):
+            constr_cb6(parent)
         elif datachunk.startswith(b'ability_pressed'):
             byte_data = datachunk[len('ability_pressed'):]
             data = pickle.loads(byte_data)
@@ -226,8 +265,12 @@ def constr_cb5(data, parent):
     parent.start_stack_action(ability, card, victim, state, force, imposed=True)
 
 @mainthread
-def constr_cb4(duration, parent):
-    parent.start_timer(duration, True)
+def constr_cb6(parent):
+    parent.on_online_press_skip()
+
+@mainthread
+def constr_cb4(parent):
+    parent.on_online_press_turn()
 
 @mainthread
 def constr_cb3(cards, parent):

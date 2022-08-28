@@ -39,7 +39,7 @@ class Voin_hrama_1(Card):
         self.abilities.append(a1)
 
     def a1_cb(self, ability):
-        roll = self.gui.backend.get_roll_result()
+        roll = self.gui.backend.get_roll_result(1)
         print('voin hrama roll', roll)
         self.gui.draw_die(0, 0, roll, [])
         if roll > 4:

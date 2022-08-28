@@ -66,8 +66,8 @@ class MainHandler(socketserver.BaseRequestHandler):
 class GameHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
-        self.data = self.request.recv(8192).strip()
-        print('Game_server:', self.data)
+        self.data = self.request.recv(65536).strip()
+        print('Game_server:', len(self.data), self.data)
         if self.data.startswith(b'next_screen'):
             ip, port, turn = self.data[len('next_screen'):].decode('utf-8').split('#')
             turn = int(turn)
@@ -114,19 +114,32 @@ class GameHandler(socketserver.BaseRequestHandler):
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip2, int(port2)))
                         s1.sendall(b'start_constr' + self.server.player1_cards)
-        elif self.data.startswith(b'timer_pressed'):
-            duration, turn = self.data[len('timer_pressed'):].decode('utf-8').split('#')
+        elif self.data.startswith(b'eot_pressed'):
+            turn = self.data[len('eot_pressed'):len('eot_pressed')+1].decode('utf-8')
             turn = int(turn)
             ip1, port1, nick1 = self.server.player1
             ip2, port2, nick2 = self.server.player2
             if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
-                    s1.sendall(b'timer_pressed' + duration.encode('utf-8'))
+                    s1.sendall(b'eot_pressed')
             elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip2, int(port2)))
-                    s1.sendall(b'timer_pressed' + duration.encode('utf-8'))
+                    s1.sendall(b'eot_pressed')
+        elif self.data.startswith(b'ph_pressed'):
+            turn = self.data[len('ph_pressed'):len('ph_pressed')+1].decode('utf-8')
+            turn = int(turn)
+            ip1, port1, nick1 = self.server.player1
+            ip2, port2, nick2 = self.server.player2
+            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip1, int(port1)))
+                    s1.sendall(b'ph_pressed')
+            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                    s1.connect((ip2, int(port2)))
+                    s1.sendall(b'ph_pressed')
         elif self.data.startswith(b'ability_pressed'):
             turn = self.data[len('ability_pressed'):len('ability_pressed')+1].decode('utf-8')
             turn = int(turn)
@@ -141,7 +154,19 @@ class GameHandler(socketserver.BaseRequestHandler):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ability_pressed' + data)
-
+        elif self.data.startswith(b'get_roll'):
+            count = self.data[len('get_roll'):].decode('utf-8')
+            count = int(count)
+            if not self.server.rolls or len(self.server.rolls) != count:
+                self.server.rolls = []
+                for _ in range(count):
+                    self.server.rolls.append(random.randint(1, 7))
+            data = pickle.dumps(self.server.rolls)
+            self.server.sent_rolls += 1
+            self.request.sendall(data)
+            if self.server.sent_rolls == 2:
+                self.server.sent_rolls = 0
+                self.server.rolls = []
 
 class GameServer:
     def __init__(self, game_id, ip1, port1, ip2, port2, nick1='Унгар1', nick2='Унгар1'):
@@ -163,6 +188,8 @@ class GameServer:
         self.player2_cards = []
         self.server.player1_cards = self.player1_cards
         self.server.player2_cards = self.player2_cards
+        self.server.sent_rolls = 0
+        self.server.rolls = []
 
 
 

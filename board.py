@@ -4,7 +4,7 @@ from cards.card_properties import *
 
 class Board():
 
-    def __init__(self):
+    def __init__(self, backend):
         self.game_board = [0 for _ in range(30)]
         self.extra1 = []
         self.extra2 = []
@@ -14,6 +14,7 @@ class Board():
         self.grave2 = []
         self.deck1 = []
         self.deck2 = []
+        self.backend = backend
         
     def populate_board(self, cards):
         for c in cards:
@@ -216,7 +217,7 @@ class Board():
         raise('Not found card!', id_)
 
     def get_available_moves(self, card):
-        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or card.gui.backend.curr_game_state != GameStates.MAIN_PHASE:
+        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or self.backend.curr_game_state != GameStates.MAIN_PHASE:
             return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)
