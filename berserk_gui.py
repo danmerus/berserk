@@ -458,12 +458,12 @@ class BerserkApp(App):
         if card.type_ == CreatureType.CREATURE and card.alive or card.hidden:
             return self.cards_dict[card].pos
         elif not card.alive:
-            if card.player == 1:
+            if (card.player == 1 and self.pow == 1) or (card.player == 2 and self.pow == 2):
                 return self.grave_1_gl.to_window(*self.cards_dict[card].pos)
             else:
                 return self.grave_2_gl.to_window(*self.cards_dict[card].pos)
         if card.type_ == CreatureType.FLYER:
-            if card.player == 1:
+            if (card.player == 1 and self.pow == 1) or (card.player == 2 and self.pow == 2):
                 return self.dop_zone_1.to_parent(*self.cards_dict[card].pos)
             else:
                 return self.dop_zone_2.to_parent(*self.cards_dict[card].pos)
