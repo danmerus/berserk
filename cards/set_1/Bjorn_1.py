@@ -6,7 +6,7 @@ class Bjorn_1(Card):
 
     def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=1,
+            life=10,
             move=1,
             attack=(2, 2, 3),
             name='Бьёрн',
