@@ -42,7 +42,7 @@ class Voin_hrama_1(Card):
         roll = self.gui.backend.get_roll_result(1)
         print('voin hrama roll', roll)
         self.gui.draw_die(0, 0, roll, [])
-        if roll > 4:
+        if roll[0] > 4:
             b = BlockAction(ability)
             self.gui.backend.stack.append((b, None, None, 2))
         self.gui.process_stack()

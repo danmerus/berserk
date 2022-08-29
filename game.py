@@ -36,17 +36,21 @@ class Game:
         self.server_ip = server_ip
         self.server_port = server_port
 
-    def set_cards(self, cards_on_board1, cards_on_board2, gui):  # todo remove gui arg
+    def set_cards(self, cards_on_board1, cards_on_board2, gui):
+        new_cards1 = []
+        new_cards2 = []
         for card in cards_on_board1:
-            card.gui = gui
-            for i, a in enumerate(card.abilities):
+            nc = card.__class__(card.player, card.loc, gui)
+            for i, a in enumerate(nc.abilities):
                 a.index = i
+            new_cards1.append(nc)
         for card in cards_on_board2:
-            card.gui = gui
-            for i, a in enumerate(card.abilities):
+            nc = card.__class__(card.player, card.loc, gui)
+            for i, a in enumerate(nc.abilities):
                 a.index = i
-        self.input_cards1 = cards_on_board1
-        self.input_cards2 = cards_on_board2
+            new_cards2.append(nc)
+        self.input_cards1 = new_cards1
+        self.input_cards2 = new_cards2
         self.populate_cards()
 
     def populate_cards(self):
@@ -210,13 +214,13 @@ if __name__ == '__main__':
     # selection.run()
     # game.set_cards(game.cards_on_board1, game.cards_on_board2, gui)
     cards1 = [Mrazen_1(player=1, location=27, gui=gui),
-              # Ovrajnii_gnom_1(player=1, location=13, gui=gui),
+               # Lovets_dush_1(player=1, location=13, gui=gui),
                Lovets_dush_1(player=1, location=0, gui=gui),
-              # Necromant_1(player=1, location=21, gui=gui),
+              Necromant_1(player=1, location=21, gui=gui),
               Elfiyskiy_voin_1(player=1, location=12, gui=gui),
                Leshii_1(player=1, location=2),
-              Otshelnik_1(player=1, location=4, gui=gui),
-              Bjorn_1(player=1, location=3, gui=gui),
+              # Otshelnik_1(player=1, location=4, gui=gui),
+              Ovrajnii_gnom_1(player=1, location=15, gui=gui),
               # Draks_1(player=1, location=5, gui=gui)
         ]
     cards2 = [

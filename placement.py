@@ -211,6 +211,7 @@ class SelectionApp(App):
                     #     card.hidden = True
                     card.loc = self.convert_coord(v)
                 card.gui = None
+                card.abilities = None
                 out.append(card)
             if self.turn == 1:
                 self.backend.cards_on_board1 = out

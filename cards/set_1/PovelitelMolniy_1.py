@@ -22,7 +22,7 @@ class PovelitelMolniy_1(Card):
             active_status=[],
             description='',
             curr_fishka=0,
-            max_fishka=2,
+            max_fishka=99,
             can_tap_for_fishka=True
         )
 

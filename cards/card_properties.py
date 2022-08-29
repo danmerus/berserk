@@ -254,7 +254,7 @@ class MultipleCardAction():
 class PopupAction():
 
     def __init__(self,  options, action_list, a_type=ActionTypes.POPUP, txt='', ranged=False, state_of_action=GameStates.MAIN_PHASE,
-                  isinstant=False):
+                  isinstant=False, show_to=1):
         self.action_list = action_list
         self.state_of_action = state_of_action
         self.ranged = ranged
@@ -263,6 +263,8 @@ class PopupAction():
         self.options = options
         self.isinstant = isinstant
         self.options = options
+        self.show_to = show_to
+
     def __str__(self):
         return self.txt
 

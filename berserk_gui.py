@@ -222,8 +222,11 @@ class BerserkApp(App):
     def popup_attack_bind(self, result, ability, card, victim, *args):
         self.timer_ability.unbind(on_complete=self.press_1)
         if hasattr(self, 'attack_popup'):
-            self.attack_popup.dismiss()
-            del self.attack_popup
+            try:
+                self.attack_popup.dismiss()
+                del self.attack_popup
+            except:
+                pass
         a, b = result
         if a:
             ability.damage_make = ability.damage[a - 1]
@@ -235,15 +238,11 @@ class BerserkApp(App):
         else:
             ability.damage_receive = 0
 
-        instants = self.backend.board.get_instants()
-        # if instants: TODO
-        #     self.backend.passed_1 = False
-        #     self.backend.passed_2 = False
-        # else:
         Clock.schedule_once(lambda x: self.destroy_red_arrows(), 2)
         self.backend.passed_1 = True
         self.backend.passed_2 = True
-        self.perform_card_action((ability, card, victim, 2))
+        ability .can_be_redirected = False
+        self.start_stack_action(ability, card, victim, state=2)
 
     def destroy_card(self, card, is_ubiranie_v_colodu=False):
         cb = self.backend.board.get_all_cards_with_callback(Condition.ANYCREATUREDEATH)
@@ -264,7 +263,7 @@ class BerserkApp(App):
         card.alive = False
 
         rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
-        btn1 = Button(disabled=False,
+        btn1 = Button(disabled=False, border=[1,1,1,1],
                       background_normal=card.pic, pos=(0, CARD_Y_SIZE * 0.16),
                       size=(CARD_X_SIZE, CARD_Y_SIZE * 0.84), size_hint=(None, None))
         card.loc = -1
@@ -316,7 +315,7 @@ class BerserkApp(App):
                 return
             sound.play()
         except Exception as e:
-            print(e)
+            print('play_attack_sound ', e)
 
     def card_popup_destr(self, window, pos):
         if hasattr(self, 'card_popup_obj'):
@@ -426,6 +425,10 @@ class BerserkApp(App):
             gr2 = [gr2]
         if gr1:
             for i, roll in enumerate(gr1):
+                if roll > 6:
+                    roll = 6
+                elif roll < 1:
+                    roll = 1
                 r1_i = Image(source=f'data/dice/Alea_{roll}.png', pos=(Window.width * 0.78 - 0.07 * Window.width * i, Window.height * 0.8),
                              size=(0.07 * Window.width, Window.height * 0.07))
                 with r1_i.canvas:
@@ -436,6 +439,10 @@ class BerserkApp(App):
                 self.die_pics.append(r1_i)
         if gr2:
             for i, roll in enumerate(gr2):
+                if roll > 6:
+                    roll = 6
+                elif roll < 1:
+                    roll = 1
                 r2_i = Image(source=f'data/dice/Alea_{roll}.png', pos=(Window.width * 0.12 + 0.07 * Window.width * i, Window.height * 0.8),
                              size=(0.07 * Window.width, Window.height * 0.07))
                 with r2_i.canvas:
@@ -537,10 +544,10 @@ class BerserkApp(App):
             if len(self.multiple_targets_list) == len(ability.action_list):
                 out = []
                 if ability.take_all_targets:  # выполняем последний акшен
-                    out.append((ability.action_list[-1], card, self.multiple_targets_list, 0))
+                    out.append((ability.action_list[-1], card, self.multiple_targets_list, state))
                 else:
                     for i, a in enumerate(ability.action_list):
-                        out.append((a, card, self.multiple_targets_list[i], 0))
+                        out.append((a, card, self.multiple_targets_list[i], state))
                 if self.proxi_ability:
                     if hasattr(ability, 'inc_ability'):
                         ability.inc_ability = None
@@ -558,7 +565,7 @@ class BerserkApp(App):
                 self.handle_multiple_actions(ability, card, None)
                 return
         else:
-            out = (ability, card, victim, 0)
+            out = (ability, card, victim, state)
         if (card.actions_left > 0 or force) and not force == -1:
             self.backend.stack.append(out)
             self.multiple_targets_list = []
@@ -567,12 +574,12 @@ class BerserkApp(App):
             self.able_selected(enable=False)
             self.start_timer(STACK_DURATION)
 
-    def start_stack_action(self, ability, card, victim, state=0, force=0, imposed=False): #, movement_tuple=None):
+    def start_stack_action(self, ability, card, victim, state=0, force=0, imposed=False):
         if self.backend.mode == 'online' and not imposed:
             network.ability_pressed(self.backend.server_ip, self.backend.server_port, self.backend.turn, ability, card, victim, state, force)
         else:
-            pass
-            # print(network.ability_to_pickle(ability, card, victim, state, force))
+            # pass
+            print(network.ability_to_pickle(ability, card, victim, state, force))
 
         self.destroy_target_rectangles()
         self.destroy_target_marks()
@@ -582,13 +589,13 @@ class BerserkApp(App):
             if self.defenders:  # Предварительный этап ("при объявлении [текст]")
                 self.backend.in_stack = True
                 self.eot_button.disabled = True
+                self.backend.curr_priority = victim.player
                 if self.backend.mode == 'online' and self.pow == self.backend.curr_priority:
                     self.ph_button.disabled = False
                 elif self.backend.mode == 'online' and self.pow != self.backend.curr_priority:
                     self.ph_button.disabled = True
                 elif self.backend.mode != 'online':
                     self.ph_button.disabled = False
-                self.backend.curr_priority = victim.player
 
                 self.draw_red_arrow(self.cards_dict[card], self.cards_dict[victim], card, victim)
                 Clock.schedule_once(lambda x: self.destroy_red_arrows(), 3)
@@ -600,13 +607,13 @@ class BerserkApp(App):
                     c.defence_action.disabled = False
                     c.defence_action.fight_with = card
                 self.pending_attack = ability
-                self.backend.stack.append((ability, card, victim, 0))
+                self.backend.stack.append((ability, card, victim, state))
                 # if not imposed:
                 #     self.start_stack_action(ability, card, victim, imposed=True)
             elif self.backend.board.get_instants():
-                self.handle_instant_stack(ability, card, victim)
+                self.handle_instant_stack(ability, card, victim, state)
             else:
-                self.perform_card_action(ability, card, victim, 0)
+                self.perform_card_action(ability, card, victim, state)  # state was 0!
                 self.process_stack()
         elif ability.a_type == ActionTypes.ZASCHITA:
             if hasattr(self, 'pending_attack') and self.pending_attack:
@@ -625,9 +632,7 @@ class BerserkApp(App):
                     temp_attack.redirected = True
                     temp_attack.can_be_redirected = False
                     self.pending_attack = None
-                    print('there!:', temp_attack, ability.fight_with, card)
-                    self.start_stack_action(temp_attack, ability.fight_with, card, force=1)
-                    # self.backend.stack.append((temp_attack, ability.fight_with, card, 0))
+                    self.start_stack_action(temp_attack, ability.fight_with, card, force=1, imposed=True)
         else:
             instants = self.backend.board.get_instants()
             if instants:  #or self.pending_attack
@@ -635,13 +640,13 @@ class BerserkApp(App):
                 self.handle_instant_stack(ability, card, victim, state, force)
             else:
                 if isinstance(ability, MultipleCardAction):
-                    if len(self.multiple_targets_list) == len(ability.action_list):
+                    if len(victim) == len(ability.action_list):
                         if ability.take_all_targets:  # выполняем последний акшен
-                            self.perform_card_action(ability.action_list[-1], card, self.multiple_targets_list, 0)
+                            self.perform_card_action(ability.action_list[-1], card, victim, 0)
                             self.multiple_targets_list = []
                         else:
                             for i, a in enumerate(ability.action_list):
-                                self.perform_card_action(a, card, self.multiple_targets_list[i], 0)
+                                self.perform_card_action(a, card, victim[i], 0)
                             self.multiple_targets_list = []
                         if self.proxi_ability:
                             if len(self.proxi_ability) == 2:
@@ -767,24 +772,25 @@ class BerserkApp(App):
         new_card.curr_move = new_card.move
         new_card.alive = True
 
-    def create_selection_popup(self, text, button_texts, button_binds):
-        popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
-                                       overlay_color=(0, 0, 0, 0), size_hint=(None, None),
-                                       auto_dismiss=False)
-        rl = RelativeLayout(size=popup_.size, size_hint=(None, None))
-        popup_.content = rl
-        with rl.canvas:
-            l = Label(pos=(70, 20), size_hint=(None, None), text=text, valign='top')
-            self.garbage.append(l)
+    def create_selection_popup(self, text, button_texts, button_binds, show_to=1):
+        if self.backend.mode != 'online' or (self.backend.mode == 'online' and self.pow == show_to):
+            popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
+                                           overlay_color=(0, 0, 0, 0), size_hint=(None, None),
+                                           auto_dismiss=False)
+            rl = RelativeLayout(size=popup_.size, size_hint=(None, None))
+            popup_.content = rl
+            with rl.canvas:
+                l = Label(pos=(70, 20), size_hint=(None, None), text=text, valign='top')
+                self.garbage.append(l)
 
-        for i, b_text in enumerate(button_texts):
-            btn1 = Button(pos=(0+i*rl.width/len(button_texts), 0), size=(130, 30), background_color=(1, 0, 0, 1),
-                          size_hint=(None, None),
-                          text=b_text)
-            btn1.bind(on_press=button_binds[i])
-            rl.add_widget(btn1)
-        popup_.open()
-        return popup_
+            for i, b_text in enumerate(button_texts):
+                btn1 = Button(pos=(0+i*rl.width/len(button_texts), 0), size=(130, 30), background_color=(1, 0, 0, 1),
+                              size_hint=(None, None),
+                              text=b_text)
+                btn1.bind(on_press=button_binds[i])
+                rl.add_widget(btn1)
+            popup_.open()
+            return popup_
 
     def perform_card_action_0(self, args):
         # STAGE 0  - PODGOTOVKA
@@ -824,19 +830,20 @@ class BerserkApp(App):
                     ability.callback()
                 return
             if isinstance(ability, SelectCardAction):
-                self.disabled_actions = True
-                self.exit_stack = True
-                # self.eot_button_disabled = True
-                # self.eot_button.disabled = True
-                self.display_available_targets(self.backend.board, card, ability, 1, None)
+                if self.backend.mode != 'online' or (self.backend.mode == 'online' and card.player == self.pow):
+                    self.disabled_actions = True
+                    self.exit_stack = True
+                    # self.eot_button_disabled = True
+                    # self.eot_button.disabled = True
+                    self.display_available_targets(self.backend.board, card, ability, 1, None)
                 return
             if ability.a_type == ActionTypes.VOZROJDENIE:
                 new_card, place = victim
-                if new_card.player == 1:
+                if (new_card.player == 1 and self.pow == 1) or (new_card.player == 2 and self.pow == 2):
                     self.grave_1_gl.remove_widget(self.cards_dict[new_card])
                     self.grave_buttons_1.remove(self.cards_dict[new_card])
                     self.backend.board.grave1.remove(new_card)
-                elif new_card.player == 2:
+                elif (new_card.player == 1 and self.pow == 2) or (new_card.player == 2 and self.pow == 1):
                     self.grave_2_gl.remove_widget(self.cards_dict[new_card])
                     self.grave_buttons_2.remove(self.cards_dict[new_card])
                     self.backend.board.grave2.remove(new_card)
@@ -877,7 +884,7 @@ class BerserkApp(App):
                 if not hasattr(self, 'attack_popup'):
                     self.attack_popup = self.create_selection_popup('Сделайте выбор: ',
                                                                     button_texts=ability.options,
-                                                                    button_binds=ability.action_list)
+                                                                    button_binds=ability.action_list, show_to=ability.show_to)
                 self.press_1 = ability.action_list[0]
                 dur = self.timer.duration-1
                 self.timer_ability = Animation(duration=dur)
@@ -982,12 +989,17 @@ class BerserkApp(App):
                         else:
                             ability.damage_receive = 0
                     else:
+                        if outcome_list[0][0] > outcome_list[0][1]:
+                            show_to_ = card.player
+                        else:
+                            show_to_ = 3 - int(card.player)
                         dmg_dict = {0: 'Промах', 1: 'Слабый', 2: 'Средний', 3: 'Cильный'}
                         self.attack_popup = self.create_selection_popup('Выберите результат сражения: ',
                                             [dmg_dict[outcome_list[0][0]] + '-' + dmg_dict[outcome_list[0][1]],
                                             dmg_dict[outcome_list[1][0]] + '-' + dmg_dict[outcome_list[1][1]]],
                                         button_binds=[partial(self.popup_attack_bind, outcome_list[0], ability, card, victim),
-                                                      partial(self.popup_attack_bind, outcome_list[1], ability, card, victim)])
+                                                      partial(self.popup_attack_bind, outcome_list[1], ability, card, victim)],
+                                                                        show_to=show_to_)
 
                         self.press_1 = lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim)
                         dur = self.timer.duration - 1
@@ -1271,7 +1283,7 @@ class BerserkApp(App):
             btn = Button(size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_color=(0, 0, 0, 0))
             rl.add_widget(btn)
             ability = DefaultMovementAction(move=move)
-            btn.bind(on_press=partial(self.start_stack_action, ability, card, move))
+            btn.bind(on_press=partial(self.start_stack_action, ability, card, move, 0))
             with rl.canvas:
                 Color(1, 0, 0, 1)
                 Ellipse(pos=(CARD_X_SIZE / 2 - 10, CARD_Y_SIZE / 2 - 10), size=(20, 20))
@@ -1321,17 +1333,18 @@ class BerserkApp(App):
         self.destroy_target_marks()
         self.multiple_targets_list.append(target)
         if len(multiple_ability.action_list)-1 == ix and (len(self.multiple_targets_list) == len(multiple_ability.action_list)):
-            self.start_stack_action(multiple_ability, card, None, None)
+            self.start_stack_action(multiple_ability, card, self.multiple_targets_list, state=0)
         else:
             bind_ = partial(self.bind_multiple_actions, card, multiple_ability, ix+1)
             self.display_available_targets(self.backend.board, card, multiple_ability.action_list[ix+1], bind_, None)
 
     def handle_multiple_actions(self, ability, card, instance):
-        if ability.isinstant:
-            self.able_selected(enable=False)
-            #self.display_card_actions(card, False, None)
-        self.display_available_targets(self.backend.board, card, ability.action_list[0],
-                                           partial(self.bind_multiple_actions, card, ability, 0),  None)
+        if self.backend.mode != 'online' or (self.backend.mode == 'online' and card.player == self.pow):
+            if ability.isinstant:
+                self.able_selected(enable=False)
+                #self.display_card_actions(card, False, None)
+            self.display_available_targets(self.backend.board, card, ability.action_list[0],
+                                               partial(self.bind_multiple_actions, card, ability, 0),  None)
 
     def handle_selection_action(self, ability, card, t, *args):  # cobold?
         self.timer_ability.unbind(on_complete=self.press_2)
@@ -1445,7 +1458,7 @@ class BerserkApp(App):
                     if ability.reverse:
                         t0 = targets.copy()
                         t0.remove(t)
-                btn.bind(on_press=partial(self.start_stack_action, ability, card, t0))
+                btn.bind(on_press=partial(self.start_stack_action, ability, card, t0, 0))
             self.target_marks_buttons.append(t)
 
     def display_available_targets(self, board, card, ability, bind_, instance):
@@ -1884,7 +1897,7 @@ class BerserkApp(App):
             if self.selected_card.player not in cards:
                 self.able_selected(enable=False)
         except Exception as e:
-            print(e)
+            print('disable_all_buttons_except_instant:', e)
         self.stack_cards = cards
 
     def disable_all_non_instant_actions(self):
