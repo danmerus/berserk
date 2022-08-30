@@ -22,7 +22,7 @@ class Ar_gull_1(Card):
             active_status=[],
             description='',
             curr_fishka=1,
-            max_fishka=99,
+            max_fishka=4,
             can_tap_for_fishka=True
         )
 

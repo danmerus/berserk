@@ -36,7 +36,7 @@ class Cobold_1(Card):
 
     def _update_abilities(self):  # txt max length 17
         self.a1 = TriggerBasedCardAction(txt='Блок щитом', recieve_inc=False, target=None, prep=self.a1_prep,
-                                         check=self.a1_check,
+                                         check=self.a1_check, isinstant=True,
                                     callback=self.a1_cb, condition=Condition.ON_DEFENCE_BEFORE_DICE, display=True)
         self.a1.repeat = False
         self.abilities.append(self.a1)
@@ -52,26 +52,29 @@ class Cobold_1(Card):
         if self.tapped:
             return
         elif self.a1.target and self.a1.actor:
-            self.gui.start_flickering(self)
-            self.gui.backend.stack.append([(self.a1.target, self.a1.actor, self, 1), (LambdaCardAction(func=self.a1_non_ins), None, None, 1)])
+            self.gui.start_flickering(self, player=self.player)
+            self.gui.backend.stack.append([(LambdaCardAction(func=self.a1_non_ins), None, None, 1), (self.a1.target, self.a1.actor, self, 1)])
 
     def a1_cb(self):
-        if self.tapped:
-            return
-        elif self.a1.target:
+        if self.a1.target:
             b = BlockAction(self.a1.target)
-            self.gui.backend.stack.append((b, self, self, 2))
+            lambda_cleanup = LambdaCardAction(func=self.a1_non_ins)
+            tap = SimpleCardAction(a_type=ActionTypes.TAP, damage=0, range_min=1, range_max=6,
+                                   txt='Закрыть себя после блока',  # target=target,
+                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+            self.gui.start_stack_action(b, self, self, state=2, force=1)
+            self.gui.start_stack_action(tap, self, self, state=0, force=1)
+            self.gui.start_stack_action(lambda_cleanup, self, self, state=0, force=1)
+            #self.gui.backend.stack.append((b, self, self, 2))
         self.actions_left -= 1
-        self.gui.tap_card(self)
-        self.a1.isinstant = False
         self.a1.repeat = False
         self.a1.disabled = True
         self.gui.destroy_flickering(self)
-        self.gui.process_stack()
+        #self.gui.process_stack()
 
     def a1_non_ins(self):
         self.a1.repeat = False
-        self.a1.isinstant = False
+        self.a1.disabled = True
         self.gui.destroy_flickering(self)
 
     def stroy_in_cb(self):

@@ -140,7 +140,10 @@ class Board():
         for c in all_cards:
             for a in c.abilities:
                 if a.isinstant and not isinstance(a, DefenceAction) and not c.tapped:
-                    out.append((c, a))
+                    if hasattr(a, 'disabled') and not a.disabled:
+                        out.append((c, a))
+                    elif not hasattr(a, 'disabled'):
+                        out.append((c, a))
         return out
 
     def get_available_targets_ground(self, card_pos_no, range_):
