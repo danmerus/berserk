@@ -120,7 +120,8 @@ class SelectionApp(App):
         self.mode = mode
         self.server_ip = server_ip
         self.server_port = server_port
-        network.on_entering_next_screen(self.server_ip, self.server_port, self.turn, self)
+        if self.mode == 'online':
+            network.on_entering_next_screen(self.server_ip, self.server_port, self.turn, self)
 
     def open_settings(self, *largs):
         pass

@@ -25,6 +25,7 @@ from kivy.graphics.vertex_instructions import BorderImage
 import game_properties
 import operator
 import network
+from main_menu import MainMenuApp
 from cards.card_properties import *
 from copy import copy
 from collections import defaultdict
@@ -69,6 +70,7 @@ class BerserkApp(App):
         super(BerserkApp, self).__init__()
         self.backend = backend
         self.pow = pow
+        self.window_size = window_size
         Window.size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
@@ -357,36 +359,40 @@ class BerserkApp(App):
         cb = self.backend.board.get_all_cards_with_callback(Condition.ON_SELF_MOVING)
         for c, a in cb:
             if c.player == self.backend.current_active_player and a.check():
-                self.start_stack_action(a, c, c, 0)
-                #Clock.schedule_once(self.process_stack)
+                if self.backend.mode != 'online' or (self.backend.mode == 'online' and card.player == self.pow):
+                    self.start_stack_action(a, c, c, 0)
 
     def check_game_end(self):
         cards = self.backend.board.get_all_cards()
         if not cards:
-            popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
-                      content=Label(text='Ничья!', font_size=Window.height*0.07), background_color=(1, 0, 0, 1),
-                      size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
-            popup.open()
+            text_ = 'Ничья'
         elif len([c for c in cards if c.player == 1]) == 0:
-            popup = OmegaPopup(title='', separator_height=0,overlay_color=(0, 0, 0, 0),
-                          content=Label(text='Победа игрока 2!', font_size=Window.height*0.07),background_color=(1, 0, 0, 1),
-                          size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
-            popup.open()
+            text_ = 'Победа игрока 2!'
         elif len([c for c in cards if c.player == 2]) == 0:
-            popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
-                          content=Label(text='Победа игрока 1!', font_size=Window.height*0.07),background_color=(1, 0, 0, 1),
-                               size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
-            popup.open()
+            text_ = 'Победа игрока 1!'
+        else:
+            return
+        rl = RelativeLayout()
+        rl.add_widget(Label(text=text_, font_size=Window.height*0.07))
+        btn = Button(text='В меню')
+        btn.bind(on_press=lambda x: self.stop())
+        btn.bind(on_press=lambda x:  MainMenuApp(self.window_size).run())
+        rl.add_widget(btn)
+        popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
+                      content=rl, background_color=(1, 0, 0, 1),
+                           size_hint=(None, None), size=(Window.width*0.4, Window.height / 4))
+        popup.open()
 
     def handle_PRI_ATAKE(self, ability, card, victim, *args):
-        all_cards = self.backend.board.get_all_cards()
-        if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO and card in all_cards and victim in all_cards:
-            for ab in card.abilities:
-                if isinstance(ab, TriggerBasedCardAction) and ab.condition == Condition.PRI_ATAKE:
-                    if ab.recieve_inc:
-                        ab.callback(victim)
-                    else:
-                        ab.callback()
+        if self.backend.mode != 'online' or (self.backend.mode == 'online' and card.player == self.pow):
+            all_cards = self.backend.board.get_all_cards()
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO and card in all_cards and victim in all_cards:
+                for ab in card.abilities:
+                    if isinstance(ab, TriggerBasedCardAction) and ab.condition == Condition.PRI_ATAKE:
+                        if ab.recieve_inc:
+                            ab.callback(victim)
+                        else:
+                            ab.callback()
 
     def draw_red_arrow(self, from_card, to_card, card, victim):
         with self.root.canvas:
@@ -1399,7 +1405,7 @@ class BerserkApp(App):
             if hasattr(ability, 'target_restriction') and 'enemy' in ability.target_restriction:
                 targets = [x for x in targets if x.player != card.player]
         elif card.can_hit_flyer:  # NO TARGETS ON GROUND ONLY FLYING  CREATURES
-            targets = board.get_available_targets_flyer(card)
+            targets = board.get_flying_targets()
         elif card.type_ == CreatureType.FLYER:
             magnets = self.backend.board.get_flyer_magnets(card.player, enemy=True)
             if magnets:
