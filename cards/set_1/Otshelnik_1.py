@@ -43,7 +43,7 @@ class Otshelnik_1(Card):
 
         self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
                                          check=self.a2_check, prep=self.a2_prep, recieve_all=True,
-                                         isinstant=True, impose=True,
+                                         isinstant=True, impose=False,
                                          callback=self.a2_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
         self.a2.repeat = False
         self.a2.clear_cb = self.a2_non_ins
