@@ -13,8 +13,8 @@ from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
 import deck_selection
 import network
-import berserk_gui
-from game import Game
+# import berserk_gui
+# from game import Game
 
 class MainField(Widget):
     def __init__(self, **kwargs):
@@ -120,7 +120,7 @@ class SelectionApp(App):
         self.mode = mode
         self.server_ip = server_ip
         self.server_port = server_port
-        if self.mode == 'online':
+        if self.mode == 'constr':
             network.on_entering_next_screen(self.server_ip, self.server_port, self.turn, self)
 
     def open_settings(self, *largs):

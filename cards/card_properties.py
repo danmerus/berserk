@@ -120,7 +120,7 @@ class DefaultMovementAction:
 class TriggerBasedCardAction:
 
     def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False, recieve_all=False,
-                 target=None, prep=None, actor=None, check=None, isinstant=False, repeat=False):
+                 target=None, prep=None, actor=None, check=None, isinstant=False, repeat=False, impose=False):
         self.txt = txt
         self.callback = callback
         self.condition = condition
@@ -136,6 +136,7 @@ class TriggerBasedCardAction:
         self.target = target
         self.prep = prep
         self.actor = actor
+        self.impose = impose
 
     def __str__(self):
         return self.txt
@@ -198,7 +199,7 @@ class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
-                 reverse=False, target_restriction=[], can_be_redirected=True):
+                 reverse=False, target_restriction=[], can_be_redirected=True, display=True):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -216,6 +217,7 @@ class SimpleCardAction:
         self.damage_receive = 0
         self.redirected = False
         self.reverse = reverse
+        self.display = display
         self.target_count = target_count
         self.target_restriction = target_restriction
         self.can_be_redirected = can_be_redirected

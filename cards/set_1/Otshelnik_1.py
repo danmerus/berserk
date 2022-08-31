@@ -43,35 +43,35 @@ class Otshelnik_1(Card):
 
         self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
                                          check=self.a2_check, prep=self.a2_prep, recieve_all=True,
-                                         callback=self.a1_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
+                                         isinstant=True, impose=True,
+                                         callback=self.a2_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
         self.a2.repeat = False
         self.a2.clear_cb = self.a2_non_ins
         self.abilities.append(self.a2)
+        self.a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
+                               txt='Перераспределение ран simple',
+                               target=self.a3_trg, display=False,
+                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+        self.abilities.append(self.a32)
 
-    def a1_cb(self, ability, card, victim):
+    def a2_cb(self, ability, card, victim):
         N = self.a2.inc_ability.damage_make
         if N < 1:
             return
-        a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
-                               txt='Перераспределение ран simple',
-                               target=self.a3_trg,
-                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
         action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
-        action_list.append(a32)
+        action_list.append(self.a32)
         a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
                                 action_list=action_list,
                                 target_callbacks=None,
                                 ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
-                                isinstant=False)
-        self.a2.repeat = False
-        self.a2.disabled = True
-        self.a2.stay_disabled = True
-        self.a2.isinstant = False
-        self.a2.inc_ability = None
-        self.gui.start_stack_action(a3, self, self, 0, -1)
+                                isinstant=True)
+        self.a2.inc_ability.damage_make = 0
+        print('there!!!')
+        if self.gui.pow == self.player:
+            self.gui.start_stack_action(a3, self, self, state=0, force=-1, imposed=True)
 
     def a2_prep(self):
-        self.gui.start_flickering(self)
+        self.gui.start_flickering(self, player=self.player)
 
     def a2_check(self, card, victim, ability):
         return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
@@ -86,6 +86,4 @@ class Otshelnik_1(Card):
         self.a2.repeat = False
         self.a2.disabled = True
         self.a2.stay_disabled = True
-        self.a2.isinstant = False
-        # self.gui.eot_button.disabled = False
-        #self.a2.inc_ability = None
+

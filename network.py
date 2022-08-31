@@ -177,13 +177,13 @@ def ability_to_pickle(ability, card, victim, state, force):
         state = 0
     if hasattr(victim1, 'id_on_board'):
         v = victim1.id_on_board
-    elif isinstance(ability, MultipleCardAction) and isinstance(victim1, list):
+    elif (isinstance(ability, MultipleCardAction) or ability.a_type == ActionTypes.PERERASPREDELENIE_RAN) and isinstance(victim1, list):
         v = []
         for c in victim1:
             if isinstance(c, int):
                 v.append(str(c))
             else:
-                v.append(c.id_on_board)  # TODO Fix for necro
+                v.append(c.id_on_board)
     else:
         v = victim1
     if hasattr(ability1, 'index'):
@@ -203,7 +203,7 @@ def pickle_to_ability(data, parent):
         ability = card.get_ability_by_id(ability)
     if isinstance(ability, DefaultMovementAction):
         victim = victim
-    elif isinstance(ability, MultipleCardAction) and isinstance(victim, list):
+    elif (isinstance(ability, MultipleCardAction) or ability.a_type == ActionTypes.PERERASPREDELENIE_RAN) and isinstance(victim, list):
         v = []
         for c in victim:
             if isinstance(c, int):
@@ -212,11 +212,9 @@ def pickle_to_ability(data, parent):
                 v.append(int(c))
         victim = v
     else:
-        try:
-            victim = parent.backend.board.get_card_by_id(victim)
-        except Exception as e:
-            #print('unpickle victim error:', e, victim)
-            victim = victim
+        victim = parent.backend.board.get_card_by_id(victim)
+        if not victim:
+            victim = pickle.loads(data)[2]
     return ability, card, victim, state, force
 
 

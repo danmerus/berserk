@@ -177,7 +177,7 @@ class Game:
         ret = False
         for card in self.board.get_all_cards():
             for ability in card.abilities:
-                if not isinstance(ability, TriggerBasedCardAction) and state in ability.state_of_action:
+                if not card.tapped and not isinstance(ability, TriggerBasedCardAction) and state in ability.state_of_action:
                     ret = True
         return ret
 
@@ -201,6 +201,7 @@ if __name__ == '__main__':
     STACK_DURATION = 5
     TURN_DURATION = 5
     game = Game()
+    # game.mode = 'online'
     gui = berserk_gui.BerserkApp(game, WINDOW_SIZE, STACK_DURATION, TURN_DURATION, pow=1)
     game.gui = gui
     # cards1 = [Lovets_dush_1(), Cobold_1(), Draks_1(), Lovets_dush_1(), Voin_hrama_1(), Draks_1(),]
@@ -220,14 +221,14 @@ if __name__ == '__main__':
               # Necromant_1(player=1, location=21, gui=gui),
               # Ar_gull_1(player=1, location=12, gui=gui),
               #  Cobold_1(player=1, location=14),
-              # Otshelnik_1(player=1, location=4, gui=gui),
+              Otshelnik_1(player=1, location=4, gui=gui),
                Gnom_basaarg_1(player=1, location=15, gui=gui),
               # Draks_1(player=1, location=5, gui=gui)
         ]
     cards2 = [
         # Bjorn_1(player=2, location=13),
-        #         Draks_1(player=2, location=22, gui=gui),
-        #        Necromant_1(player=2, location=19, gui=gui),
+                Draks_1(player=2, location=22, gui=gui),
+               Necromant_1(player=2, location=19, gui=gui),
              # Lovets_dush_1(player=2, location=12, gui=gui),
                Ar_gull_1(player=2, location=16, gui=gui),
              #  Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)
