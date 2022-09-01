@@ -64,7 +64,8 @@ class Cobold_1(Card):
                                    ranged=False, state_of_action=[GameStates.MAIN_PHASE])
             self.gui.start_stack_action(b, self, self, state=2, force=1)
             self.gui.start_stack_action(tap, self, self, state=0, force=1)
-            self.gui.start_stack_action(lambda_cleanup, self, self, state=0, force=1)
+            self.gui.start_stack_action(lambda_cleanup, self, self, state=0, force=1, imposed=True)
+            self.gui.process_stack()
             #self.gui.backend.stack.append((b, self, self, 2))
         self.actions_left -= 1
         self.a1.repeat = False

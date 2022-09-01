@@ -228,7 +228,7 @@ def ability_pressed(host, port, turn, ability, card, victim, state, force):
             byte_data = pickle.dumps(data)
             res = s1.sendall(b'ability_pressed' + (str(turn)).encode() + byte_data)
     except Exception as e:
-        print('ability_pressed: ', e)
+        print('ability_pressed: ', e, ability)
     return res
 
 def get_rolls(host, port, count):

@@ -66,6 +66,7 @@ class Gnom_basaarg_1(Card):
         ch = SelectCardAction(child_action=a, targets=closed_enemy)
         if closed_enemy and self.actions_left > 0:
             self.gui.start_stack_action(ch, self, self, 0)
+            self.gui.process_stack()
 
     def stroy_in_cb(self):
         self.in_stroy = True

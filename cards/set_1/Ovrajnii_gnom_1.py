@@ -63,7 +63,8 @@ class Ovrajnii_gnom_1(Card):
             a22_action = partial(self.a_action, a21, target, 0)
             pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
                              a_type=ActionTypes.POPUP, txt='Закрыться?', show_to=(3-int(self.player)))
-            self.gui.perform_card_action(pp, self, self, 0)
+            self.gui.start_stack_action(pp, self, self, 0, force=1)
+            self.gui.process_stack()
             # self.gui.backend.passed_1 = True
             # self.gui.backend.passed_2 = True
 

@@ -125,8 +125,11 @@ class Game:
             for c, a in cb:
                 if c.player == self.current_active_player and a.check():
                     if self.mode != 'online' or (self.mode == 'online' and c.player == self.gui.pow):
-                        self.gui.start_stack_action(a, c, c, 0)
-                        Clock.schedule_once(self.gui.process_stack)
+                        self.gui.start_stack_action(a, c, c, 0, 0)
+                        # self.gui.check_all_passed()
+                        # if self.backend.mode == 'online' and self.pow != self.backend.current_active_player:
+                        #     self.eot_button.disabled = True
+                        # Clock.schedule_once(self.gui.process_stack)
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
             self.on_step_start()
@@ -220,14 +223,14 @@ if __name__ == '__main__':
               #  Lovets_dush_1(player=1, location=0, gui=gui),
               # Necromant_1(player=1, location=21, gui=gui),
               # Ar_gull_1(player=1, location=12, gui=gui),
-              #  Cobold_1(player=1, location=14),
+               Cobold_1(player=1, location=14),
               Otshelnik_1(player=1, location=4, gui=gui),
                Gnom_basaarg_1(player=1, location=15, gui=gui),
               # Draks_1(player=1, location=5, gui=gui)
         ]
     cards2 = [
         # Bjorn_1(player=2, location=13),
-                Draks_1(player=2, location=22, gui=gui),
+                Ovrajnii_gnom_1(player=2, location=22, gui=gui),
                Necromant_1(player=2, location=19, gui=gui),
              # Lovets_dush_1(player=2, location=12, gui=gui),
                Ar_gull_1(player=2, location=16, gui=gui),
