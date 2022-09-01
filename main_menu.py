@@ -50,22 +50,14 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from kivy.graphics import Line, Color, Rectangle, Ellipse
+from kivy.graphics import Rectangle
 from kivy.utils import get_color_from_hex
 from kivy.clock import Clock
 from kivy.uix.dropdown import DropDown
-from kivy.lang import Builder
-import placement
-from concurrent import futures
-from multiprocessing import Pool
-import copy
 import threading
 from functools import partial
-import deck_selection
-from game_properties import GameStates
-from cards.card import *
+from screens import deck_selection
 #from game import Game
-import berserk_gui
 import network
 
 SUPPORTED_RESOLUTIONS = [(1920, 1080), (1536, 864), (1440, 900), (1366, 768), (960, 540)]
@@ -128,7 +120,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='172.30.112.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
+        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))

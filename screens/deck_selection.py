@@ -10,26 +10,22 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-from kivy.graphics import Line, Color, Rectangle, Ellipse
+from kivy.graphics import Line, Color, Rectangle
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.image import Image
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from kivy.uix.treeview import TreeView
 from game import Game
 import berserk_gui
-from game_properties import GameStates
 from cards.card import *
 import os
-import copy
-import re
 import random
 from functools import partial
 import deck
 import main_menu
-import squad_formation
+from screens import squad_formation
 from kivy.base import EventLoop
 
 def reset():
@@ -517,7 +513,7 @@ class DeckSelectionApp(App):
 
         self.filechoser.bind(on_entry_added=self.on_entry_added_)
         self.filechoser.filters = ['*.bdck']
-        self.filechoser.path = './user_decks'
+        self.filechoser.path = 'user_decks'
 
         btn2 = Button(text='Загрузить', pos=(Window.width * 0.81, Window.height * 0.51), background_color=(1, 0, 0, 1),font_size=Window.height*0.025,
                                 size=(Window.width * 0.08, Window.height * 0.04), size_hint=(None, None))

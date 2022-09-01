@@ -11,7 +11,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
-import deck_selection
+from screens import deck_selection
 import network
 # import berserk_gui
 # from game import Game

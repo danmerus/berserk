@@ -70,5 +70,4 @@ class Card:
         for a in self.abilities:
             if a.index == id_:
                 return a
-        return None
 

@@ -9,15 +9,12 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-from kivy.graphics import Line, Color, Rectangle, Ellipse
+from kivy.graphics import Line, Color, Rectangle
 from kivy.uix.image import Image
 # from game import Game
 # import berserk_gui
-from game_properties import GameStates
 from cards.card import *
-import placement
-import os
-import copy
+from screens import placement
 import random
 from functools import partial
 

@@ -15,11 +15,26 @@ class Board():
         self.deck1 = []
         self.deck2 = []
         self.backend = backend
-        
+
+
+    def get_state(self):
+        return self.game_board, self.extra1, self.extra2, \
+               self.symb1, self.symb2, self.grave1, self.grave2, self.deck1, self.deck2
+
     def populate_board(self, cards):
         for c in cards:
+            c.zone = self.assign_initial_zone(c)
             if c.loc >= 0 and c.loc < 30:
                 self.game_board[c.loc] = c
+
+    def assign_initial_zone(self, card):
+        if card.type_ == CreatureType.CREATURE:
+            if not card.alive and card.player == 1:
+                return 'gr'
+            else:
+                return 'board'
+        elif (card.type_ == CreatureType.FLYER or card.type_ == CreatureType.LAND):
+            return 'dz'
 
     def remove_card(self, card):
         if card in self.game_board:
@@ -92,6 +107,7 @@ class Board():
             return [x for x in self.grave2 if x.cost[0] == 0]
         else:
             return [x for x in self.grave2 if x.cost[0] == 0]+[x for x in self.grave1 if x.cost[0] == 0]
+
     def get_defenders(self, card, victim):
         candidates = []
         if card.player == victim.player:
@@ -204,14 +220,12 @@ class Board():
         outt = [x for x in out if self.game_board[x] != 0]
         return [self.game_board[x] for x in outt]
 
-
     def get_all_cards(self):
         gr = [x for x in self.game_board if x != 0]
         extr1 = [x for x in self.extra1 if x.type_]
         extr2 = [x for x in self.extra2 if x.type_]
         out = list(chain(gr, self.symb1, self.symb2, extr1, extr2))
         return out
-
 
     def get_grave(self):
         return self.grave1 + self.grave2
@@ -224,8 +238,8 @@ class Board():
         print('Not found card!', id_)
 
     def get_available_moves(self, card):
-        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or self.backend.curr_game_state != GameStates.MAIN_PHASE:
-            return []
+        # if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or self.backend.curr_game_state != GameStates.MAIN_PHASE:
+        #     return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)
         out = []
@@ -241,13 +255,9 @@ class Board():
             self.game_board[now] = card
             self.game_board[prev] = 0
 
-    def get_state(self):
-        return {i:getattr(self, i) for i in self.__dict__.keys() if i[:1] != '_'}
-
     def get_zone_count(self, attr):
         return len(getattr(self, attr))
 
 
-# b = Board()
-# print(b.get_adjacent_cells(0, range_=4))
-# print(b.get_flyer_count('extra1'))
+# b = Board('qwe')
+# print(b.get_state())
