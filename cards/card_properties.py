@@ -102,6 +102,7 @@ class DefenceAction:
         self.isinstant = True
         self.condition = None
         self.disabled = True
+        self.marks_needed = 0
 
     def __str__(self):
         return self.txt
@@ -114,7 +115,8 @@ class DefaultMovementAction:
         self.isinstant = False
         self.display = False
         self.state_of_action = [GameStates.MAIN_PHASE]
-       # self.txt = ''
+        self.marks_needed = 1
+        self.txt = 'Простое передвижение'
 
 
 class TriggerBasedCardAction:
@@ -137,6 +139,7 @@ class TriggerBasedCardAction:
         self.prep = prep
         self.actor = actor
         self.impose = impose
+        self.marks_needed = 0
 
     def __str__(self):
         return self.txt
@@ -168,6 +171,7 @@ class BlockAction:
         self.to_block = to_block
         self.state_of_action = [GameStates.MAIN_PHASE]
         self.tap_target = False
+        self.marks_needed = 0
 
     def __str__(self):
         return self.txt
@@ -180,6 +184,7 @@ class TapToHitFlyerAction:
         self.isinstant = False
         self.display = True
         self.state_of_action = [GameStates.MAIN_PHASE]
+        self.marks_needed = 0
 
     def __str__(self):
         return self.txt
@@ -190,6 +195,7 @@ class IncreaseFishkaAction:
         self.txt = txt
         self.state_of_action = state_of_action
         self.isinstant = False
+        self.marks_needed = 0
 
     def __str__(self):
         return self.txt
@@ -221,6 +227,7 @@ class SimpleCardAction:
         self.target_count = target_count
         self.target_restriction = target_restriction
         self.can_be_redirected = can_be_redirected
+        self.marks_needed = 1
 
     def __str__(self):
         return self.txt
@@ -236,6 +243,7 @@ class SelectCardAction():
         self.range_min = range_min
         self.range_max = range_max
         self.ranged = ranged
+        self.marks_needed = 1
 
 class MultipleCardAction():
 
@@ -249,6 +257,7 @@ class MultipleCardAction():
         self.target_callbacks = target_callbacks
         self.isinstant = isinstant
         self.take_all_targets = take_all_targets
+        self.marks_needed = len(action_list)
 
     def __str__(self):
         return self.txt
