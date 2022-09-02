@@ -117,6 +117,7 @@ class DefaultMovementAction:
         self.state_of_action = [GameStates.MAIN_PHASE]
         self.marks_needed = 1
         self.txt = 'Простое передвижение'
+        self.take_board_cells = True
 
 
 class TriggerBasedCardAction:

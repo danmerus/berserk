@@ -196,6 +196,15 @@ class BerserkApp(App):
             for bt in list_:
                 self.root.remove_widget(bt)
 
+    def destroy_target_marks(self):
+        for btn, card in self.target_marks_cards:
+            card.remove_widget(btn)
+        for r, canvas in self.target_rectangles:
+            canvas.remove(r)
+        self.target_rectangles = []
+        self.target_marks_buttons = []
+        self.target_marks_cards = []
+
     def delete_move_marks_on_unfocus(self, window, pos):
         delete_ = True
         for nav_b in self.nav_buttons:
@@ -226,6 +235,36 @@ class BerserkApp(App):
             else:
                 return self.dop_zone_2.to_parent(*self.cards_dict[card_id].pos)
 
+    def play_attack_sound(self, dmg):
+        try:
+            if abs(dmg) < 3:
+                sound = SoundLoader.load('data/sound/weak_punch.wav')
+            elif 3 <= abs(dmg) < 5:
+                sound = SoundLoader.load('data/sound/med_punch.wav')
+            elif abs(dmg) >= 5:
+                sound = SoundLoader.load('data/sound/hard_punch.wav')
+            else:
+                return
+            sound.play()
+        except Exception as e:
+            print('play_attack_sound ', e)
+
+    def start_flickering(self, card_id, player=1):
+        rl = RelativeLayout()
+        self.base_overlays[card_id].add_widget(rl)
+        with rl.canvas:
+            col = Color(1, 1, 1, 0.2)
+            rect = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
+                             background_color=col,
+                             pos=(0, 0), size_hint=(1, 1))
+            anim = Animation(opacity=0, duration=0.5) + Animation(opacity=1, duration=0.5)
+            anim.repeat = True
+            anim.start(rl)
+            self.selection_flicker_dict[card_id] = rl
+
+    def destroy_flickering(self, *args):
+        for c in self.selection_flicker_dict.keys():
+            self.base_overlays[c].remove_widget(self.selection_flicker_dict[c])
 
     def card_popup(self, card, window):
         # print(card)
@@ -431,7 +470,7 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.nav_buttons.append(rl)
 
-    def card_clicked(self, card, *args):
+    def card_clicked(self, card, *args):  # TODO should be optimised to use state
         if self.mode == 'online':
             pass
         else:
@@ -450,12 +489,25 @@ class BerserkApp(App):
         else:
             self.backend.mark_clicked(mark)
 
+    def eot_clicked(self, *args):
+        if self.mode == 'online':
+            pass
+        else:
+            self.backend.eot_clicked()
+
+    def ph_clicked(self, *args):
+        if self.mode == 'online':
+            pass
+        else:
+            self.backend.ph_clicked()
+
     def update_card_buttons(self, ability_names):
         self.destroy_x(self.selected_card_buttons)
         self.selected_card_buttons = []
         self.display_card_actions(ability_names)
 
     def on_click_on_card(self, card, instance):
+        self.destroy_target_marks()
         if mouse == 'left':
             if self.selected_card:
                 Clock.schedule_once(partial(self.draw_card_overlay, self.selected_card, 0))
@@ -468,7 +520,6 @@ class BerserkApp(App):
             ability_names, moves = self.card_clicked(card)
             self.update_card_buttons(ability_names)
             self.display_moves(moves)
-
 
     def add_dopzones(self, position_scroll, position_butt, position_butt2, zone_name, button_name, gl_name, txt, player, button_func):
         if zone_name == 'dop_zone_1' or zone_name == 'dop_zone_2':
@@ -618,6 +669,7 @@ class BerserkApp(App):
         if new['curr_life'] != old['curr_life'] or new['life'] != old['life']:
             self.hp_label_dict[new['id']].text = f'{new["curr_life"]}/{new["life"]}'
             self.display_damage(new["id"], int(new['curr_life'])-int(old['curr_life']))
+            self.play_attack_sound(int(new['curr_life'])-int(old['curr_life']))
         if new['curr_fishka'] > 0:
             self.add_fishki_gui(new)
         else:
@@ -642,9 +694,64 @@ class BerserkApp(App):
             ch.size = (CARD_X_SIZE, CARD_Y_SIZE*0.84)
 
     def display_available_targets(self):
-        pass
+        b_size = 30  # размер квадратика
+        targets = self.curr_state['markers']
+        target_list_cards = []
+        target_list_cells = []
+        if 'card_ids' in targets.keys():
+            target_list_cards = targets['card_ids']
+        elif 'cells' in targets.keys():
+            target_list_cells = targets['cells']
+        for t in target_list_cards:
+            with self.cards_dict[t].canvas:
+                btn = Button(pos=(0, 0),
+                             background_color=(1, 1, 1, 0.0),
+                             size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                if self.id_card_dict[t]['player'] == self.pow:
+                    c = Color(1, 1, 1, 0.8)
+                else:
+                    c = Color(1, 0, 0, 1)
+                rect1 = Rectangle(pos=(CARD_X_SIZE / 2 - b_size / 2,
+                                       CARD_Y_SIZE / 2 - b_size / 2),
+                                  background_color=c,
+                                  size=(b_size, b_size), size_hint=(1, 1))
+                c = Color(1, 1, 1, 0.15)
+                rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
+                                  background_color=c,
+                                  pos=(0, 0), size_hint=(1, 1))
+            btn.bind(on_press=partial(self.mark_clicked, t))
+            self.target_rectangles.append((rect1, self.cards_dict[t].canvas))
+            self.target_rectangles.append((rect2, self.cards_dict[t].canvas))
+            self.cards_dict[t].add_widget(btn)
+            self.target_marks_cards.append([btn, self.cards_dict[t]])
+            self.target_marks_buttons.append(t)
+        for t in target_list_cells:
+            pos = self.card_position_coords[t]
+            c = Color(1, 1, 1, 0.8)
+            rl = RelativeLayout(pos=pos)
+            with rl.canvas:
+                btn = Button(pos=(0, 0),
+                             background_color=(1, 1, 1, 0.0),
+                             size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+                rect1 = Rectangle(pos=(CARD_X_SIZE / 2 - b_size / 2,
+                                       CARD_Y_SIZE / 2 - b_size / 2),
+                                  background_color=c,
+                                  size=(b_size, b_size), size_hint=(1, 1))
+                c = Color(1, 1, 1, 0.15)
+                rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
+                                  background_color=c,
+                                  pos=(0, 0), size_hint=(1, 1))
+                self.target_rectangles.append((rect1, rl.canvas))
+                self.target_rectangles.append((rect2, rl.canvas))
+                rl.add_widget(btn)
+                self.target_marks_cards.append([btn, rl])
+            btn.bind(on_press=partial(self.mark_clicked, t))
+            self.root.add_widget(rl)
+            self.target_marks_buttons.append(t)
 
     def draw_from_state_diff(self, state):
+        self.destroy_target_marks()
+        self.destroy_flickering()
         new_state = state
         old_state = self.curr_state
         for card_id in new_state['cards'].keys():
@@ -661,8 +768,11 @@ class BerserkApp(App):
         self.curr_state = new_state
         if new_state['markers']:
             self.display_available_targets()
+        if new_state['flickers']:
+            for c in new_state['flickers']:
+                self.start_flickering(c)
 
-    def on_state_recieved(self, state):
+    def on_state_received(self, state):
         if not self.curr_state:
             self.curr_state = state
             self.draw_from_state_init()
@@ -706,6 +816,11 @@ class BerserkApp(App):
         self.grave_buttons_1 = []
         self.grave_buttons_2 = []
         self.id_card_dict = {}
+        self.target_rectangles = []
+        self.target_marks_cards = []
+        self.target_marks_buttons = []
+        self.selection_flicker_dict = {}
+
 
         # self.defender_set = False
         # self.eot_button_disabled = False
@@ -713,15 +828,11 @@ class BerserkApp(App):
         # self.disabled_actions = False
         # self.exit_stack = False
         # self.proxi_ability = None
-        # self.target_marks_buttons = []
         # self.pereraspredelenie_label_dict = defaultdict(int)
         # self.pereraspredelenie_dict = {}
         # self.die_pics = []
         # self.red_arrows = []
-        # self.target_rectangles = []
-        # self.target_marks_cards = []
         # self.curr_id_on_bord = 0
-        # self.selection_flicker_dict = {}
         # self.stack_cards = []
         # self.multiple_targets_list = []
         # self.garbage = []
@@ -750,26 +861,14 @@ class BerserkApp(App):
         self.ph_button = Button(text="Пропустить", disabled=True,
                               pos=(Window.width * 0.83, Window.height * 0.28), background_color=(1,0,0,1),
                                    size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
-        # self.ph_button.bind(on_press=self.backend.player_passed)
-        # self.ph_button.bind(on_press=Clock.schedule_once(self.check_all_passed))
-        # self.ph_button.bind(on_press=partial(self.start_timer, STACK_DURATION))
-        # self.ph_button.bind(on_press=self.destroy_flickering)
-        # if self.backend.mode == 'online':
-        #     self.ph_button.bind(on_press=partial(network.ph_pressed, self.backend.server_ip, self.backend.server_port,
-        #                                           self.backend.turn))
+        self.ph_button.bind(on_press=self.ph_clicked)
         self.layout.add_widget(self.ph_button)
         #
         # Button for end of turn
         self.eot_button = Button(text="Сл. Фаза", disabled=False,
                            pos=(Window.width * 0.91, Window.height * 0.28), background_color=(1,0,0,1),
                            size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
-        # self.eot_button.bind(on_press=self.backend.next_game_state)
-        # self.eot_button.bind(on_press=Clock.schedule_once(self.update_timer_text, ))
-        # self.eot_button.bind(on_press=partial(self.start_timer, TURN_DURATION))
-        # if self.backend.mode == 'online':
-        #     self.eot_button.bind(on_press=partial(network.eot_pressed, self.backend.server_ip, self.backend.server_port, self.backend.turn))
-        #     if self.pow != self.backend.current_active_player:
-        #         self.eot_button.disabled = True
+        self.eot_button.bind(on_press=self.eot_clicked)
         self.layout.add_widget(self.eot_button)
 
         self.timer_label = Label()

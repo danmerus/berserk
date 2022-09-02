@@ -238,8 +238,8 @@ class Board():
         print('Not found card!', id_)
 
     def get_available_moves(self, card):
-        # if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or self.backend.curr_game_state != GameStates.MAIN_PHASE:
-        #     return []
+        if card.tapped or card.type_ != CreatureType.CREATURE or card.curr_move <= 0 or self.backend.curr_game_state != GameStates.MAIN_PHASE:
+            return []
         pos = self.game_board.index(card)
         moves_pre = self.get_adjacent_cells_no_diag(pos)
         out = []

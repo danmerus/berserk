@@ -47,18 +47,18 @@ class Gnom_basaarg_1(Card):
         self.abilities.append(a2)
 
     def a2_check(self):
-        adj = self.gui.backend.board.get_adjacent_cells(self.loc, range_=1)
-        closed_enemy = [x for x in adj if self.gui.backend.board.game_board[x] != 0]
-        closed_enemy = [self.gui.backend.board.game_board[x] for x in closed_enemy if
-                        self.gui.backend.board.game_board[x].tapped and self.gui.backend.board.game_board[
+        adj = self.gui.board.get_adjacent_cells(self.loc, range_=1)
+        closed_enemy = [x for x in adj if self.gui.board.game_board[x] != 0]
+        closed_enemy = [self.gui.board.game_board[x] for x in closed_enemy if
+                        self.gui.board.game_board[x].tapped and self.gui.board.game_board[
                             x].player != self.player]
         return len(closed_enemy) > 0
 
 
     def a1_cb(self):
-        adj = self.gui.backend.board.get_adjacent_cells(self.loc, range_=1)
-        closed_enemy = [x for x in adj if self.gui.backend.board.game_board[x] != 0]
-        closed_enemy = [self.gui.backend.board.game_board[x] for x in closed_enemy if self.gui.backend.board.game_board[x].tapped and self.gui.backend.board.game_board[x].player != self.player]
+        adj = self.gui.board.get_adjacent_cells(self.loc, range_=1)
+        closed_enemy = [x for x in adj if self.gui.board.game_board[x] != 0]
+        closed_enemy = [self.gui.board.game_board[x] for x in closed_enemy if self.gui.board.game_board[x].tapped and self.gui.board.game_board[x].player != self.player]
         a = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=(self.attack[0]+1, self.attack[1]+1, self.attack[2]+1),
                                   range_min=1, range_max=1, can_be_redirected=False,
                                   txt=f'Атака {self.attack[0]+1}-{self.attack[1]+1}-{self.attack[2]+1}',

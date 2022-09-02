@@ -39,7 +39,7 @@ class Necromant_1(Card):
         a21 = SelectTargetAction(targets=self.a2_t_cb)
 
         a22 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,
-                              txt='Возрождение элитного существа', target=partial(self.gui.backend.board.get_adjacent_empty, self),
+                              txt='Возрождение элитного существа', target=partial(self.gui.board.get_adjacent_empty, self),
                               ranged=False, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=4, is_tapped=True)
 
         a2 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Возрождение элитного существа', action_list=[a21, a22],
@@ -51,8 +51,9 @@ class Necromant_1(Card):
         a31 = SelectTargetAction(targets=self.a3_t_cb)
 
         a32 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,
-                               txt='Возрождение элитного существа', target=partial(self.gui.backend.board.get_adjacent_empty, self),
+                               txt='Возрождение элитного существа', target=partial(self.gui.board.get_adjacent_empty, self),
                                ranged=False, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=3, is_tapped=True)
+        a32.take_board_cells = True
 
         a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Возрождение рядового существа',
                                 action_list=[a31, a32],
