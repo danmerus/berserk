@@ -444,6 +444,7 @@ class BerserkApp(App):
         self.root.add_widget(self.timer_ly)
         self.timer = Animation(s=1 / 30, duration=duration)
         self.timer.bind(on_progress=partial(self.timer_update, duration))
+        self.timer.bind(on_complete=self.timer_completed)
         self.timer.start(self.timer_label)
 
     def display_card_actions(self, data):
@@ -500,6 +501,12 @@ class BerserkApp(App):
             pass
         else:
             self.backend.ph_clicked()
+
+    def timer_completed(self, *args):
+        if self.mode == 'online':
+            pass
+        else:
+            self.backend.timer_completed()
 
     def update_card_buttons(self, ability_names):
         self.destroy_x(self.selected_card_buttons)
@@ -696,12 +703,19 @@ class BerserkApp(App):
     def display_available_targets(self):
         b_size = 30  # размер квадратика
         targets = self.curr_state['markers']
+        self.display_available_targets_helper(targets, 1, len(targets))
+
+
+    def display_available_targets_helper(self, targets, i, total, *args):
+        b_size = 30  # размер квадратика
+        target_dict = targets[i-1]
+        print(target_dict)
         target_list_cards = []
         target_list_cells = []
-        if 'card_ids' in targets.keys():
-            target_list_cards = targets['card_ids']
-        elif 'cells' in targets.keys():
-            target_list_cells = targets['cells']
+        if 'card_ids' in target_dict.keys():
+            target_list_cards = target_dict['card_ids']
+        elif 'cells' in target_dict.keys():
+            target_list_cells = target_dict['cells']
         for t in target_list_cards:
             with self.cards_dict[t].canvas:
                 btn = Button(pos=(0, 0),
@@ -719,12 +733,16 @@ class BerserkApp(App):
                 rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
                                   background_color=c,
                                   pos=(0, 0), size_hint=(1, 1))
-            btn.bind(on_press=partial(self.mark_clicked, t))
+                btn.bind(on_press=partial(self.mark_clicked, t))
+            if i < total:
+                btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
+
             self.target_rectangles.append((rect1, self.cards_dict[t].canvas))
             self.target_rectangles.append((rect2, self.cards_dict[t].canvas))
             self.cards_dict[t].add_widget(btn)
             self.target_marks_cards.append([btn, self.cards_dict[t]])
             self.target_marks_buttons.append(t)
+
         for t in target_list_cells:
             pos = self.card_position_coords[t]
             c = Color(1, 1, 1, 0.8)
@@ -746,6 +764,8 @@ class BerserkApp(App):
                 rl.add_widget(btn)
                 self.target_marks_cards.append([btn, rl])
             btn.bind(on_press=partial(self.mark_clicked, t))
+            if i < total:
+                btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
             self.root.add_widget(rl)
             self.target_marks_buttons.append(t)
 
@@ -762,8 +782,9 @@ class BerserkApp(App):
                 self.tap_card(new_state['cards'][card_id], tap=False)
             elif not old_state['cards'][card_id]['tapped'] and new_state['cards'][card_id]['tapped']:
                 self.tap_card(new_state['cards'][card_id], tap=True)
-            if card_id == self.selected_card['id']:
-                self.update_card_buttons(new_state['cards'][card_id]['abilities'])
+            if self.selected_card:
+                if card_id == self.selected_card['id']:
+                    self.update_card_buttons(new_state['cards'][card_id]['abilities'])
             self.add_defence_signs(new_state['cards'][card_id])
         self.curr_state = new_state
         if new_state['markers']:

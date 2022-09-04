@@ -6,7 +6,7 @@ class Lovets_dush_1(Card):
 
     def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=8,
+            life=1,
             move=1,
             attack=(1, 2, 3),
             name='Ловец душ',
@@ -52,11 +52,15 @@ class Lovets_dush_1(Card):
         #                       ranged=True, state_of_action=[GameStates.OPENING_PHASE,
         #                                                     GameStates.END_PHASE, GameStates.MAIN_PHASE], isinstant=True)
         a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Часть души', action_list=[a31, a32],
-                                target_callbacks=None,
+                                target_callbacks=None, marks_needed=2, target_list=['enemy', 'ally'],
                                 ranged=True, state_of_action=[GameStates.MAIN_PHASE],
                                 isinstant=False)
+        # a3 = SimpleCardAction(a_type=ActionTypes.ZAKLINANIE, damage=1, range_min=1, range_max=6, txt='Ранить на 1',
+        #                        ranged=True, isinstant=True, state_of_action=[GameStates.OPENING_PHASE,
+        #                                                      GameStates.END_PHASE, GameStates.MAIN_PHASE],
+        #                        target='enemy')
         self.abilities.append(a3)
 
     def a1_cb(self):
         if self.curr_fishka < self.max_fishka:
-            self.gui.add_fishka(self, False)
+            self.gui.add_fishka(self, True)

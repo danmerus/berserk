@@ -155,7 +155,7 @@ class Board():
         out = []
         for c in all_cards:
             for a in c.abilities:
-                if a.isinstant and not isinstance(a, DefenceAction) and not c.tapped:
+                if a.isinstant and not c.tapped: # and not isinstance(a, DefenceAction)
                     if hasattr(a, 'disabled') and not a.disabled:
                         out.append((c, a))
                     elif not hasattr(a, 'disabled'):

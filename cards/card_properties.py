@@ -233,7 +233,7 @@ class SimpleCardAction:
     def __str__(self):
         return self.txt
 
-class SelectCardAction():
+class SelectCardAction:
 
     def __init__(self, child_action, targets=None, range_min=0, range_max=0, ranged=False):
         self.child_action = child_action
@@ -246,10 +246,10 @@ class SelectCardAction():
         self.ranged = ranged
         self.marks_needed = 1
 
-class MultipleCardAction():
+class MultipleCardAction:
 
-    def __init__(self, a_type: ActionTypes, txt: str, ranged: bool, state_of_action: [GameStates], 
-                 target_callbacks, action_list, isinstant=False, take_all_targets=False):
+    def __init__(self, a_type: ActionTypes, txt: str, ranged: bool, state_of_action: [GameStates], target_callbacks, action_list,
+                 isinstant=False, take_all_targets=False, marks_needed=1,  target_list=[]):
         self.action_list = action_list
         self.state_of_action = state_of_action
         self.ranged = ranged
@@ -258,12 +258,13 @@ class MultipleCardAction():
         self.target_callbacks = target_callbacks
         self.isinstant = isinstant
         self.take_all_targets = take_all_targets
-        self.marks_needed = len(action_list)
+        self.marks_needed = marks_needed
+        self.target_list = target_list
 
     def __str__(self):
         return self.txt
 
-class PopupAction():
+class PopupAction:
 
     def __init__(self,  options, action_list, a_type=ActionTypes.POPUP, txt='', ranged=False, state_of_action=GameStates.MAIN_PHASE,
                   isinstant=False, show_to=1):
