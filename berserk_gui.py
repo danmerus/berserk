@@ -69,7 +69,6 @@ class TouchInput(Widget):
     global mouse
     mouse = touch.button
 
-
 class BerserkApp(App):
 
     def __init__(self, window_size, stack_duration=10, turn_duration=10, pow=1, mode='offline', backend=None):
@@ -100,6 +99,47 @@ class BerserkApp(App):
             pass
         else:
             self.backend.on_load(1)
+
+    def destroy_red_arrows(self, *args):
+        if self.red_arrows:
+            for el in self.root.canvas.children:
+                if el in self.red_arrows:
+                    self.root.canvas.remove(el)
+                    self.red_arrows.remove(el)
+
+    def draw_red_arrows(self, arrow_list):
+        with self.root.canvas:
+            c = Color(1, 0, 0, 0.8)
+            for fr, to, type_ in arrow_list:
+                if to is None:
+                    continue
+                if self.id_card_dict[fr]['zone'] == 'dz':
+                    if (self.id_card_dict[fr]['player'] == 1 and self.pow == 1) or (self.id_card_dict[fr]['player'] == 2 and self.pow == 2):
+                        x, y = self.dop_zone_1.to_parent(*self.cards_dict[fr].pos)
+                    else:
+                        x, y = self.dop_zone_2.to_parent(*self.cards_dict[fr].pos)
+                elif self.id_card_dict[fr]['zone'] == 'board':
+                    x, y = self.cards_dict[fr].pos
+                if type_ == 'card':
+                    if self.id_card_dict[to]['zone'] == 'dz':
+                        if (self.id_card_dict[to]['player'] == 1 and self.pow == 1) or (
+                                self.id_card_dict[to]['player'] == 2 and self.pow == 2):
+                            n, m = self.dop_zone_1.to_parent(*self.cards_dict[to].pos)
+                        else:
+                            n, m = self.dop_zone_2.to_parent(*self.cards_dict[to].pos)
+                    elif self.id_card_dict[to]['zone'] == 'board':
+                        n, m = self.cards_dict[to].pos
+                elif type_ == 'cell':
+                    n, m = self.card_position_coords[to]
+                l = Line(width=3, color=c, points=(x + CARD_X_SIZE / 2, y + CARD_Y_SIZE / 2,
+                                                   n + CARD_X_SIZE / 2, m + CARD_Y_SIZE / 2))
+                self.red_arrows.append(l)
+        Clock.schedule_once(self.destroy_red_arrows, 2)
+            # TODO
+            # tri = Triangle(color=c, points=[x*0.7+(x-n)*0.15*0.57, (x-n)*0.85+n*0.1,
+            #                                  n+CARD_X_SIZE/2, m+CARD_Y_SIZE/2,
+            #                                 x*0.7+(x-n)*0.15*0.57, (y-m)*0.85+m])
+            #self.red_arrows.append(tri)
 
     def draw_card_overlay(self, *args):
         card = args[0]
@@ -196,7 +236,7 @@ class BerserkApp(App):
             for bt in list_:
                 self.root.remove_widget(bt)
 
-    def destroy_target_marks(self):
+    def destroy_target_marks(self, *args):
         for btn, card in self.target_marks_cards:
             card.remove_widget(btn)
         for r, canvas in self.target_rectangles:
@@ -475,8 +515,7 @@ class BerserkApp(App):
         if self.mode == 'online':
             pass
         else:
-            ability_names, moves = self.backend.card_clicked(card['id'], self.pow)
-        return ability_names, moves
+            self.backend.card_clicked(card['id'], self.pow)
 
     def ability_clicked(self, ix, *args):
         if self.mode == 'online':
@@ -485,10 +524,13 @@ class BerserkApp(App):
             self.backend.ability_clicked(ix)
 
     def mark_clicked(self, mark, *args):
-        if self.mode == 'online':
-            pass
-        else:
-            self.backend.mark_clicked(mark)
+        self.mark_clicked_list.append(mark)
+        if len(self.mark_clicked_list) == len(self.curr_state['markers']):
+            if self.mode == 'online':
+                pass
+            else:
+                self.backend.mark_clicked(self.mark_clicked_list)
+            self.mark_clicked_list = []
 
     def eot_clicked(self, *args):
         if self.mode == 'online':
@@ -524,9 +566,9 @@ class BerserkApp(App):
             self.bright_card_overlay(card)
             self.selected_card = card
             self.draw_selection_border(instance.parent, card)
-            ability_names, moves = self.card_clicked(card)
-            self.update_card_buttons(ability_names)
-            self.display_moves(moves)
+            self.card_clicked(card)
+            # self.update_card_buttons(ability_names)
+            # self.display_moves(moves)
 
     def add_dopzones(self, position_scroll, position_butt, position_butt2, zone_name, button_name, gl_name, txt, player, button_func):
         if zone_name == 'dop_zone_1' or zone_name == 'dop_zone_2':
@@ -701,15 +743,14 @@ class BerserkApp(App):
             ch.size = (CARD_X_SIZE, CARD_Y_SIZE*0.84)
 
     def display_available_targets(self):
-        b_size = 30  # размер квадратика
+        self.mark_clicked_list = []
         targets = self.curr_state['markers']
         self.display_available_targets_helper(targets, 1, len(targets))
 
-
     def display_available_targets_helper(self, targets, i, total, *args):
+        self.destroy_target_marks()
         b_size = 30  # размер квадратика
         target_dict = targets[i-1]
-        print(target_dict)
         target_list_cards = []
         target_list_cells = []
         if 'card_ids' in target_dict.keys():
@@ -745,36 +786,56 @@ class BerserkApp(App):
 
         for t in target_list_cells:
             pos = self.card_position_coords[t]
-            c = Color(1, 1, 1, 0.8)
-            rl = RelativeLayout(pos=pos)
+            rl = RelativeLayout(pos=pos, size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
+            btn = Button(size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None), background_color=(0, 0, 0, 0))
             with rl.canvas:
-                btn = Button(pos=(0, 0),
-                             background_color=(1, 1, 1, 0.0),
-                             size=(CARD_X_SIZE, CARD_Y_SIZE), size_hint=(None, None))
-                rect1 = Rectangle(pos=(CARD_X_SIZE / 2 - b_size / 2,
-                                       CARD_Y_SIZE / 2 - b_size / 2),
-                                  background_color=c,
-                                  size=(b_size, b_size), size_hint=(1, 1))
-                c = Color(1, 1, 1, 0.15)
-                rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
-                                  background_color=c,
-                                  pos=(0, 0), size_hint=(1, 1))
-                self.target_rectangles.append((rect1, rl.canvas))
-                self.target_rectangles.append((rect2, rl.canvas))
+                Color(1, 0, 0, 1)
+                Ellipse(pos=(CARD_X_SIZE / 2 - 10, CARD_Y_SIZE / 2 - 10), size=(20, 20))
                 rl.add_widget(btn)
-                self.target_marks_cards.append([btn, rl])
+                self.nav_buttons.append(rl)
             btn.bind(on_press=partial(self.mark_clicked, t))
             if i < total:
                 btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
             self.root.add_widget(rl)
             self.target_marks_buttons.append(t)
 
+    def move_to_grave(self, card):
+        btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.16), background_down=card['pic'],
+                      background_normal=card['pic'], size=(CARD_X_SIZE, CARD_Y_SIZE * 0.84), border=(0, 0, 0, 0),
+                      size_hint=(None, None))
+        if card['zone'] == 'dz':
+            if (card.player == 1 and self.pow == 1) or (card.player == 2 and self.pow == 2):
+                self.dop_zone_1.children[0].remove_widget(self.cards_dict[card['id']])
+            else:
+                self.dop_zone_2.children[0].remove_widget(self.cards_dict[card['id']])
+        else:
+            self.layout.remove_widget(self.cards_dict[card['id']])
+        rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
+        btn1.bind(on_press=partial(self.card_popup, card))
+        btn1.bind(on_touch_up=self.card_popup_destr)
+        rl1.add_widget(btn1)
+        self.cards_dict[card['id']] = rl1
+        self.base_overlays[card['id']] = RelativeLayout()
+        Clock.schedule_once(partial(self.draw_card_overlay, card, 3))
+        rl1.add_widget(self.base_overlays[card['id']])
+        if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
+            self.grave_1_gl.add_widget(rl1)
+            self.grave_buttons_1.append(rl1)
+        elif (card['player'] == 2 and self.pow == 1) or (card['player'] == 1 and self.pow == 2):
+            self.grave_2_gl.add_widget(rl1)
+            self.grave_buttons_2.append(rl1)
+        self.update_zone_counters()
+
+
     def draw_from_state_diff(self, state):
         self.destroy_target_marks()
         self.destroy_flickering()
         new_state = state
         old_state = self.curr_state
+        self.curr_state = new_state
         for card_id in new_state['cards'].keys():
+            if old_state['cards'][card_id]['zone'] != 'gr' and new_state['cards'][card_id]['zone'] == 'gr':
+                self.move_to_grave(new_state['cards'][card_id])
             if old_state['cards'][card_id]['loc'] != new_state['cards'][card_id]['loc']:
                 self.move_card(card_id, new_state['cards'][card_id]['loc'])
             self.update_labels(old_state['cards'][card_id], new_state['cards'][card_id])
@@ -786,12 +847,13 @@ class BerserkApp(App):
                 if card_id == self.selected_card['id']:
                     self.update_card_buttons(new_state['cards'][card_id]['abilities'])
             self.add_defence_signs(new_state['cards'][card_id])
-        self.curr_state = new_state
         if new_state['markers']:
             self.display_available_targets()
         if new_state['flickers']:
             for c in new_state['flickers']:
                 self.start_flickering(c)
+        if new_state['arrows']:
+            self.draw_red_arrows(new_state['arrows'])
 
     def on_state_received(self, state):
         if not self.curr_state:
@@ -841,6 +903,8 @@ class BerserkApp(App):
         self.target_marks_cards = []
         self.target_marks_buttons = []
         self.selection_flicker_dict = {}
+        self.mark_clicked_list = []
+        self.red_arrows = []
 
 
         # self.defender_set = False
@@ -852,7 +916,6 @@ class BerserkApp(App):
         # self.pereraspredelenie_label_dict = defaultdict(int)
         # self.pereraspredelenie_dict = {}
         # self.die_pics = []
-        # self.red_arrows = []
         # self.curr_id_on_bord = 0
         # self.stack_cards = []
         # self.multiple_targets_list = []
