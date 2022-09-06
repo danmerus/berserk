@@ -26,7 +26,7 @@ class MainField(Widget):
 
 class FormationApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, gold_cap, silver_cap, deck, mode, server_ip=None, server_port=None, **kwargs):
+    def __init__(self, window_size, hand, turn, gold_cap, silver_cap, deck, mode, server_ip=None, server_port=None, **kwargs):
         super(FormationApp, self).__init__(**kwargs)
         Window.size = window_size
         self.window_size = window_size
@@ -36,7 +36,6 @@ class FormationApp(App):
         CARD_X_SIZE = (Window.width * 0.07)
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
 
-        self.backend = backend
         self.hand = hand
         self.hand = self.order_cost(hand)
         self.mul_no = 0
@@ -197,7 +196,7 @@ class FormationApp(App):
 
     def start_placement(self, *args):
         if self.cards_down:
-            self.selection = placement.SelectionApp(self.backend, self.window_size, self.cards_down, self.turn, mode=self.mode,
+            self.selection = placement.SelectionApp(self.window_size, self.cards_down, self.turn, mode=self.mode,
                                                     server_ip=self.server_ip, server_port=self.server_port)
             self.stop()
             self.selection.run()

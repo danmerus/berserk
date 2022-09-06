@@ -120,7 +120,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
+        self.server_input = TextInput(text='192.168.56.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
@@ -148,7 +148,7 @@ class MainMenuApp(App):
 
     def server_popup(self, *args):
         self.host, self.port = self.server_input.text.split(':')
-        code = network.join_server(self.host, self.port, self.nickname_input.text)  # ToDO thread
+        code = network.join_server(self.host, self.port, self.nickname_input.text)
         if code == -1:
             p = Popup(title='', separator_height=0, background='',
                       content=Label(text='Не удалось подключиться'), background_color=(0.8, 0.3, 0, 1), overlay_color=(0, 0, 0, 0),
@@ -231,6 +231,8 @@ class MainMenuApp(App):
         network.start_constr_game(self.host, self.port, self, game_id)
 
     def start_for_constra(self, turn, ip, port):
+        for b in [self.deck_btn, self.settings_btn, self.exit_btn]:
+            b.disabled = True
         self.stop()
         d = deck_selection.DeckSelectionApp(self.window_size, mode='constr', server_ip=ip, server_port=port, turn=int(turn))
         d.run()
@@ -318,6 +320,7 @@ class MainMenuApp(App):
         self.all_buttons.append(self.new_net_game_btn)
 
         self.new_single_game_btn = Button(pos=(Window.width * 0.37, Window.height * 0.7), text='Одиночный режим', color=self.c1,
+                                          disabled=True,
                                           size=(Window.width * 0.24, Window.height * 0.11), size_hint=(None, None),
                                           background_color=(0, 0, 0, 0),
                                           font_size=Window.height * 0.05, font_name='data/fonts/RuslanDisplay-Regular.ttf')

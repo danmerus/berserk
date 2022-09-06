@@ -137,8 +137,6 @@ def placement_ready(host, port, turn, data, *args):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
-            for card in data:
-                print(vars(card))
             byte_data = pickle.dumps(data)
             print('card data length: ', len(byte_data))
             res = s1.sendall(b'placement_ready'+(str(turn)).encode()+byte_data)
@@ -167,68 +165,65 @@ def ph_pressed(host, port, turn, *args):
         print('ph_pressed: ', e)
     return res
 
-def ability_to_pickle(ability, card, victim, state, force):
-    print('pre-pickling:', ability, card, victim, state, force)
-    ability.button = None
-    ability1 = copy(ability)
-    card1 = copy(card)
-    victim1 = copy(victim)
-    if isinstance(state, kivy.uix.button.Button):
-        state = 0
-    if hasattr(victim1, 'id_on_board'):
-        v = victim1.id_on_board
-    elif (isinstance(ability, MultipleCardAction) or ability.a_type == ActionTypes.PERERASPREDELENIE_RAN) and isinstance(victim1, list):
-        v = []
-        for c in victim1:
-            if isinstance(c, int):
-                v.append(str(c))
-            else:
-                v.append(c.id_on_board)
-    else:
-        v = victim1
-    if hasattr(ability1, 'index'):
-        a = ability1.index
-    else:
-        a = ability1
-    if not isinstance(force, int):
-        force = 0
-    print('pickling:', a, card1.id_on_board, v, state, force)
-    return pickle.dumps([a, card1.id_on_board, v, state, force])
-
-def pickle_to_ability(data, parent):
-    ability, card, victim, state, force = pickle.loads(data)
-    card = parent.backend.board.get_card_by_id(card)
-    print('recieved, ', ability, card, victim, state, force)
-    if isinstance(ability, int):
-        ability = card.get_ability_by_id(ability)
-    if isinstance(ability, DefaultMovementAction):
-        victim = victim
-    elif (isinstance(ability, MultipleCardAction) or ability.a_type == ActionTypes.PERERASPREDELENIE_RAN) and isinstance(victim, list):
-        v = []
-        for c in victim:
-            if isinstance(c, int):
-                v.append(parent.backend.board.get_card_by_id(c))
-            else:
-                v.append(int(c))
-        victim = v
-    else:
-        victim = parent.backend.board.get_card_by_id(victim)
-        if not victim:
-            victim = pickle.loads(data)[2]
-    return ability, card, victim, state, force
-
-
-def ability_pressed(host, port, turn, ability, card, victim, state, force):
+def timer_completed(host, port, turn, *args):
     res = -1
-    # print('ability pressed!', turn)
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
-            data = ability_to_pickle(ability, card, victim, state, force)
-            byte_data = pickle.dumps(data)
-            res = s1.sendall(b'ability_pressed' + (str(turn)).encode() + byte_data)
+            res = s1.sendall(b'timer_completed' + (str(turn)).encode())
     except Exception as e:
-        print('ability_pressed: ', e, ability)
+        print('timer_completed: ', e)
+    return res
+
+def pop_up_clicked(host, port, turn, ix, type_, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'pop_up_clicked' + (str(ix)+'#'+str(type_)).encode())
+    except Exception as e:
+        print('pop_up_clicked: ', e)
+    return res
+
+def client_loaded(host, port, turn, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'client_loaded' + (str(turn)).encode())
+    except Exception as e:
+        print('client_loaded: ', e)
+    return res
+
+def card_clicked(host, port, turn, card, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'card_clicked' + (str(turn)+'#'+str(card)).encode())
+    except Exception as e:
+        print('card_clicked: ', e)
+    return res
+
+def mark_clicked(host, port, turn, marks, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            marks_data = pickle.dumps(marks)
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'mark_clicked' + (str(turn)).encode() + marks_data)
+    except Exception as e:
+        print('mark_clicked: ', e)
+    return res
+
+def ability_clicked(host, port, turn, ix, *args):
+    res = -1
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((host, int(port)))
+            res = s1.sendall(b'ability_clicked' + (str(turn)+'#'+str(ix)).encode())
+    except Exception as e:
+        print('ability_clicked: ', e)
     return res
 
 def get_rolls(host, port, count):
@@ -257,11 +252,7 @@ def start_constr_helper(sock, parent):
             nick = datachunk[len('ready'):].decode('utf-8')
             constr_cb2(nick, parent)
         elif datachunk.startswith(b'start_constr'):
-            card_data = datachunk[len('start_constr'):]
-            try:
-                constr_cb3(pickle.loads(card_data), parent)
-            except:
-                print('error in decoding cards!')
+            constr_cb3(parent)
             print('starting constracted game!')
         elif datachunk.startswith(b'eot_pressed'):
             constr_cb4(parent)
@@ -271,8 +262,25 @@ def start_constr_helper(sock, parent):
             byte_data = datachunk[len('ability_pressed'):]
             data = pickle.loads(byte_data)
             constr_cb5(data, parent)
+        elif datachunk.startswith(b'state_obj'):
+            byte_data = datachunk[len('state_obj'):]
+            data = pickle.loads(byte_data)
+            constr_cb7(data, parent)
+        elif datachunk.startswith(b'end_game'):
+            txt = datachunk[len('end_game'):].decode('utf-8')
+            constr_cb8(txt, parent)
 
     sock.close()
+
+@mainthread
+def constr_cb8(txt, parent):
+    parent.on_game_end(txt)
+
+
+@mainthread
+def constr_cb7(state, parent):
+    # print('Sending state: ', state)
+    parent.on_state_received(state)
 
 @mainthread
 def constr_cb5(data, parent):
@@ -289,8 +297,8 @@ def constr_cb4(parent):
     parent.on_online_press_turn()
 
 @mainthread
-def constr_cb3(cards, parent):
-    parent.on_game_start(cards)
+def constr_cb3(parent):
+    parent.on_game_start()
 
 @mainthread
 def constr_cb2(nick, parent):
@@ -304,8 +312,3 @@ def constr_cb1(data, parent):
     turn, ip, port = data.decode('utf-8').split('#')
     parent.start_for_constra(turn, ip, port)
     # print('got server addr!', data)
-
-# from  cards.set_1 import Bjorn_1
-#
-# n = Bjorn_1.Bjorn_1(location=12, player=1, gui=1)
-# print(n.__class__().abilities)

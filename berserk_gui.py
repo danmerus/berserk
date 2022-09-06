@@ -71,12 +71,15 @@ class TouchInput(Widget):
 
 class BerserkApp(App):
 
-    def __init__(self, window_size, stack_duration=10, turn_duration=10, pow=1, mode='offline', backend=None):
+    def __init__(self, window_size, stack_duration=10, turn_duration=10, pow=1, mode='offline', backend=None,
+                 server_ip=None, server_port=None):
         super(BerserkApp, self).__init__()
         self.backend = backend
         self.mode = mode
         self.pow = pow
         self.window_size = window_size
+        self.server_ip = server_ip
+        self.server_port = server_port
         Window.size = window_size
         if window_size == (1920, 1080):
             Window.maximize()
@@ -96,9 +99,9 @@ class BerserkApp(App):
 
     def load_complete(self):
         if self.mode == 'online':
-            pass
+            network.client_loaded(self.server_ip, self.server_port, self.pow)
         else:
-            self.backend.on_load(1)
+            self.backend.on_load()
 
     def destroy_red_arrows(self, *args):
         if self.red_arrows:
@@ -236,6 +239,13 @@ class BerserkApp(App):
             for bt in list_:
                 self.root.remove_widget(bt)
 
+    def check_children(self, list_):
+        for bt in list_:
+            if bt in self.root.children:
+                return True
+        return False
+
+
     def destroy_target_marks(self, *args):
         for btn, card in self.target_marks_cards:
             card.remove_widget(btn)
@@ -350,7 +360,7 @@ class BerserkApp(App):
         if hasattr(self, "card_border"):
             self.card_border[1].canvas.remove(self.card_border[0])
         with instance.canvas:
-            if card['player'] == 1:
+            if card['player'] == self.pow:
                 c = Color(1, 1, 0, 1)
             else:
                 c = Color(0.2, 0.2, 0.8, 1)
@@ -450,14 +460,8 @@ class BerserkApp(App):
         else:
             bar_w = Window.width * 0.01
         self.timer_bar.size = (bar_w, Window.height * 0.03)
-        if self.backend.in_stack:
-            txt = game_properties.state_to_str[self.backend.curr_game_state] + ' Прио ' + str(self.backend.curr_priority)
-        else:
-            if self.backend.curr_game_state == game_properties.GameStates.MAIN_PHASE:
-                txt = game_properties.state_to_str[self.backend.curr_game_state] + ' игрока ' + str(self.backend.current_active_player)
-            else:
-                txt = game_properties.state_to_str[self.backend.curr_game_state]
-        self.timer_label.text = txt + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
+        self.timer_label.text = self.timer_state['state_name'] + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
+        # self.timer_label.text = 'TODO' + ' ' + str(int(total_min-minutes))+':'+str(int(duration-rem_m*60-seconds)).zfill(2)
 
     def start_timer(self, duration, player, *args):
         if hasattr(self, 'timer'):
@@ -472,11 +476,7 @@ class BerserkApp(App):
             self.timer_bar = BorderImage(size=(Window.width * 0.15, Window.height * 0.03),
                                          pos=(Window.width * 0.83, Window.height * 0.35),
                                         color=Color(1,1,0.3,1), minimum_width=0)
-            if self.backend.in_stack:
-                txt = 'Приоритет игрока '+str(self.backend.curr_priority)
-            else:
-                txt = game_properties.state_to_str[self.backend.curr_game_state]
-            self.lbl = Label(text=txt,
+            self.lbl = Label(text=self.timer_state['state_name'],
                         pos=(Window.width * 0.88, Window.height * 0.35), color=(0, 0, 0, 1),
                         size=(CARD_X_SIZE * 0.3, CARD_Y_SIZE * 0.2),
                         pos_hint=(None, None), font_size=str(Window.height * 0.016))
@@ -511,44 +511,52 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.nav_buttons.append(rl)
 
-    def card_clicked(self, card, *args):  # TODO should be optimised to use state
+    def card_clicked(self, card, *args):
         if self.mode == 'online':
-            pass
+            network.card_clicked(self.server_ip, self.server_port, self.pow, card['id'])
         else:
             self.backend.card_clicked(card['id'], self.pow)
 
     def ability_clicked(self, ix, *args):
         if self.mode == 'online':
-            pass
+            network.ability_clicked(self.server_ip, self.server_port, self.pow, ix)
         else:
-            self.backend.ability_clicked(ix)
+            self.backend.ability_clicked(ix, self.pow)
 
     def mark_clicked(self, mark, *args):
         self.mark_clicked_list.append(mark)
         if len(self.mark_clicked_list) == len(self.curr_state['markers']):
             if self.mode == 'online':
-                pass
+                network.mark_clicked(self.server_ip, self.server_port, self.pow, self.mark_clicked_list)
             else:
-                self.backend.mark_clicked(self.mark_clicked_list)
+                self.backend.mark_clicked(self.mark_clicked_list, self.pow)
             self.mark_clicked_list = []
 
     def eot_clicked(self, *args):
         if self.mode == 'online':
-            pass
+            network.eot_pressed(self.server_ip, self.server_port, self.pow)
         else:
             self.backend.eot_clicked()
 
     def ph_clicked(self, *args):
         if self.mode == 'online':
-            pass
+            network.ph_pressed(self.server_ip, self.server_port, self.pow)
         else:
             self.backend.ph_clicked()
 
     def timer_completed(self, *args):
-        if self.mode == 'online':
+        if self.mode == 'online' and self.pow == 1:
+            network.timer_completed(self.server_ip, self.server_port, self.pow)
+        elif  self.mode == 'online' and self.pow == 2:
             pass
         else:
             self.backend.timer_completed()
+
+    def pop_up_clicked(self, i, type_, *args):
+        if self.mode == 'online':
+            network.pop_up_clicked(self.server_ip, self.server_port, self.pow, i, type_)
+        else:
+            self.backend.pop_up_clicked(i, type_)
 
     def update_card_buttons(self, ability_names):
         self.destroy_x(self.selected_card_buttons)
@@ -719,9 +727,9 @@ class BerserkApp(App):
             self.hp_label_dict[new['id']].text = f'{new["curr_life"]}/{new["life"]}'
             self.display_damage(new["id"], int(new['curr_life'])-int(old['curr_life']))
             self.play_attack_sound(int(new['curr_life'])-int(old['curr_life']))
-        if new['curr_fishka'] > 0:
+        if old['curr_fishka'] <=0 and new['curr_fishka'] > 0:
             self.add_fishki_gui(new)
-        else:
+        elif old['curr_fishka'] > 0 and new['curr_fishka'] <= 0:
             self.remove_fishki_gui(new)
 
     def tap_card(self, card, tap=True):
@@ -799,12 +807,12 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.target_marks_buttons.append(t)
 
-    def move_to_grave(self, card):
+    def move_to_grave(self, card, prev_zone):
         btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.16), background_down=card['pic'],
                       background_normal=card['pic'], size=(CARD_X_SIZE, CARD_Y_SIZE * 0.84), border=(0, 0, 0, 0),
                       size_hint=(None, None))
-        if card['zone'] == 'dz':
-            if (card.player == 1 and self.pow == 1) or (card.player == 2 and self.pow == 2):
+        if prev_zone == 'dz':
+            if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
                 self.dop_zone_1.children[0].remove_widget(self.cards_dict[card['id']])
             else:
                 self.dop_zone_2.children[0].remove_widget(self.cards_dict[card['id']])
@@ -826,6 +834,94 @@ class BerserkApp(App):
             self.grave_buttons_2.append(rl1)
         self.update_zone_counters()
 
+    def on_game_end(self, text_):
+        rl = RelativeLayout()
+        rl.add_widget(Label(text=text_, font_size=Window.height * 0.05, pos=(0, Window.height * 0.05)))
+        btn = Button(text='В меню', background_color=(1, 0, 0, 1), size_hint=(0.5, 0.2), pos=(Window.width * 0.1, 0))
+        btn.bind(on_press=lambda x: self.stop())
+        btn.bind(on_press=lambda x: MainMenuApp(self.window_size).run())
+        rl.add_widget(btn)
+        popup = OmegaPopup(title='', separator_height=0, overlay_color=(0, 0, 0, 0),
+                           content=rl, background_color=(1, 0, 0, 1),
+                           size_hint=(None, None), size=(Window.width * 0.4, Window.height / 4))
+        popup.open()
+
+    def draw_die(self, dices):
+        clean = False
+        for el in dices:
+            if el:
+                clean = True
+        if clean:
+            self.destroy_x(self.die_pics)
+        if self.pow == 1:
+            player_one_part = dices[0]
+            player_two_part = dices[1]
+        else:
+            player_one_part = dices[1]
+            player_two_part = dices[0]
+        to_draw_1 = []
+        to_draw_2 = []
+        for set_of_rolls in player_one_part:
+            if set_of_rolls:
+                bonus = set_of_rolls[1]
+                for i, roll in enumerate(set_of_rolls[0]):
+                    if roll > 6:
+                        roll = 6
+                    elif roll < 1:
+                        roll = 1
+                    to_draw_1.append((roll, bonus))
+        for i, (roll, bonus) in enumerate(to_draw_1):
+            r1_i = Image(source=f'data/dice/Alea_{roll}.png', pos=(Window.width * 0.78 - 0.07 * Window.width * i, Window.height * 0.8),
+                         size=(0.07 * Window.width, Window.height * 0.07))
+            with r1_i.canvas:
+                if bonus is not None:
+                    l = Label(text='+'+str(bonus), pos=(Window.width * 0.78 - 0.07 * Window.width * i, Window.height * 0.7))
+                    self.die_pics.append(l)
+            self.root.add_widget(r1_i)
+            self.die_pics.append(r1_i)
+        for set_of_rolls in player_two_part:
+            if set_of_rolls:
+                bonus = set_of_rolls[1]
+                for i, roll in enumerate(set_of_rolls[0]):
+                    if roll > 6:
+                        roll = 6
+                    elif roll < 1:
+                        roll = 1
+                    to_draw_2.append((roll, bonus))
+        for i, (roll, bonus) in enumerate(to_draw_2):
+            r2_i = Image(source=f'data/dice/Alea_{roll}.png', pos=(Window.width * 0.12 + 0.07 * Window.width * i, Window.height * 0.8),
+                         size=(0.07 * Window.width, Window.height * 0.07))
+            with r2_i.canvas:
+                if bonus is not None:
+                    l = Label(text='+'+str(bonus), pos=(Window.width * 0.12 + 0.07 * Window.width * i, Window.height * 0.7))
+                    self.die_pics.append(l)
+            self.root.add_widget(r2_i)
+            self.die_pics.append(r2_i)
+
+        # if not self.check_children(self.die_pics):
+        # Clock.schedule_once(partial(self.destroy_x, self.die_pics), 3)
+
+    def create_selection_popup(self, data):
+        question = data['q']
+        button_texts = data['texts']
+        popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
+                                           overlay_color=(0, 0, 0, 0), size_hint=(None, None),
+                                           auto_dismiss=False)
+        rl = RelativeLayout(size=popup_.size, size_hint=(None, None))
+        popup_.content = rl
+        with rl.canvas:
+            l = Label(pos=(70, 20), size_hint=(None, None), text=question, valign='top')
+            self.garbage.append(l)
+
+        for i, b_text in enumerate(button_texts):
+            btn1 = Button(pos=(0+i*rl.width/len(button_texts), 0), size=(130, 30), background_color=(1, 0, 0, 1),
+                          size_hint=(None, None),
+                          text=b_text)
+            btn1.bind(on_press=partial(self.pop_up_clicked, i, data['type']))
+            btn1.bind(on_press=lambda x: popup_.dismiss())
+            rl.add_widget(btn1)
+        popup_.open()
+        return popup_
 
     def draw_from_state_diff(self, state):
         self.destroy_target_marks()
@@ -835,7 +931,7 @@ class BerserkApp(App):
         self.curr_state = new_state
         for card_id in new_state['cards'].keys():
             if old_state['cards'][card_id]['zone'] != 'gr' and new_state['cards'][card_id]['zone'] == 'gr':
-                self.move_to_grave(new_state['cards'][card_id])
+                self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'])
             if old_state['cards'][card_id]['loc'] != new_state['cards'][card_id]['loc']:
                 self.move_card(card_id, new_state['cards'][card_id]['loc'])
             self.update_labels(old_state['cards'][card_id], new_state['cards'][card_id])
@@ -854,8 +950,14 @@ class BerserkApp(App):
                 self.start_flickering(c)
         if new_state['arrows']:
             self.draw_red_arrows(new_state['arrows'])
+        if new_state['dices']:
+            self.draw_die(new_state['dices'])
+        if new_state['popups']:
+            if new_state['popups']['show_to'] == self.pow:
+                self.create_selection_popup(new_state['popups'])
 
     def on_state_received(self, state):
+        self.garbage_dict = {}
         if not self.curr_state:
             self.curr_state = state
             self.draw_from_state_init()
@@ -870,7 +972,7 @@ class BerserkApp(App):
 
     def build(self):
         if self.mode == 'online':
-            network.on_entering_next_screen(self.backend.server_ip, self.backend.server_port, self.backend.turn, self)
+            network.on_entering_next_screen(self.server_ip, self.server_port, self.pow, self)
         root = MainField()
         with root.canvas:
             root.bg_rect = Rectangle(source='data/bg/dark_bg_7.jpg', pos=root.pos, size=Window.size)
@@ -905,6 +1007,9 @@ class BerserkApp(App):
         self.selection_flicker_dict = {}
         self.mark_clicked_list = []
         self.red_arrows = []
+        self.die_pics = []
+        self.garbage = []
+        self.garbage_dict = {}
 
 
         # self.defender_set = False
@@ -915,12 +1020,9 @@ class BerserkApp(App):
         # self.proxi_ability = None
         # self.pereraspredelenie_label_dict = defaultdict(int)
         # self.pereraspredelenie_dict = {}
-        # self.die_pics = []
         # self.curr_id_on_bord = 0
         # self.stack_cards = []
         # self.multiple_targets_list = []
-        # self.garbage = []
-        # self.garbage_dict = {}
 
         for i in range(5):
             for j in range(6):
@@ -956,8 +1058,6 @@ class BerserkApp(App):
         self.layout.add_widget(self.eot_button)
 
         self.timer_label = Label()
-#        self.backend.start()
-        #Clock.schedule_once(lambda x: self.start_timer(TURN_DURATION))  # BUGGY?
 
         # Extra zones sliders
         self.dop_zone_1_buttons = []

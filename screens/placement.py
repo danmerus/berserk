@@ -13,7 +13,7 @@ from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy_garden.draggable import KXDraggableBehavior, KXDroppableBehavior
 from screens import deck_selection
 import network
-# import berserk_gui
+import berserk_gui
 # from game import Game
 
 class MainField(Widget):
@@ -100,7 +100,7 @@ class DraggableRL(KXDraggableBehavior, KXDroppableBehavior, RelativeLayout):
 
 class SelectionApp(App):
 
-    def __init__(self, backend, window_size, hand, turn, mode, server_ip=None, server_port=None, **kwargs):
+    def __init__(self, window_size, hand, turn, mode, server_ip=None, server_port=None, **kwargs):
         super(SelectionApp, self).__init__(**kwargs)
         self.window_size = window_size
         Window.size = self.window_size
@@ -113,7 +113,6 @@ class SelectionApp(App):
         TURN_DURATION = 6
         DZ_SIZE = (CARD_X_SIZE, Window.height * 0.45)
 
-        self.backend = backend
         self.hand = hand
         self.turn = turn
         self.title = 'Berserk Renewal'
@@ -185,19 +184,21 @@ class SelectionApp(App):
                                 size=(Window.width * 0.08, Window.height * 0.05), size_hint=(None, None))
         self.layout.add_widget(self.ready_info)
 
-    def on_game_start(self, cards, *args):
+    def on_game_start(self, *args):
         self.stop()
-        self.backend.turn = self.turn
-        self.backend.mode = 'online'
-        self.backend.server_ip = self.server_ip
-        self.backend.server_port = self.server_port
-        if self.turn == 1:
-            # print('1', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
-            self.backend.set_cards(self.backend.cards_on_board1, cards, self.backend.gui)
-        else:
-            # print('2', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
-            self.backend.set_cards(cards, self.backend.cards_on_board2, self.backend.gui)
-        self.backend.gui.run()
+        self.gui = berserk_gui.BerserkApp(self.window_size, server_ip=self.server_ip, server_port=self.server_port, pow=self.turn, backend=None, mode='online')
+        self.gui.run()
+        # self.backend.turn = self.turn
+        # self.backend.mode = 'online'
+        # self.backend.server_ip = self.server_ip
+        # self.backend.server_port = self.server_port
+        # if self.turn == 1:
+        #     # print('1', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
+        #     self.backend.set_cards(self.backend.cards_on_board1, cards, self.backend.gui)
+        # else:
+        #     # print('2', self.backend.cards_on_board1, self.backend.cards_on_board2, cards)
+        #     self.backend.set_cards(cards, self.backend.cards_on_board2, self.backend.gui)
+        # self.backend.gui.run()
 
     def lock_and_loaded(self, *args):
         if -1 not in self.occupied.values():
@@ -214,20 +215,20 @@ class SelectionApp(App):
                 card.gui = None
                 card.abilities = None
                 out.append(card)
-            if self.turn == 1:
-                self.backend.cards_on_board1 = out
-            elif self.turn == 2:
-                self.backend.cards_on_board2 = out
-            if self.mode == 'single1':
-                self.stop()
-                d = deck_selection.DeckSelectionApp(self.window_size, mode='single2', backend=self.backend)
-                d.run()
-            elif self.mode == 'single2':
-                self.stop()
-                self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
-                self.backend.gui.run()
-            elif self.mode == 'constr':
+            # if self.turn == 1:
+            #     self.backend.cards_on_board1 = out
+            # elif self.turn == 2:
+            #     self.backend.cards_on_board2 = out
+            if self.mode == 'constr':
                 network.placement_ready(self.server_ip, self.server_port, self.turn, out)
+            # if self.mode == 'single1':
+            #     self.stop()
+            #     d = deck_selection.DeckSelectionApp(self.window_size, mode='single2', backend=self.backend)
+            #     d.run()
+            # elif self.mode == 'single2':
+            #     self.stop()
+            #     self.backend.set_cards(self.backend.cards_on_board1, self.backend.cards_on_board2, self.backend.gui)
+            #     self.backend.gui.run()
 
     def build(self):
         root = MainField()

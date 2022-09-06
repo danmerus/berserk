@@ -27,8 +27,8 @@ class Ovrajnii_gnom_1(Card):
             curr_fishka=0,
             max_fishka=0,
             can_tap_for_fishka=False,
-            exp_in_def=1,
-            exp_in_off=1
+            exp_in_def=0,
+            exp_in_off=0
         )
         # self.add_default_abilities()
         self._update_abilities()

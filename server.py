@@ -6,6 +6,7 @@ import pickle
 import network
 import random
 from collections import defaultdict
+import game
 
 class MainHandler(socketserver.BaseRequestHandler):
 
@@ -77,12 +78,12 @@ class GameHandler(socketserver.BaseRequestHandler):
                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                    s1.connect((ip2, int(port2)))
                    s1.sendall(b'close')
-               self.server.player2 = (ip, port, nick1)
+               self.server.player2 = (ip, port, nick2)
             elif (turn == 1 and self.server.turn_rng==1) or (turn == 2 and self.server.turn_rng==2):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'close')
-                self.server.player1 = (ip, port, nick2)
+                self.server.player1 = (ip, port, nick1)
         elif self.data.startswith(b'placement_ready'):
             turn = int(self.data[len('placement_ready'):len('placement_ready') + 1].decode('utf-8'))
             card_data = self.data[len('placement_ready')+1:]
@@ -90,70 +91,51 @@ class GameHandler(socketserver.BaseRequestHandler):
             ip2, port2, nick2 = self.server.player2
             self.server.ready_count.add(turn)
             if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
-                self.server.player2_cards = card_data
+                try:
+                    self.server.player2_cards = pickle.loads(card_data)
+                except:
+                    print('error in decoding card data!')
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip1, int(port1)))
                     s1.sendall(b'ready' + nick2)
             elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
-                self.server.player1_cards = card_data
+                try:
+                    self.server.player1_cards = pickle.loads(card_data)
+                except:
+                    print('error in decoding card data!')
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                     s1.connect((ip2, int(port2)))
                     s1.sendall(b'ready' + nick1)
             if len(self.server.ready_count) == 2:
+                self.server.game.set_cards(self.server.player1_cards, self.server.player2_cards, self.server.game)
+                self.server.ready_count = set()
                 if self.server.turn_rng == 1:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))
-                        s1.sendall(b'start_constr'+self.server.player2_cards)
+                        s1.sendall(b'start_constr')
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip2, int(port2)))
-                        s1.sendall(b'start_constr'+self.server.player1_cards)
+                        s1.sendall(b'start_constr')
                 elif self.server.turn_rng == 2:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip1, int(port1)))
-                        s1.sendall(b'start_constr' + self.server.player2_cards)
+                        s1.sendall(b'start_constr')
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
                         s1.connect((ip2, int(port2)))
-                        s1.sendall(b'start_constr' + self.server.player1_cards)
+                        s1.sendall(b'start_constr')
         elif self.data.startswith(b'eot_pressed'):
             turn = self.data[len('eot_pressed'):len('eot_pressed')+1].decode('utf-8')
             turn = int(turn)
-            ip1, port1, nick1 = self.server.player1
-            ip2, port2, nick2 = self.server.player2
-            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip1, int(port1)))
-                    s1.sendall(b'eot_pressed')
-            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip2, int(port2)))
-                    s1.sendall(b'eot_pressed')
+            self.server.game.eot_clicked()
         elif self.data.startswith(b'ph_pressed'):
             turn = self.data[len('ph_pressed'):len('ph_pressed')+1].decode('utf-8')
             turn = int(turn)
-            ip1, port1, nick1 = self.server.player1
-            ip2, port2, nick2 = self.server.player2
-            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip1, int(port1)))
-                    s1.sendall(b'ph_pressed')
-            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip2, int(port2)))
-                    s1.sendall(b'ph_pressed')
-        elif self.data.startswith(b'ability_pressed'):
-            turn = self.data[len('ability_pressed'):len('ability_pressed')+1].decode('utf-8')
+            self.server.game.ph_clicked()
+        elif self.data.startswith(b'ability_clicked'):
+            turn, ix = self.data[len('ability_clicked'):].decode('utf-8').split('#')
+            ix = int(ix)
             turn = int(turn)
-            data = self.data[len('ability_pressed')+1:]
-            ip1, port1, nick1 = self.server.player1
-            ip2, port2, nick2 = self.server.player2
-            if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip1, int(port1)))
-                    s1.sendall(b'ability_pressed' + data)
-            elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip2, int(port2)))
-                    s1.sendall(b'ability_pressed' + data)
+            self.server.game.ability_clicked(ix, turn)
         elif self.data.startswith(b'get_roll'):
             count = self.data[len('get_roll'):].decode('utf-8')
             count = int(count)
@@ -167,6 +149,31 @@ class GameHandler(socketserver.BaseRequestHandler):
             if self.server.sent_rolls == 2:
                 self.server.sent_rolls = 0
                 self.server.rolls = []
+        elif self.data.startswith(b'client_loaded'):
+            turn = self.data[len('client_loaded'):].decode('utf-8')
+            turn = int(turn)
+            self.server.ready_count.add(turn)
+            if len(self.server.ready_count) == 2:
+                self.server.game.on_load()
+        elif self.data.startswith(b'card_clicked'):
+            turn, card_id = self.data[len('card_clicked'):].decode('utf-8').split('#')
+            turn = int(turn)
+            card_id = int(card_id)
+            self.server.game.card_clicked(card_id, turn)
+        elif self.data.startswith(b'mark_clicked'):
+            turn = self.data[len('mark_clicked'):len('mark_clicked')+1].decode('utf-8')
+            turn = int(turn)
+            mark_data = pickle.loads(self.data[len('mark_clicked')+1:])
+            self.server.game.mark_clicked(mark_data, turn)
+        elif self.data.startswith(b'timer_completed'):
+            turn = self.data[len('timer_completed'):].decode('utf-8')
+            # turn = int(turn)
+            self.server.game.timer_completed()
+        elif self.data.startswith(b'pop_up_clicked'):
+            ix, type_ = self.data[len('pop_up_clicked'):].decode('utf-8').split('#')
+            ix = int(ix)
+            self.server.game.pop_up_clicked(ix, type_)
+
 
 class GameServer:
     def __init__(self, game_id, ip1, port1, ip2, port2, nick1='Унгар1', nick2='Унгар1'):
@@ -174,10 +181,12 @@ class GameServer:
         self.server = socketserver.TCPServer((HOST, 0), GameHandler)
         print(f'starting game {game_id} on: ', self.server.server_address)
         self.server_address = self.server.server_address
+        self.game = game.Game(server=self, server_ip=self.server_address[0], server_port=self.server_address[1])
+        self.server.game = self.game
+        self.server.game.mode = 'online'
         self.game_id = game_id
         self.turn_rng = random.randint(1, 2)
         self.server.turn_rng = self.turn_rng
-        # if self.turn_rng == 1:
         self.player1 = (ip1, port1, nick1)
         self.player2 = (ip2, port2, nick2)
         self.server.player1 = self.player1
@@ -190,6 +199,37 @@ class GameServer:
         self.server.player2_cards = self.player2_cards
         self.server.sent_rolls = 0
         self.server.rolls = []
+
+    def end_game(self, text):
+        ip1, port1, nick1 = self.server.player1
+        ip2, port2, nick2 = self.server.player2
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((ip1, int(port1)))
+            s1.sendall(b'end_game' + (str(text)).encode())
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.connect((ip2, int(port2)))
+            s1.sendall(b'end_game' + (str(text)).encode())
+
+    def send_state(self, player, state_obj):
+        data = pickle.dumps(state_obj)
+        ip1, port1, nick1 = self.server.player1
+        ip2, port2, nick2 = self.server.player2
+        if self.turn_rng == 1 and player == 1:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                s1.connect((ip1, int(port1)))
+                s1.sendall(b'state_obj'+data)
+        elif self.turn_rng == 1 and player == 2:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                s1.connect((ip2, int(port2)))
+                s1.sendall(b'state_obj'+data)
+        elif self.turn_rng == 2 and player == 1:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                s1.connect((ip2, int(port2)))
+                s1.sendall(b'state_obj'+data)
+        elif self.turn_rng == 2 and player == 2:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+                s1.connect((ip1, int(port1)))
+                s1.sendall(b'state_obj' + data)
 
 
 

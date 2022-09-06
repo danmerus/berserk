@@ -17,8 +17,6 @@ from kivy.uix.image import Image
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from game import Game
-import berserk_gui
 from cards.card import *
 import os
 import random
@@ -27,6 +25,7 @@ import deck
 import main_menu
 from screens import squad_formation
 from kivy.base import EventLoop
+import game
 
 def reset():
     if not EventLoop.event_listeners:
@@ -62,7 +61,6 @@ class DeckSelectionApp(App):
         self.reset_dicts()
         self.deck_obj = deck.Deck()
         self.mode = mode
-        self.backend = backend
         self.server_ip = server_ip
         self.server_port = server_port
         self.turn = turn
@@ -230,14 +228,14 @@ class DeckSelectionApp(App):
         self.tinput.select_all()
         self.okbtn.opacity = 1
         self.okbtn.disabled = False
-        if mode=='save':
+        if mode == 'save':
             self.tinput.text = 'Название деки'
             self.okbtn.bind(on_release=self.bindok)
             Window.bind(on_key_down=self.save_deck_enter)
-        elif mode=='import':
+        elif mode == 'import':
             self.okbtn.bind(on_release=self.import_deck_helper)
             Window.bind(on_key_down=self.import_deck_enter)
-        elif mode=='show':
+        elif mode == 'show':
             self.okbtn.bind(on_release=self.deactivate_input)
 
     def deactivate_input(self, *args):
@@ -396,38 +394,30 @@ class DeckSelectionApp(App):
             cards.extend([key for x in range(vals)])
         chk, text = self.deck_check(cards)
         if chk:
-            if not hasattr(self, 'backend'):
-                game = Game()
-                game.gui = berserk_gui.BerserkApp(game, self.window_size)
-                self.backend = game
-            elif not self.backend:
-                game = Game()
-                game.gui = berserk_gui.BerserkApp(game, self.window_size)
-                self.backend = game
-            if self.mode == 'single1':
-                deck = [x(gui=self.backend.gui) for x in cards]
+            temp_game_obj = game.Game()
+            if self.mode == 'constr':
+                deck = [x(gui=temp_game_obj) for x in cards]
                 hand = random.sample(deck, 15)
-                self.stop()
-                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=1, gold_cap=24, silver_cap=22,
-                                                 deck=deck, mode=self.mode)
-                f.run()
-            elif self.mode == 'single2':
-                deck = [x(gui=self.backend.gui) for x in cards]
-                hand = random.sample(deck, 15)
-                self.stop()
-                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=2, gold_cap=24, silver_cap=22,
-                                                 deck=deck, mode=self.mode)
-                f.run()
-            elif self.mode == 'constr':
-                deck = [x(gui=self.backend.gui) for x in cards]
-                hand = random.sample(deck, 15)
-                self.backend.gui.pow = self.turn
                 self.stop()
                 reset()
-                f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=self.turn, gold_cap=24,
+                f = squad_formation.FormationApp(self.window_size, hand, turn=self.turn, gold_cap=24,
                                                  silver_cap=22, deck=deck,
                                                  mode=self.mode, server_ip=self.server_ip, server_port=self.server_port)
                 f.run()
+            # if self.mode == 'single1':
+            #     deck = [x(gui=self.backend.gui) for x in cards]
+            #     hand = random.sample(deck, 15)
+            #     self.stop()
+            #     f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=1, gold_cap=24, silver_cap=22,
+            #                                      deck=deck, mode=self.mode)
+            #     f.run()
+            # elif self.mode == 'single2':
+            #     deck = [x(gui=self.backend.gui) for x in cards]
+            #     hand = random.sample(deck, 15)
+            #     self.stop()
+            #     f = squad_formation.FormationApp(self.backend, self.window_size, hand, turn=2, gold_cap=24, silver_cap=22,
+            #                                      deck=deck, mode=self.mode)
+            #     f.run()
         elif text:
             p = Popup(title='', separator_height=0,
                     content=Label(text=text), background_color=(1, 0, 0, 1),
