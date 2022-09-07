@@ -181,7 +181,7 @@ class Board():
     def get_ground_targets_min_max(self, card_pos_no, range_max, range_min, ability):
         if range_max > range_min:
             t1 = set(self.get_available_targets_ground(card_pos_no, range_max))
-            t2 = set(self.get_available_targets_ground(card_pos_no, range_min))
+            t2 = set(self.get_available_targets_ground(card_pos_no, max(0, range_min-1)))
             out = list(t1-t2)
             if ability.ranged:
                 out.extend(self.get_flying_targets())

@@ -47,6 +47,8 @@ class Game:
         self.dices = [[], []]
         self.popup_state = {}
         self.popup_temp = []
+        self.send_count = 0
+        self.card_exit = False
 
     def set_cards(self, cards_on_board1, cards_on_board2, game):
         new_cards = []
@@ -239,62 +241,60 @@ class Game:
                 and card.type_ == CreatureType.CREATURE and not add_tap_for_flyer_flag:
             card.abilities.remove(to_remove)
 
+    def check_for_card_ab_in_stack(self, card):
+        for block in self.stack:
+            for a, c, v, s in block:
+                if card == c:
+                    return True
+        return False
+
+    def check_card_abs_for_legality(self, card, pow):
+        out = []
+        for x in card.abilities:
+            if ((not hasattr(x, 'display')) or x.display) and not card.tapped:
+                if hasattr(x, 'disabled') and x.disabled:
+                    out.append((x.txt, x.index, 1))
+                elif self.card_exit:
+                    out.append((x.txt, x.index, 1))
+                elif card.actions_left <= 0:
+                    out.append((x.txt, x.index, 1))
+                elif self.curr_game_state not in x.state_of_action:
+                    out.append((x.txt, x.index, 1))
+                elif self.check_for_card_ab_in_stack(card):
+                    out.append((x.txt, x.index, 1))
+                elif not x.isinstant and self.in_stack:
+                    out.append((x.txt, x.index, 1))
+                elif self.in_stack and card.player != self.curr_priority:
+                    out.append((x.txt, x.index, 1))
+                elif not self.in_stack and pow != self.current_active_player:
+                    out.append((x.txt, x.index, 1))
+                elif isinstance(x, IncreaseFishkaAction):
+                    if card.curr_fishka >= card.max_fishka:
+                        out.append((x.txt, x.index, 1))
+                    else:
+                        out.append((x.txt, x.index, 0))
+                elif isinstance(x, FishkaCardAction):
+                    if (isinstance(x.cost_fishka, int) and x.cost_fishka <= card.curr_fishka) or \
+                            (callable(x.cost_fishka) and x.cost_fishka() <= card.curr_fishka):
+                        out.append((x.txt, x.index, 0))
+                    else:
+                        out.append((x.txt, x.index, 1))
+                else:
+                    out.append((x.txt, x.index, 0))
+            elif (not hasattr(x, 'display')) or x.display:
+                out.append((x.txt, x.index, 1))
+        return out
+
+
     def get_displayable_actions_for_gui(self, card, pow):
         self.update_tap_to_hit_flyers(card)
         if self.mode == 'online':
-            out = []
             if card.player == pow:
-                for x in card.abilities:
-                    if ((not hasattr(x, 'display')) or x.display) and not card.tapped:
-                        if hasattr(x, 'disabled') and x.disabled:
-                            out.append((x.txt, x.index, 1))
-                        elif card.actions_left <= 0:
-                            out.append((x.txt, x.index, 1))
-                        elif self.curr_game_state not in x.state_of_action:
-                            out.append((x.txt, x.index, 1))
-                        elif not x.isinstant and self.in_stack:
-                            out.append((x.txt, x.index, 1))
-                        elif self.in_stack and card.player != self.curr_priority:
-                            out.append((x.txt, x.index, 1))
-                        elif not self.in_stack and pow != self.current_active_player:
-                            out.append((x.txt, x.index, 1))
-                        elif isinstance(x, FishkaCardAction):
-                            if (isinstance(x.cost_fishka, int) and x.cost_fishka <= card.curr_fishka) or \
-                                    (callable(x.cost_fishka) and x.cost_fishka() <= card.curr_fishka):
-                                out.append((x.txt, x.index, 0))
-                            else:
-                                out.append((x.txt, x.index, 1))
-                        else:
-                            out.append((x.txt, x.index, 0))
-                    elif (not hasattr(x, 'display')) or x.display:
-                        out.append((x.txt, x.index, 1))
+               out = self.check_card_abs_for_legality(card, pow)
             else:
                 return [(x.txt, x.index, 1) for x in card.abilities if (not hasattr(x, 'display')) or x.display]
         else:
-            # pass
-            out = []
-            for x in card.abilities:
-                if ((not hasattr(x, 'display')) or x.display) and not card.tapped:
-                    if hasattr(x, 'disabled') and x.disabled:
-                        out.append((x.txt, x.index, 1))
-                    elif card.actions_left <= 0:
-                        out.append((x.txt, x.index, 1))
-                    elif self.curr_game_state not in x.state_of_action:
-                        out.append((x.txt, x.index, 1))
-                    elif not x.isinstant and self.in_stack:
-                        out.append((x.txt, x.index, 1))
-                    elif self.in_stack and card.player != self.curr_priority:
-                        out.append((x.txt, x.index, 1))
-                    elif isinstance(x, FishkaCardAction):
-                        if (isinstance(x.cost_fishka, int) and x.cost_fishka <= card.curr_fishka) or \
-                        (callable(x.cost_fishka) and x.cost_fishka() <= card.curr_fishka):
-                            out.append((x.txt, x.index, 0))
-                        else:
-                            out.append((x.txt, x.index, 1))
-                    else:
-                        out.append((x.txt, x.index, 0))
-                elif (not hasattr(x, 'display')) or x.display:
-                    out.append((x.txt, x.index, 1))
+            out = self.check_card_abs_for_legality(card, pow)
         return out
 
     def card_to_state(self, card, player):
@@ -370,6 +370,7 @@ class Game:
             return [self.get_available_targets_helper(ability, ability.targets, card)]
 
     def get_available_targets_helper(self, ability, t_val, card):
+        self.default_ability_target = []
         if t_val == 'all':
             targets = self.board.get_all_cards()
         elif t_val == 'ally':
@@ -402,15 +403,25 @@ class Game:
                 targets = magnets
             else:
                 targets = self.board.get_available_targets_flyer(card)
+
         if hasattr(ability, 'take_board_cells') and ability.take_board_cells:
+            if targets:
+                self.default_ability_target = targets[0]
             return {'cells': targets}
         else:
+            if targets:
+                self.default_ability_target = targets[0].id_on_board
             return {'card_ids': [x.id_on_board for x in targets]}
 
 
     def card_clicked(self, card, pow):
         """ send back ability list with active/passive status, move tile numbers"""
         # print(self.curr_priority, self.current_active_player, self.curr_game_state)
+        if self.card_exit:
+            self.timer_state['restart'] = False
+            self.send_state(player=pow)
+            self.timer_state['restart'] = True
+            return
         card = self.board.get_card_by_id(card)
         if card.player == pow and not self.in_stack and self.current_active_player == card.player:
             moves = self.board.get_available_moves(card)
@@ -437,6 +448,22 @@ class Game:
             self.send_state(player=pow)
             self.timer_state['restart'] = True
 
+    def ability_clicked_forced(self, ab, card, pow):  # like selectcardaction
+        self.card_exit = True
+        self.default_card = card
+        self.default_ability = ab
+        self.marks_bind = ab
+        if self.marks_bind.marks_needed == 0:
+            self.selected_marks_list = []
+            self.target_dict = {}
+            self.add_to_stack(self.marks_bind, self.selected_card[pow - 1], [], 0)
+        else:
+            self.timer_state['restart'] = False
+            self.selected_marks_list = []
+            self.target_dict = self.get_available_targets(self.marks_bind, self.selected_card[pow - 1])
+            self.send_state(player=pow)
+            self.timer_state['restart'] = True
+
 
     def mark_clicked(self, marks, pow, *args):
         self.selected_marks_list = marks
@@ -448,14 +475,28 @@ class Game:
             pass
 
     def eot_clicked(self):
-       self.next_game_state()
-       if self.mode == 'online':
+        if self.card_exit and self.default_ability_target:
+            self.target_dict = {}
+            self.add_to_stack(self.default_ability, self.default_card, self.default_ability_target, 0)
+            self.default_ability = None
+            self.default_card = None
+        elif self.card_exit:
+            self.card_exit = False
+        self.next_game_state()
+        if self.mode == 'online':
            self.send_state(1)
            self.send_state(2)
-       else:
+        else:
            self.send_state(1)
 
     def ph_clicked(self):
+        if self.card_exit and self.default_ability_target:
+            self.target_dict = {}
+            self.add_to_stack(self.default_ability, self.default_card, self.default_ability_target, 0)
+            self.default_ability = None
+            self.default_card = None
+        elif self.card_exit:
+            self.card_exit = False
         self.timer_state['restart'] = True
         self.player_passed()
         if self.mode == 'online':
@@ -466,6 +507,13 @@ class Game:
         self.handle_passes()
 
     def timer_completed(self):
+        if self.card_exit and self.default_ability_target:
+            self.target_dict = {}
+            self.add_to_stack(self.default_ability, self.default_card, self.default_ability_target, 0)
+            self.default_ability = None
+            self.default_card = None
+        elif self.card_exit:
+            self.card_exit = False
         self.timer_state['restart'] = True
         if self.in_stack:
             self.player_passed()
@@ -480,6 +528,16 @@ class Game:
         else:
             # print('send_state:', player, state['flickers'], self.curr_priority)
             self.gui.on_state_received(state)
+        if self.mode == 'online':  # TODO костыльно
+            self.send_count += 1
+            if self.send_count == 2:
+                self.send_count = 0
+            if self.send_count == 0:
+                if self.popup_state:
+                    self.popup_state = {}
+        else:
+            if self.popup_state:
+                self.popup_state = {}
 
     def on_reveal(self):
         cards = self.board.get_all_cards()
@@ -544,6 +602,9 @@ class Game:
         if type == 'attack':
             self.popup_temp = extra
             self.popup_state = {'show_to': show_to, 'texts': texts, 'q': question, 'type': type}
+        elif type == 'append':
+            self.popup_temp = extra
+            self.popup_state = {'show_to': show_to, 'texts': texts, 'q': question, 'type': type}
 
     def pop_up_clicked(self, choice, type_, *args):
         if type_ == 'attack':
@@ -559,6 +620,8 @@ class Game:
             else:
                 ability.damage_receive = 0
             self.add_to_stack(ability, c, v, s)
+        elif type_ == 'append':
+            self.add_to_stack(*self.popup_temp[choice])
 
         self.popup_temp = []
         # print('cur top', self.curr_top)
@@ -573,7 +636,9 @@ class Game:
                 target = target
         else:
             if target is not None:
-                if ability.marks_needed == 1 and isinstance(target, list):
+                if isinstance(target, list) and len(target) == 0:
+                    target = target
+                elif ability.marks_needed == 1 and isinstance(target, list):
                     target = target[0]
                 if not isinstance(target, Card):
                     target = self.board.get_card_by_id(target)
@@ -586,6 +651,10 @@ class Game:
         return ability, card, target, stage
 
     def add_to_stack(self, ability, card, target, stage=0):
+        # if card.player != self.curr_priority:
+        #     print('cheater!!', ability, card)
+        #     return
+        self.card_exit = False
         if self.defenders:
             for c in self.defenders:
                 c.defence_action.disabled = True
@@ -657,12 +726,8 @@ class Game:
         if self.mode == 'online':
             self.send_state(1)
             self.send_state(2)
-            if self.popup_state:
-                self.popup_state = {}
         else:
             self.send_state(1)
-            if self.popup_state:
-                self.popup_state = {}
         if not self.passed_1 or not self.passed_2:
             return
         if self.passed_1 and self.passed_2 and self.stack:
@@ -716,22 +781,21 @@ class Game:
                 self.passed_2 = False
                 self.curr_priority = card.player
                 self.player_passed()
-                self.flicker_dict = {target.player: [x.id_on_board for x in self.defenders],
-                                     3-int(target.player): [x.id_on_board for x in self.defenders]}  # for test
-                self.handle_passes()  # TODO activate def bttns
+                self.flicker_dict = {target.player: [x.id_on_board for x in self.defenders]}
+                                     # 3-int(target.player): [x.id_on_board for x in self.defenders]}  # for test
+                self.handle_passes()
                 return
             if ability.a_type == ActionTypes.ZASCHITA:
                 pending_attack = self.stack_return_pending_attack()
                 if pending_attack:
                     a_ability, a_card, a_target, a_stage = pending_attack
                     defenders = self.check_for_defenders(a_ability, a_card, a_target, a_stage)
-                    print('defenders', defenders)
                     if card in defenders:
-                        print('in defenders!')
                         card.actions_left -= 1
                         card.tapped = True
                         new_ability = copy(a_ability)
                         new_ability.can_be_redirected = False
+                        new_ability.redirected = True
                         self.correct_stack_after_defence(a_ability, a_card, a_target, a_stage, new_ability, card)
                         self.modify_stack_stage(new_ability, a_card, card, 1)
                         card.defender = True
@@ -766,13 +830,14 @@ class Game:
                 self.stack.pop()
                 return
             if isinstance(ability, TriggerBasedCardAction):
+                print('TriggerBasedCardAction', ability)
+                self.stack.pop()
                 if ability.recieve_inc:
                     ability.callback(target)
                 elif ability.recieve_all:
                     ability.callback(ability, card, target)
                 else:
                     ability.callback()
-                self.stack.pop()
                 return
             # if ability.a_type == ActionTypes.VOZROJDENIE:
             #     new_card, place = victim
@@ -859,6 +924,7 @@ class Game:
                     return
 
             self.modify_stack_stage(ability, card, target, 1)
+            ability.passed = False
         self.perform_card_action_1(action)
 
     def perform_card_action_1(self, action):
@@ -872,6 +938,7 @@ class Game:
         # Шаг броска кубика (накладываем модификаторы к броску кубика, срабатывают особенности карт "при броске кубика")
         to_add_extra = []
         for ability, card, target, stage in action:
+            ability.failed = False
             self.update_arrows(card, target)
             bonus1 = 0
             bonus2 = 0
@@ -879,6 +946,13 @@ class Game:
             if not card in all_cards:
                 self.stack.pop()
                 return
+            cb = self.board.get_all_cards_with_callback(Condition.ON_DEFENCE_BEFORE_DICE)
+            for c, a in cb:
+                a.cleanup()
+                if a.check(ability, card, target):
+                    a.callback_prep(ability, card, target)
+                    return
+
             ability.rolls = []
             num_die_rolls_attack = 1
             num_die_rolls_def = 0
@@ -930,26 +1004,10 @@ class Game:
                         self.curr_priority = card.player
                         ability.passed = False
                         self.stack.pop()
+                        self.process_rolls(ability.rolls, bonus1, bonus2, num_die_rolls_attack, num_die_rolls_def, card,
+                                           target)
                         self.handle_passes()
                         return
-                        # self.attack_popup = self.create_selection_popup('Выберите результат сражения: ',
-                        #                                                 [dmg_dict[outcome_list[0][0]] + '-' + dmg_dict[
-                        #                                                     outcome_list[0][1]],
-                        #                                                  dmg_dict[outcome_list[1][0]] + '-' + dmg_dict[
-                        #                                                      outcome_list[1][1]]],
-                        #                                                 button_binds=[partial(self.popup_attack_bind,
-                        #                                                                       outcome_list[0], ability,
-                        #                                                                       card, victim),
-                        #                                                               partial(self.popup_attack_bind,
-                        #                                                                       outcome_list[1], ability,
-                        #                                                                       card, victim)],
-                        #                                                 show_to=show_to_)
-
-                        # self.press_1 = lambda *_: self.popup_attack_bind(outcome_list[1], ability, card, victim)
-                        # dur = self.timer.duration - 1
-                        # self.timer_ability = Animation(duration=dur)
-                        # self.timer_ability.bind(on_complete=self.press_1)
-                        # self.timer_ability.start(self)
                 else:
                     roll1 = max(ability.rolls[:num_die_rolls_attack]) + bonus1
                     if roll1 <= 3:
@@ -1001,32 +1059,33 @@ class Game:
         #  STAGE 2 - NALOJENIE I OPLATA
         # Оба игрока должны пасануть в случае нахождения в стеке
         print('in perform_card_action_2', self.in_stack, self.stack)
+        if not action[0][0].passed and self.in_stack:  # TODO questionable
+            self.passed_1 = False
+            self.passed_2 = False
+            self.curr_priority = action[0][1].player
+            action[0][0].passed = True
+            self.handle_passes()
+            return
         for ability, card, target, stage in action:
             self.update_arrows(card, target)
-            if not ability.passed and self.in_stack:
-                self.passed_1 = False
-                self.passed_2 = False
-                self.curr_priority = card.player
-                ability.passed = True
-                self.handle_passes()
-                return
             if self.stack:
                 self.stack.pop()
             all_cards = self.board.get_all_cards()
             if isinstance(ability, BlockAction):
                 to_block = ability.to_block
                 for el in reversed(self.stack):
-                    for a, c, v, s in el:
-                        if a == to_block:
+                        if el == to_block:
+                            a,c,t,s = el[0]  # TODO only for single action abilities
                             self.stack.remove(el)
                             if not c.tapped:
                                 c.tapped = True
                             if isinstance(a, FishkaCardAction):
                                 self.remove_fishka(c, a.cost_fishka)
+                return
             elif ability.a_type not in target.defences and card in all_cards and target in all_cards:
                 cb_abs = self.board.cards_callback(target, Condition.ON_TAKING_DAMAGE)
                 for cb_ab in cb_abs:
-                    cb_ab.callback(card, ability)
+                    cb_ab.callback(ability, card, target)
                 if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
                     if card.can_hit_flyer and target.type_ == CreatureType.FLYER:
                         card.can_hit_flyer = False
@@ -1164,10 +1223,10 @@ if __name__ == '__main__':
     cards1 = [Elfiyskiy_voin_1(player=1, location=27, gui=game),
                Lovets_dush_1(player=1, location=13, gui=game),
               #  Lovets_dush_1(player=1, location=0, gui=game),
-              # Necromant_1(player=1, location=21, gui=game),
-               Pauk_peresmeshnik_1(player=1, location=12, gui=game),
+               Ar_gull_1(player=1, location=21, gui=game),
+               Elfiyskiy_voin_1(player=1, location=12, gui=game),
                Cobold_1(player=1, location=14),
-               Otshelnik_1(player=1, location=4, gui=game),
+               # Otshelnik_1(player=1, location=4, gui=game),
                Gnom_basaarg_1(player=1, location=15, gui=game),
                Draks_1(player=1, location=5, gui=game)
         ]

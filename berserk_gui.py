@@ -344,7 +344,11 @@ class BerserkApp(App):
                         size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
                         font_size=Window.height * 0.02, valign='top')
             self.fishka_label_dict[card['id']] = lbl
-        base_overlay.add_widget(rl)
+        if card['id'] not in self.fishka_dict.keys():
+            base_overlay.add_widget(rl)
+        else:
+            base_overlay.remove_widget(self.fishka_dict[card['id']])
+            base_overlay.add_widget(rl)
         self.fishka_dict[card['id']] = rl
 
     def remove_fishki_gui(self, card):
@@ -545,14 +549,25 @@ class BerserkApp(App):
             self.backend.ph_clicked()
 
     def timer_completed(self, *args):
+        try:
+            self.popup_.dismiss()
+            if self.default_popup_option:
+                if self.mode == 'online':
+                    network.pop_up_clicked(self.server_ip, self.server_port, self.pow, self.default_popup_option[0], self.default_popup_option[1])
+                else:
+                    self.backend.pop_up_clicked(self.default_popup_option[0], self.default_popup_option[1])
+                self.default_popup_option = []
+        except:
+            pass
         if self.mode == 'online' and self.pow == 1:
             network.timer_completed(self.server_ip, self.server_port, self.pow)
-        elif  self.mode == 'online' and self.pow == 2:
+        elif self.mode == 'online' and self.pow == 2:
             pass
         else:
             self.backend.timer_completed()
 
     def pop_up_clicked(self, i, type_, *args):
+        self.default_popup_option = []
         if self.mode == 'online':
             network.pop_up_clicked(self.server_ip, self.server_port, self.pow, i, type_)
         else:
@@ -727,7 +742,7 @@ class BerserkApp(App):
             self.hp_label_dict[new['id']].text = f'{new["curr_life"]}/{new["life"]}'
             self.display_damage(new["id"], int(new['curr_life'])-int(old['curr_life']))
             self.play_attack_sound(int(new['curr_life'])-int(old['curr_life']))
-        if old['curr_fishka'] <=0 and new['curr_fishka'] > 0:
+        if old['curr_fishka'] < new['curr_fishka'] or (old['curr_fishka'] > new['curr_fishka'] and new['curr_fishka'] > 0):
             self.add_fishki_gui(new)
         elif old['curr_fishka'] > 0 and new['curr_fishka'] <= 0:
             self.remove_fishki_gui(new)
@@ -902,13 +917,15 @@ class BerserkApp(App):
         # Clock.schedule_once(partial(self.destroy_x, self.die_pics), 3)
 
     def create_selection_popup(self, data):
+        print('open!', data)
         question = data['q']
         button_texts = data['texts']
-        popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
+        self.default_popup_option = (0, data['type'])
+        self.popup_ = OmegaPopup(width=310, height=110, background_color=(1, 0, 0, 1),
                                            overlay_color=(0, 0, 0, 0), size_hint=(None, None),
                                            auto_dismiss=False)
-        rl = RelativeLayout(size=popup_.size, size_hint=(None, None))
-        popup_.content = rl
+        rl = RelativeLayout(size=self.popup_.size, size_hint=(None, None))
+        self.popup_.content = rl
         with rl.canvas:
             l = Label(pos=(70, 20), size_hint=(None, None), text=question, valign='top')
             self.garbage.append(l)
@@ -918,10 +935,10 @@ class BerserkApp(App):
                           size_hint=(None, None),
                           text=b_text)
             btn1.bind(on_press=partial(self.pop_up_clicked, i, data['type']))
-            btn1.bind(on_press=lambda x: popup_.dismiss())
+            btn1.bind(on_press=lambda x: self.popup_.dismiss())
             rl.add_widget(btn1)
-        popup_.open()
-        return popup_
+        self.popup_.open()
+        return self.popup_
 
     def draw_from_state_diff(self, state):
         self.destroy_target_marks()
@@ -1010,6 +1027,7 @@ class BerserkApp(App):
         self.die_pics = []
         self.garbage = []
         self.garbage_dict = {}
+        self.default_popup_option = []
 
 
         # self.defender_set = False

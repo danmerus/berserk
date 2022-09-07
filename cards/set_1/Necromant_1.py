@@ -12,7 +12,7 @@ class Necromant_1(Card):
             attack=(1, 2, 3),
             name='Некромант',
             vypusk=GameSet.VOYNA_STIHIY,
-            color=CardColor.GORY,
+            color=CardColor.STEP,
             rarity=Rarity.COMMON,
             pic='data/cards/Necromant_1.jpg',
             cost=(0, 5),  # gold, silver,

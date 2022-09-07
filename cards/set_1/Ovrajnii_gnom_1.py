@@ -59,19 +59,18 @@ class Ovrajnii_gnom_1(Card):
             a22 = SimpleCardAction(a_type=ActionTypes.TAP, damage=0, range_min=1, range_max=6,
                                  txt='Закрыть атакуемого', #target=target,
                                  ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-            a21_action = partial(self.a_action, a22, target, 0)
-            a22_action = partial(self.a_action, a21, target, 0)
-            pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
-                             a_type=ActionTypes.POPUP, txt='Закрыться?', show_to=(3-int(self.player)))
-            self.gui.start_stack_action(pp, self, self, 0, force=1)
-            self.gui.process_stack()
-            # self.gui.backend.passed_1 = True
-            # self.gui.backend.passed_2 = True
+            a21_action = (a22, self, target, 0)
+            a22_action = (a21, self, target, 0)
+            # pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
+            #                  a_type=ActionTypes.POPUP, txt='Закрыться?', show_to=(3-int(self.player)))
+            self.gui.handle_popups(question='Закрыться или получить урон?', texts=['Закрыться', 'Получить два урона'],
+                                           type='append', show_to=(3-int(self.player)), extra=[a21_action, a22_action])
 
-    def a_action(self, a, target, state, *args):
-        self.gui.timer_ability.unbind(on_complete=self.gui.press_1)
-        self.gui.start_stack_action(a, self, target, state, force=1)
-        self.gui.process_stack()
+
+    # def a_action(self, a, target, state, *args):
+    #     self.gui.timer_ability.unbind(on_complete=self.gui.press_1)
+    #     self.gui.start_stack_action(a, self, target, state, force=1)
+    #     self.gui.process_stack()
 
     def a1_cb(self, victim):
         if self.upped:

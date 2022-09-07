@@ -43,8 +43,8 @@ class Elfiyskiy_voin_1(Card):
                                          callback=self.on_damage, condition=Condition.ON_TAKING_DAMAGE, display=False)
         self.abilities.append(self.a3)
 
-    def on_damage(self, target, ability):
-        if target.color == CardColor.STEP and ability.a_type in ATTACK_LIST:
+    def on_damage(self, ability, card, target):  # здесь card это атакующий
+        if card.color == CardColor.STEP and ability.a_type in ATTACK_LIST:
             ability.damage_make = max(0, ability.damage_make-1)
 
 
@@ -52,7 +52,4 @@ class Elfiyskiy_voin_1(Card):
         a = SimpleCardAction(a_type=ActionTypes.VYSTREL, damage=2, range_min=2, range_max=6,
                                    txt=f'Выстрел на 2',
                                    ranged=True, state_of_action=[GameStates.MAIN_PHASE])
-        ch = SelectCardAction(child_action=a, range_min=1, range_max=6, ranged=True)
-        self.gui.start_stack_action(ch, self, target, state=0, force=1)
-        # self.gui.backend.stack.append((ch, self, target, 0))
-        # self.gui.process_stack()
+        self.gui.ability_clicked_forced(a, self, self.player)

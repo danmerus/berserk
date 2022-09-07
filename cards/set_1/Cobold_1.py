@@ -34,10 +34,12 @@ class Cobold_1(Card):
         self.stroy_in = self.stroy_in_cb
         self.stroy_out = self.stroy_out_cb
 
-    def _update_abilities(self):  # txt max length 17
+    def _update_abilities(self):
         self.a1 = TriggerBasedCardAction(txt='Блок щитом', recieve_inc=False, target=None, prep=self.a1_prep,
-                                         check=self.a1_check, isinstant=True,
-                                    callback=self.a1_cb, condition=Condition.ON_DEFENCE_BEFORE_DICE, display=True)
+                                         recieve_all=True, callback=self.a2_cb, callback_prep=self.a1_cb,
+                                         isinstant=True, state_of_action=[GameStates.MAIN_PHASE],
+                                         check=self.a1_check, cleanup=self.a1_non_ins,
+                                          condition=Condition.ON_DEFENCE_BEFORE_DICE, display=True)
         self.a1.repeat = False
         self.abilities.append(self.a1)
         a2 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=3, range_min=0, range_max=0,
@@ -45,8 +47,9 @@ class Cobold_1(Card):
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a2)
 
-    def a1_check(self, ability):
-        return not self.a1.repeat and not self.tapped and not ability.redirected
+    def a1_check(self, ability, card, target):
+        return target == self and not self.tapped and not ability.redirected and not ability.passed and\
+        ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO # not self.a1.repeat and
 
     def a1_prep(self):
         if self.tapped:
@@ -55,28 +58,31 @@ class Cobold_1(Card):
             self.gui.start_flickering(self, player=self.player)
             self.gui.backend.stack.append([(LambdaCardAction(func=self.a1_non_ins), None, None, 1), (self.a1.target, self.a1.actor, self, 1)])
 
-    def a1_cb(self):
-        if self.a1.target:
-            b = BlockAction(self.a1.target)
-            lambda_cleanup = LambdaCardAction(func=self.a1_non_ins)
-            tap = SimpleCardAction(a_type=ActionTypes.TAP, damage=0, range_min=1, range_max=6,
-                                   txt='Закрыть себя после блока',  # target=target,
-                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-            self.gui.start_stack_action(b, self, self, state=2, force=1)
-            self.gui.start_stack_action(tap, self, self, state=0, force=1)
-            self.gui.start_stack_action(lambda_cleanup, self, self, state=0, force=1, imposed=True)
-            self.gui.process_stack()
-            #self.gui.backend.stack.append((b, self, self, 2))
-        self.actions_left -= 1
-        self.a1.repeat = False
-        self.a1.disabled = True
-        self.gui.destroy_flickering(self)
-        #self.gui.process_stack()
+    def a1_cb(self, ability, card, target):
+        print('in cb:', ability.passed)
+        if self.a1_check(ability, card, target):
+            self.a1.disabled = False
+            self.gui.flicker_dict = {self.player: [self.id_on_board]}
+            self.gui.in_stack = True
+            self.gui.passed_1 = False
+            self.gui.passed_2 = False
+            self.gui.curr_priority = self.player
+            # self.gui.player_passed()
+            # self.gui.stack.pop()
+            self.a1.to_remove = self.gui.curr_top
+            ability.passed = True
+            self.gui.handle_passes()
+
+    def a2_cb(self, ability, card, target):
+        print('called')
+        self.a1.cleanup()
+        b = BlockAction(self.a1.to_remove)
+        self.gui.add_to_stack(b, self, None, 2)
 
     def a1_non_ins(self):
-        self.a1.repeat = False
+        self.flicker_dict = {}
+        # self.in_stack = False
         self.a1.disabled = True
-        self.gui.destroy_flickering(self)
 
     def stroy_in_cb(self):
         self.in_stroy = True

@@ -123,7 +123,8 @@ class DefaultMovementAction:
 class TriggerBasedCardAction:
 
     def __init__(self, txt: str, callback, condition: Condition, display: bool, recieve_inc=False, recieve_all=False,
-                 target=None, prep=None, actor=None, check=None, isinstant=False, repeat=False, impose=False):
+                 callback_prep=None, cleanup=None,
+                 target=None, prep=None, actor=None, check=None, isinstant=False, repeat=False, impose=False, state_of_action=[]):
         self.txt = txt
         self.callback = callback
         self.condition = condition
@@ -137,10 +138,13 @@ class TriggerBasedCardAction:
         self.repeat = repeat
         self.check = check
         self.target = target
+        self.cleanup = cleanup
         self.prep = prep
         self.actor = actor
         self.impose = impose
         self.marks_needed = 0
+        self.state_of_action = state_of_action
+        self.callback_prep = callback_prep
 
     def __str__(self):
         return self.txt
