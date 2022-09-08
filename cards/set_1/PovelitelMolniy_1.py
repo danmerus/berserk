@@ -33,11 +33,11 @@ class PovelitelMolniy_1(Card):
         self.gui = gui
 
     def _update_abilities(self):  # txt max length 17
-        a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=1, range_max=6, txt='Разряд на 2',
+        a1 = SimpleCardAction(a_type=ActionTypes.RAZRYAD, damage=2, range_min=2, range_max=6, txt='Разряд на 2',
                               can_be_redirected=False,
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a1)
-        a2 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a2_dmg, range_min=1, range_max=6, txt='Разряд на 2+3X',
+        a2 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a2_dmg, range_min=2, range_max=6, txt='Разряд на 2+3X',
                               can_be_redirected=False,
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=self.a2_cost)
         self.abilities.append(a2)

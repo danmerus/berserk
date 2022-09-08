@@ -113,6 +113,7 @@ class BerserkApp(App):
     def draw_red_arrows(self, arrow_list):
         with self.root.canvas:
             c = Color(1, 0, 0, 0.8)
+            # print('arrow_list', arrow_list)
             for fr, to, type_ in arrow_list:
                 if to is None:
                     continue
@@ -628,8 +629,7 @@ class BerserkApp(App):
         self.root.add_widget(scroll)
         self.root.add_widget(butt)
 
-    def draw_from_state_init(self):
-        cards = self.curr_state['cards'].values()
+    def draw_from_state_init(self, cards):
         for card in cards:
             # if card.hidden:
             #     pic = 'data/cards/cardback.jpg'
@@ -707,12 +707,6 @@ class BerserkApp(App):
                 self.layout.add_widget(rl1)
             self.update_zone_counters()
             self.add_defence_signs(card)
-
-        # # Строй
-        # for card in cards:
-        #     stroy_neighbors = self.backend.board.get_adjacent_with_stroy(card.loc)
-        #     if len(stroy_neighbors) != 0 and not card.in_stroy and card.stroy_in:
-        #         card.stroy_in()
 
     def move_card(self, card, move):
         x, y = self.card_position_coords[move]
@@ -822,10 +816,7 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.target_marks_buttons.append(t)
 
-    def move_to_grave(self, card, prev_zone):
-        btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.16), background_down=card['pic'],
-                      background_normal=card['pic'], size=(CARD_X_SIZE, CARD_Y_SIZE * 0.84), border=(0, 0, 0, 0),
-                      size_hint=(None, None))
+    def card_remover(self, card, prev_zone, *args):
         if prev_zone == 'dz':
             if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
                 self.dop_zone_1.children[0].remove_widget(self.cards_dict[card['id']])
@@ -834,6 +825,9 @@ class BerserkApp(App):
         else:
             self.layout.remove_widget(self.cards_dict[card['id']])
         rl1 = RelativeLayout(size=(CARD_X_SIZE, CARD_Y_SIZE))
+        btn1 = Button(disabled=False, pos=(0, CARD_Y_SIZE * 0.16), background_down=card['pic'],
+                      background_normal=card['pic'], size=(CARD_X_SIZE, CARD_Y_SIZE * 0.84), border=(0, 0, 0, 0),
+                      size_hint=(None, None))
         btn1.bind(on_press=partial(self.card_popup, card))
         btn1.bind(on_touch_up=self.card_popup_destr)
         rl1.add_widget(btn1)
@@ -848,6 +842,20 @@ class BerserkApp(App):
             self.grave_2_gl.add_widget(rl1)
             self.grave_buttons_2.append(rl1)
         self.update_zone_counters()
+
+    def move_to_grave(self, card, prev_zone):
+        for el in self.cards_dict[card['id']].children:
+            if isinstance(el, Button):
+                anim = Animation(pos=(CARD_Y_SIZE/2, CARD_Y_SIZE/2), size=(0, 0), d=0.5, s=1/60, t='in_back')
+                anim.bind(on_complete=partial(self.card_remover, card, prev_zone))
+                anim.start(el)
+            else:
+                el.opacity = 0
+
+    def move_from_grave(self, card):
+        print('ressurrect: ', card, card['zone'])
+        self.draw_from_state_init([card])
+
 
     def on_game_end(self, text_):
         rl = RelativeLayout()
@@ -913,11 +921,7 @@ class BerserkApp(App):
             self.root.add_widget(r2_i)
             self.die_pics.append(r2_i)
 
-        # if not self.check_children(self.die_pics):
-        # Clock.schedule_once(partial(self.destroy_x, self.die_pics), 3)
-
     def create_selection_popup(self, data):
-        print('open!', data)
         question = data['q']
         button_texts = data['texts']
         self.default_popup_option = (0, data['type'])
@@ -949,6 +953,8 @@ class BerserkApp(App):
         for card_id in new_state['cards'].keys():
             if old_state['cards'][card_id]['zone'] != 'gr' and new_state['cards'][card_id]['zone'] == 'gr':
                 self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'])
+            if old_state['cards'][card_id]['zone'] == 'gr' and new_state['cards'][card_id]['zone'] != 'gr':
+                self.move_from_grave(new_state['cards'][card_id])
             if old_state['cards'][card_id]['loc'] != new_state['cards'][card_id]['loc']:
                 self.move_card(card_id, new_state['cards'][card_id]['loc'])
             self.update_labels(old_state['cards'][card_id], new_state['cards'][card_id])
@@ -977,7 +983,8 @@ class BerserkApp(App):
         self.garbage_dict = {}
         if not self.curr_state:
             self.curr_state = state
-            self.draw_from_state_init()
+            cards = self.curr_state['cards'].values()
+            self.draw_from_state_init(cards)
         else:
             self.draw_from_state_diff(state)
         self.timer_state = state['timer']

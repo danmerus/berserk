@@ -29,7 +29,7 @@ class Board():
 
     def assign_initial_zone(self, card):
         if card.type_ == CreatureType.CREATURE:
-            if not card.alive and card.player == 1:
+            if not card.alive:
                 return 'gr'
             else:
                 return 'board'
@@ -92,15 +92,15 @@ class Board():
         candidates = self.get_adjacent_cells(card.loc, range_=1)
         return [x for x in candidates if self.game_board[x] == 0]
 
-    def get_grave_elite(self, player):
+    def get_grave_elite(self, player, *args):
         if player == 1:
             return [x for x in self.grave1 if x.cost[0] > 0]
         elif player == 2:
             return [x for x in self.grave2 if x.cost[0] > 0]
         else:
-            return [x for x in self.grave1 if x.cost[0] > 0] +  [x for x in self.grave2 if x.cost[0] > 0]
+            return [x for x in self.grave1 if x.cost[0] > 0]+[x for x in self.grave2 if x.cost[0] > 0]
 
-    def get_grave_ryad(self, player):
+    def get_grave_ryad(self, player, *args):
         if player == 1:
             return [x for x in self.grave1 if x.cost[0] == 0]
         elif player == 2:

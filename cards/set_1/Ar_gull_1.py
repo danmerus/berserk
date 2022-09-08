@@ -33,7 +33,7 @@ class Ar_gull_1(Card):
         self.gui = gui
 
     def _update_abilities(self):  # txt max length 17
-        a1 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a1_dmg, range_min=1, range_max=6, txt='Разряд на 2X',
+        a1 = FishkaCardAction(a_type=ActionTypes.RAZRYAD, damage=self.a1_dmg, range_min=2, range_max=6, txt='Разряд на 2X',
                               ranged=True, state_of_action=[GameStates.MAIN_PHASE], cost_fishka=self.a1_cost)
         self.abilities.append(a1)
         a2 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=2, range_min=0, range_max=0,

@@ -60,22 +60,24 @@ class Gnom_basaarg_1(Card):
         closed_enemy = [x for x in adj if self.gui.board.game_board[x] != 0]
         closed_enemy = [self.gui.board.game_board[x] for x in closed_enemy if self.gui.board.game_board[x].tapped and self.gui.board.game_board[x].player != self.player]
         a = SimpleCardAction(a_type=ActionTypes.ATAKA, damage=(self.attack[0]+1, self.attack[1]+1, self.attack[2]+1),
-                                  range_min=1, range_max=1, can_be_redirected=False,
+                                  range_min=1, range_max=1, can_be_redirected=False, target=closed_enemy,
                                   txt=f'Атака {self.attack[0]+1}-{self.attack[1]+1}-{self.attack[2]+1}',
                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        ch = SelectCardAction(child_action=a, targets=closed_enemy)
         if closed_enemy and self.actions_left > 0:
-            self.gui.start_stack_action(ch, self, self, 0)
-            self.gui.process_stack()
+            self.gui.ability_clicked_forced(a, self, self.player)
 
     def stroy_in_cb(self):
         self.in_stroy = True
         self.attack = self.attack[0]+1, self.attack[1]+1, self.attack[2]+1
-        self.add_default_abilities()
-        self._update_abilities()
+        self.default_attack.damage = self.attack
+        self.default_attack.txt = f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}'
+        # self.add_default_abilities()
+        # self._update_abilities()
 
     def stroy_out_cb(self):
         self.in_stroy = False
         self.attack = self.attack[0]-1, self.attack[1]-1, self.attack[2]-1
-        self.add_default_abilities()
-        self._update_abilities()
+        self.default_attack.damage = self.attack
+        self.default_attack.txt = f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}'
+        # self.add_default_abilities()
+        # self._update_abilities()

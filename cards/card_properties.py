@@ -210,7 +210,7 @@ class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
-                 reverse=False, target_restriction=[], can_be_redirected=True, display=True):
+                 reverse=False, target_restriction=[], can_be_redirected=True, display=True, multitarget=False, target_list=[], cellsorfieldlist=[]):
         self.a_type = a_type
         self.damage = damage
         self.range_min = range_min
@@ -221,9 +221,12 @@ class SimpleCardAction:
         self.isinstant = isinstant
         self.targets = target
         self.tap_target = False
+        self.multitarget = multitarget
         self.callback = callback
         self.condition = condition
         self.rolls = []
+        self.cellsorfieldlist = cellsorfieldlist
+        self.target_list = target_list
         self.damage_make = 0
         self.damage_receive = 0
         self.redirected = False
@@ -289,12 +292,16 @@ class PopupAction:
 class FishkaCardAction(SimpleCardAction):
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool, cost_fishka,
-                 state_of_action: [GameStates], isinstant=False, target=None, is_tapped=False, can_be_redirected=True):
+                 state_of_action: [GameStates], isinstant=False, target=None, is_tapped=False, can_be_redirected=True,
+                 multitarget=False, target_list=[], cellsorfieldlist=[]):
         super().__init__(a_type, damage, range_min, range_max, txt, ranged, state_of_action, can_be_redirected)
         self.cost_fishka = cost_fishka
         self.isinstant = isinstant
         self.targets = target
         self.is_tapped = is_tapped
+        self.multitarget = multitarget
+        self.target_list = target_list
+        self.cellsorfieldlist = cellsorfieldlist
 
     def __str__(self):
         return self.txt

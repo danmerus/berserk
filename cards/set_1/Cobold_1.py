@@ -40,7 +40,6 @@ class Cobold_1(Card):
                                          isinstant=True, state_of_action=[GameStates.MAIN_PHASE],
                                          check=self.a1_check, cleanup=self.a1_non_ins,
                                           condition=Condition.ON_DEFENCE_BEFORE_DICE, display=True)
-        self.a1.repeat = False
         self.abilities.append(self.a1)
         a2 = SimpleCardAction(a_type=ActionTypes.LECHENIE, damage=3, range_min=0, range_max=0,
                               txt='Излечиться на 3', target='self',
@@ -49,7 +48,7 @@ class Cobold_1(Card):
 
     def a1_check(self, ability, card, target):
         return target == self and not self.tapped and not ability.redirected and not ability.passed and\
-        ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO # not self.a1.repeat and
+               (ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO)
 
     def a1_prep(self):
         if self.tapped:
@@ -59,7 +58,6 @@ class Cobold_1(Card):
             self.gui.backend.stack.append([(LambdaCardAction(func=self.a1_non_ins), None, None, 1), (self.a1.target, self.a1.actor, self, 1)])
 
     def a1_cb(self, ability, card, target):
-        print('in cb:', ability.passed)
         if self.a1_check(ability, card, target):
             self.a1.disabled = False
             self.gui.flicker_dict = {self.player: [self.id_on_board]}
@@ -74,13 +72,13 @@ class Cobold_1(Card):
             self.gui.handle_passes()
 
     def a2_cb(self, ability, card, target):
-        print('called')
         self.a1.cleanup()
         b = BlockAction(self.a1.to_remove)
+        self.tapped = True  # TODO TAP SELF
         self.gui.add_to_stack(b, self, None, 2)
 
     def a1_non_ins(self):
-        self.flicker_dict = {}
+        self.gui.flicker_dict = {}
         # self.in_stack = False
         self.a1.disabled = True
 
@@ -88,6 +86,7 @@ class Cobold_1(Card):
         self.in_stroy = True
         if ActionTypes.UDAR_CHEREZ_RYAD not in self.defences:
             self.defences.append(ActionTypes.UDAR_CHEREZ_RYAD)
+            # print('self.defences', self.defences)
 
     def stroy_out_cb(self):  ## TODO: might cause a bug/ TEMP SOLUTION
         self.in_stroy = False

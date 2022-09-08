@@ -29,7 +29,6 @@ class Game:
         self.stack = []
         self.passed_1 = False
         self.passed_2 = False
-        self.passed_once = False
         self.cards_on_board1 = []
         self.cards_on_board2 = []
         self.defenders = []
@@ -137,6 +136,11 @@ class Game:
                 self.on_start_opening_phase()
         if self.curr_game_state == GameStates.OPENING_PHASE:
             self.turn_count += 1
+        if self.curr_game_state == GameStates.MAIN_PHASE:
+            cb = self.board.get_all_cards_with_callback(Condition.START_MAIN_PHASE)
+            for c, a in cb:
+                if a.check():
+                    a.callback()
         self.handle_passes()
 
 
@@ -144,11 +148,6 @@ class Game:
         self.passed_1 = False
         self.passed_2 = False
         next_state = self.curr_game_state.next_after_start()
-        if next_state == GameStates.MAIN_PHASE:
-            cb = self.board.get_all_cards_with_callback(Condition.START_MAIN_PHASE)
-            for c, a in cb:
-                if c.player == self.current_active_player and a.check():
-                    self.add_to_stack(a, c, c, 0)
         if self.is_state_active(next_state) or next_state == GameStates.MAIN_PHASE:
             self.curr_game_state = next_state
             self.on_step_start()
@@ -213,9 +212,19 @@ class Game:
         if isinstance(target, Card):
             out.append(target.id_on_board)
             out.append('card')
-        else:
+        elif isinstance(target, int):
             out.append(target)
             out.append('cell')
+        elif isinstance(target, list):  # TODO FIX FOR FISHKA
+            for el in target:
+                if isinstance(el, int):
+                    out.append(el)
+                    out.append('cell')
+                    break
+                # if isinstance(el, Card):
+                #     out.append(el.id_on_board)
+                #     out.append('card')
+                #     break
         self.arrows.append(out)
 
     def update_tap_to_hit_flyers(self, card):
@@ -253,6 +262,8 @@ class Game:
         for x in card.abilities:
             if ((not hasattr(x, 'display')) or x.display) and not card.tapped:
                 if hasattr(x, 'disabled') and x.disabled:
+                    out.append((x.txt, x.index, 1))
+                elif not card.alive:
                     out.append((x.txt, x.index, 1))
                 elif self.card_exit:
                     out.append((x.txt, x.index, 1))
@@ -366,10 +377,14 @@ class Game:
             for t_val in ability.target_list:
                 ret.append(self.get_available_targets_helper(ability, t_val, card))
             return ret
+        elif hasattr(ability, 'multitarget') and ability.multitarget:
+            for i, t_val in enumerate(ability.target_list):
+                ret.append(self.get_available_targets_helper(ability, t_val, card, i))
+            return ret
         else:
             return [self.get_available_targets_helper(ability, ability.targets, card)]
 
-    def get_available_targets_helper(self, ability, t_val, card):
+    def get_available_targets_helper(self, ability, t_val, card, ix=None):
         self.default_ability_target = []
         if t_val == 'all':
             targets = self.board.get_all_cards()
@@ -381,7 +396,7 @@ class Game:
             targets = [x for x in all_cards if x.player != card.player]
         elif t_val == 'self':
             targets = [card]
-        elif t_val == ActionTypes.UDAR_CHEREZ_RYAD:
+        elif ability.a_type == ActionTypes.UDAR_CHEREZ_RYAD:
             targets = self.board.get_available_targets_uchr(card)
         elif callable(t_val):
             targets = t_val()
@@ -403,11 +418,15 @@ class Game:
                 targets = magnets
             else:
                 targets = self.board.get_available_targets_flyer(card)
-
         if hasattr(ability, 'take_board_cells') and ability.take_board_cells:
             if targets:
                 self.default_ability_target = targets[0]
             return {'cells': targets}
+        elif hasattr(ability, 'multitarget') and ability.multitarget:
+            if ability.cellsorfieldlist[ix] == 'card':
+                return {'card_ids': [x.id_on_board for x in targets]}
+            elif ability.cellsorfieldlist[ix] == 'cell':
+                return {'cells': targets}
         else:
             if targets:
                 self.default_ability_target = targets[0].id_on_board
@@ -453,6 +472,7 @@ class Game:
         self.default_card = card
         self.default_ability = ab
         self.marks_bind = ab
+        self.selected_card[pow-1] = card
         if self.marks_bind.marks_needed == 0:
             self.selected_marks_list = []
             self.target_dict = {}
@@ -539,8 +559,7 @@ class Game:
             if self.popup_state:
                 self.popup_state = {}
 
-    def on_reveal(self):
-        cards = self.board.get_all_cards()
+    def on_reveal(self, cards):
         for card in cards:
             if card.type_ == CreatureType.FLYER or card.type_ == CreatureType.LAND:
                 self.board.game_board[card.loc] = 0
@@ -549,6 +568,11 @@ class Game:
                     self.board.extra1.append(card)
                 else:
                     self.board.extra2.append(card)
+        # Строй
+        for card in cards:
+            stroy_neighbors = self.board.get_adjacent_with_stroy(card.loc)
+            if len(stroy_neighbors) != 0 and not card.in_stroy and card.stroy_in:
+                card.stroy_in()
 
     def start(self, *args):
         if self.mode == 'online':
@@ -558,7 +582,7 @@ class Game:
 
 
     def on_load(self):
-        self.on_reveal()
+        self.on_reveal(self.board.get_all_cards())
         if self.mode == 'online':
             self.timer_state = {'restart': True, 'duration': self.turn_duration}
             self.send_state(1)
@@ -634,6 +658,14 @@ class Game:
                 target = target[0]
             else:
                 target = target
+        elif hasattr(ability, 'multitarget') and ability.multitarget:
+            out = []
+            for i in range(len(ability.target_list)):
+                if ability.cellsorfieldlist[i] == 'cell':
+                    out.append(target[i])
+                elif ability.cellsorfieldlist[i] == 'card':
+                    out.append(self.board.get_card_by_id(target[i]))
+            target = out
         else:
             if target is not None:
                 if isinstance(target, list) and len(target) == 0:
@@ -734,6 +766,7 @@ class Game:
             self.process_stack()
 
     def process_stack(self):
+        self.dices = [[], []]
         while self.stack:
             # print('in stack!', self.passed_1, self.passed_2)
             if self.passed_1 and self.passed_2:
@@ -749,7 +782,6 @@ class Game:
             else:
                 return  # return here to get back to Kivy mainloop waiting for players to pass
             self.arrows = []
-            self.dices = [[], []]
             self.handle_passes()
 
 
@@ -802,23 +834,34 @@ class Game:
                         self.stack.pop()
                         return
             if isinstance(ability, DefaultMovementAction):
-                # print('Movement pass:', self.passed_1, self.passed_2)
                 if not card.tapped:
+                    stroy_neighbors_old = self.board.get_adjacent_with_stroy(card.loc)
                     prev = card.loc
                     card.loc = target
                     card.curr_move -= 1
                     self.board.update_board(prev, target, card)
-                    # TODO stroy check + gnom basaarg cb
+                    # Строй
+                    stroy_neighbors_new = self.board.get_adjacent_with_stroy(card.loc)
+                    if len(stroy_neighbors_new) != 0 and not card.in_stroy and card.stroy_in:
+                        card.stroy_in()
+                        for neigh in stroy_neighbors_new:
+                            if not neigh.in_stroy:
+                                neigh.stroy_in()
+                    elif len(stroy_neighbors_new) == 0 and card.in_stroy:
+                        card.stroy_out()
+                    if len(stroy_neighbors_old) != 0:  # убираем строй у соседей, оставшихся без строя
+                        for neigh in stroy_neighbors_old:
+                            if len(self.board.get_adjacent_with_stroy(neigh.loc)) == 0 and neigh.stroy_out:
+                                neigh.stroy_out()
+                    # Call Back Time
+                    cb = self.board.get_all_cards_with_callback(Condition.ON_SELF_MOVING)
+                    for c, a in cb:
+                        if a.check():
+                            a.callback()
                 else:
                     pass
                 self.stack.pop()
                 return
-            # if isinstance(ability, FishkaCardAction): TODO кнопка должна быть неактивна
-            #     if (isinstance(ability.cost_fishka, int) and ability.cost_fishka > card.curr_fishka) or \
-            #             (callable(ability.cost_fishka) and ability.cost_fishka() > card.curr_fishka):
-            #         self.destroy_target_rectangles()
-            #         self.destroy_target_marks()
-            #         return
             if isinstance(ability, IncreaseFishkaAction):
                 self.add_fishka(card)
                 self.stack.pop()
@@ -839,36 +882,32 @@ class Game:
                 else:
                     ability.callback()
                 return
-            # if ability.a_type == ActionTypes.VOZROJDENIE:
-            #     new_card, place = victim
-            #     if (new_card.player == 1 and self.pow == 1) or (new_card.player == 2 and self.pow == 2):
-            #         self.grave_1_gl.remove_widget(self.cards_dict[new_card])
-            #         self.grave_buttons_1.remove(self.cards_dict[new_card])
-            #         self.backend.board.grave1.remove(new_card)
-            #     elif (new_card.player == 1 and self.pow == 2) or (new_card.player == 2 and self.pow == 1):
-            #         self.grave_2_gl.remove_widget(self.cards_dict[new_card])
-            #         self.grave_buttons_2.remove(self.cards_dict[new_card])
-            #         self.backend.board.grave2.remove(new_card)
-            #     self.cleanup_card(new_card)
-            #     new_card.loc = place
-            #     new_card.player = card.player
-            #     self.backend.board.populate_board([new_card])
-            #     self.reveal_cards([new_card])
-            #     if ability.is_tapped:
-            #         new_card.tapped = False
-            #         self.tap_card(new_card)
-            #     else:
-            #         new_card.tapped = True
-            #         self.tap_card(new_card)
-            #     if isinstance(ability, FishkaCardAction):
-            #         self.remove_fishka(card, ability.cost_fishka)
-            #     uq = self.check_for_uniqueness(new_card.player)
-            #     if uq:
-            #         a = SimpleCardAction(a_type=ActionTypes.DESTRUCTION, damage=1, range_min=1, range_max=6,
-            #                              txt='Выберите какое уникальное существо оставить',
-            #                              ranged=False, state_of_action=[GameStates.MAIN_PHASE], target=uq, reverse=True)
-            #         self.display_available_targets(self.backend.board, new_card, a, None, None)
-            #     return
+            if ability.a_type == ActionTypes.VOZROJDENIE:
+                new_card, place = target
+                # self.cleanup_card(new_card)
+                new_card.alive = True
+                new_card.loc = place
+                new_card.player = card.player
+                self.board.populate_board([new_card])
+                self.on_reveal([new_card])
+                new_card.zone = self.board.assign_initial_zone(new_card)
+                print(vars(new_card))
+                if ability.is_tapped:
+                    new_card.tapped = True
+                else:
+                    new_card.tapped = False
+                if isinstance(ability, FishkaCardAction):
+                    self.remove_fishka(card, ability.cost_fishka)
+                if not card.tapped:
+                    card.tapped = True
+                self.stack.pop()
+                # uq = self.check_for_uniqueness(new_card.player)
+                # if uq:
+                #     a = SimpleCardAction(a_type=ActionTypes.DESTRUCTION, damage=1, range_min=1, range_max=6,
+                #                          txt='Выберите какое уникальное существо оставить',
+                #                          ranged=False, state_of_action=[GameStates.MAIN_PHASE], target=uq, reverse=True)
+                #     self.display_available_targets(self.backend.board, new_card, a, None, None)
+                return
             if ability.a_type == ActionTypes.DESTRUCTION:
                 try:
                     iterator = iter(target)
@@ -946,6 +985,13 @@ class Game:
             if not card in all_cards:
                 self.stack.pop()
                 return
+            if ability.a_type in [ActionTypes.VYSTREL, ActionTypes.METANIE, ActionTypes.RAZRYAD]:  # bez UCHR
+                cb = self.board.get_all_cards_with_callback(Condition.ON_RECIEVING_RANGED_ATTACK)
+                for c, a in cb:
+                    if c == target and a.check(ability, card, target):
+                        a.callback(ability, card, target)
+                        return
+            print('rolls: ', ability.rolls, bonus1, bonus2)
             cb = self.board.get_all_cards_with_callback(Condition.ON_DEFENCE_BEFORE_DICE)
             for c, a in cb:
                 a.cleanup()
@@ -1036,16 +1082,6 @@ class Game:
                     elif roll1 > 5:
                         d = ability.damage[2]
                 ability.damage_make = d
-                # if ability.a_type in [ActionTypes.VYSTREL, ActionTypes.METANIE, ActionTypes.RAZRYAD]:  # bez UCHR
-                #     cb = self.board.get_all_cards_with_callback(Condition.ON_RECIEVING_RANGED_ATTACK)
-                #     for c, a in cb:
-                #         if c == target:
-                #             to_add_extra.append((a, target, ability, 0))
-                # if self.current_active_player == 1 and draw:
-                #     self.draw_die(bonus1, bonus2, ability.rolls, [])
-                # elif self.current_active_player == 2 and draw:
-                #     self.draw_die(bonus1, bonus2, [], ability.rolls)
-                print('rolls: ', ability.rolls, bonus1, bonus2)
             self.process_rolls(ability.rolls, bonus1, bonus2, num_die_rolls_attack, num_die_rolls_def, card, target)
             self.modify_stack_stage(ability, card, target, 2)
             if self.in_stack:
@@ -1151,7 +1187,7 @@ class Game:
         bonuses = [bonus1, bonus2]
         if not target or card.player == target.player:
             self.dices[card.player-1].append((rolls, bonuses[card.player-1]))
-        if card.player != target.player:
+        elif card.player != target.player:
             if card.player == 1:
                 self.dices[0].append((rolls[:x1], bonus1))
                 self.dices[1].append((rolls[x1:], bonus2))
@@ -1223,16 +1259,16 @@ if __name__ == '__main__':
     cards1 = [Elfiyskiy_voin_1(player=1, location=27, gui=game),
                Lovets_dush_1(player=1, location=13, gui=game),
               #  Lovets_dush_1(player=1, location=0, gui=game),
-               Ar_gull_1(player=1, location=21, gui=game),
+               Ledyanoy_ohotnik_1(player=1, location=21, gui=game),
                Elfiyskiy_voin_1(player=1, location=12, gui=game),
-               Cobold_1(player=1, location=14),
+               Necromant_1(player=1, location=14, gui=game),
                # Otshelnik_1(player=1, location=4, gui=game),
                Gnom_basaarg_1(player=1, location=15, gui=game),
                Draks_1(player=1, location=5, gui=game)
         ]
     cards2 = [
         Draks_1(player=2, location=20),
-        #         Ovrajnii_gnom_1(player=2, location=22, gui=game),
+                Voin_hrama_1(player=2, location=22, gui=game),
                 Necromant_1(player=2, location=19, gui=game),
                 Lovets_dush_1(player=2, location=18, gui=game),
                 # Otshelnik_1(player=2, location=16, gui=game),

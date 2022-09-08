@@ -56,11 +56,13 @@ class Card:
                                   txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',
                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
             self.abilities.insert(0, a0)
+            self.default_attack = a0
         elif self.type_ == CreatureType.FLYER:
             a0 = SimpleCardAction(a_type=ActionTypes.UDAR_LETAUSHEGO, damage=self.attack, range_min=1, range_max=1,
                                   txt=f'Атака {self.attack[0]}-{self.attack[1]}-{self.attack[2]}',
                                   ranged=False, state_of_action=[GameStates.MAIN_PHASE])
             self.abilities.insert(0, a0)
+            self.default_attack = a0
         if not (self.type_ == CreatureType.LAND or self.type_ == CreatureType.ARTIFACT):
             a1 = DefenceAction(a_type=ActionTypes.ZASCHITA, active=True)
             self.abilities.insert(1, a1)

@@ -32,7 +32,7 @@ class Mrazen_1(Card):
         self.gui = gui
 
     def _update_abilities(self):
-        self.a1 = SimpleCardAction(a_type=ActionTypes.METANIE, damage=(1,2,2), range_min=1, range_max=6,
+        self.a1 = SimpleCardAction(a_type=ActionTypes.METANIE, damage=(1,2,2), range_min=2, range_max=6,
                               txt=f'', ranged=True, state_of_action=[GameStates.MAIN_PHASE])
         self.a1.txt = f'Метание на {self.a1.damage[0]}-{self.a1.damage[1]}-{self.a1.damage[2]}'
         self.abilities.append(self.a1)

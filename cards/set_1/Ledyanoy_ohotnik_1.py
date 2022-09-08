@@ -33,7 +33,7 @@ class Ledyanoy_ohotnik_1(Card):
         self.gui = gui
 
     def _update_abilities(self):
-        a1 = SimpleCardAction(a_type=ActionTypes.UDAR_CHEREZ_RYAD, damage=self.uchr_damage, range_min=1, range_max=1,
+        a1 = SimpleCardAction(a_type=ActionTypes.UDAR_CHEREZ_RYAD, damage=self.uchr_damage, range_min=2, range_max=6,
                               txt=f'Удар через ряд {self.uchr_damage[0]}-{self.uchr_damage[1]}-{self.uchr_damage[2]}',
                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
         self.abilities.append(a1)
