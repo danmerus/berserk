@@ -43,47 +43,65 @@ class Otshelnik_1(Card):
 
         self.a2 = TriggerBasedCardAction(txt='Перераспределение ран', recieve_inc=False, target=None,
                                          check=self.a2_check, prep=self.a2_prep, recieve_all=True,
-                                         isinstant=True, impose=False,
+                                         cleanup=self.a2_non_ins,
+                                         isinstant=True, impose=False, state_of_action=[GameStates.MAIN_PHASE],
                                          callback=self.a2_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
-        self.a2.repeat = False
+        self.a2.passed = False
         self.a2.clear_cb = self.a2_non_ins
         self.abilities.append(self.a2)
-        self.a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
-                               txt='Перераспределение ран simple',
-                               target=self.a3_trg, display=False,
-                               ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        self.abilities.append(self.a32)
+        # self.a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
+        #                        txt='Перераспределение ран simple',
+        #                        target=self.a3_trg, display=False,
+        #                        ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+        # self.abilities.append(self.a32)
 
     def a2_cb(self, ability, card, victim):
         N = self.a2.inc_ability.damage_make
         if N < 1:
             return
-        action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
-        action_list.append(self.a32)
-        a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
-                                action_list=action_list,
-                                target_callbacks=None,
-                                ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
-                                isinstant=True)
-        self.a2.inc_ability.damage_make = 0
-        print('there!!!')
-        if self.gui.pow == self.player:
-            self.gui.start_stack_action(a3, self, self, state=0, force=-1, imposed=True)
+        print('N:', N)
+        self.a2.cleanup()
+        pereraspr = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=1, range_max=6,
+                                    txt='Перераспределение ран simple',
+                                    target='ally', display=False, #self.a3_trg
+                                    ranged=False, state_of_action=[GameStates.MAIN_PHASE])
+        # self.tapped = True  # TODO TAP SELF
+        pereraspr.marks_needed = N
+        self.gui.stack.pop()
+        self.gui.ability_clicked_forced(pereraspr, self, self.player)
 
-    def a2_prep(self):
-        self.gui.start_flickering(self, player=self.player)
+        # action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
+        # action_list.append(self.a32)
+        # a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
+        #                         action_list=action_list,
+        #                         target_callbacks=None,
+        #                         ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
+        #                         isinstant=True)
+        # self.a2.inc_ability.damage_make = 0
 
-    def a2_check(self, card, victim, ability):
+    def a2_prep(self, ability, card, target):
+        print('prepped!')
+        self.a2.disabled = False
+        self.a2.passed = True
+        self.a2.inc_ability = ability
+        self.gui.flicker_dict = {self.player: [self.id_on_board]}
+        self.gui.in_stack = True
+        self.gui.passed_1 = False
+        self.gui.passed_2 = False
+        self.gui.curr_priority = self.player
+        print(vars(self.a2))
+        self.gui.handle_passes()
+
+    def a2_check(self, ability, card, target):
         return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
-            not CardEffect.BESTELESNOE in victim.active_status and victim != self and victim.player == self.player and not self.tapped and \
-               ability.damage_make > 0 and not self.a2.repeat
+            not CardEffect.BESTELESNOE in target.active_status and target != self and target.player == self.player and not self.tapped and \
+               ability.damage_make > 0 and not self.a2.passed  #and not self.a2.repeat
 
     def a3_trg(self):
-        all_ = self.gui.backend.board.get_all_cards()
+        all_ = self.gui.board.get_all_cards()
         return [x for x in all_ if x != self and not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x!= self.a2.victim]
 
     def a2_non_ins(self, *args):
-        self.a2.repeat = False
+        self.gui.flicker_dict = {}
         self.a2.disabled = True
-        self.a2.stay_disabled = True
 

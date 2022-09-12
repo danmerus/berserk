@@ -7,7 +7,7 @@ class Necromant_1(Card):
 
     def __init__(self, player=1, location=0, gui=None, *args):
         super().__init__(
-            life=1,
+            life=8,
             move=1,
             attack=(1, 2, 3),
             name='Некромант',
@@ -22,7 +22,7 @@ class Necromant_1(Card):
             actions_left=1,
             active_status=[],
             description='',
-            curr_fishka=10,
+            curr_fishka=0,
             max_fishka=99,
             can_tap_for_fishka=True
         )

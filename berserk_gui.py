@@ -329,6 +329,17 @@ class BerserkApp(App):
         except:
             pass
 
+    def remove_pereraspredelenie_ran(self):
+        all_cards = self.backend.board.get_all_cards()
+        try:
+            for card in all_cards:
+                if card in self.pereraspredelenie_dict.keys():
+                    ly = self.base_overlays[card]
+                    self.pereraspredelenie_label_dict[card] = 0
+                    ly.remove_widget(self.pereraspredelenie_dict[card])
+        except Exception as e:
+            print('Error on remove_pereraspredelenie_ran', e)
+
     def add_fishki_gui(self, card):
         if card['curr_fishka'] <= 0:
             return
@@ -853,8 +864,26 @@ class BerserkApp(App):
                 el.opacity = 0
 
     def move_from_grave(self, card):
-        print('ressurrect: ', card, card['zone'])
+        print('ressurrect: ',  card, card['zone'])
+        rl1 = self.cards_dict[card['id']]
+        if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
+            self.grave_1_gl.remove_widget(rl1)
+            self.grave_2_gl.remove_widget(rl1)
+            try:
+                self.grave_buttons_1.remove(rl1)
+                self.grave_buttons_2.remove(rl1)
+            except:
+                pass
+        elif (card['player'] == 2 and self.pow == 1) or (card['player'] == 1 and self.pow == 2):
+            self.grave_2_gl.remove_widget(rl1)
+            self.grave_1_gl.remove_widget(rl1)
+            try:
+                self.grave_buttons_1.remove(rl1)
+                self.grave_buttons_2.remove(rl1)
+            except:
+                pass
         self.draw_from_state_init([card])
+        self.update_zone_counters()
 
 
     def on_game_end(self, text_):
@@ -1035,7 +1064,8 @@ class BerserkApp(App):
         self.garbage = []
         self.garbage_dict = {}
         self.default_popup_option = []
-
+        self.pereraspredelenie_dict = {}
+        self.pereraspredelenie_label_dict = defaultdict(int)
 
         # self.defender_set = False
         # self.eot_button_disabled = False
@@ -1043,8 +1073,6 @@ class BerserkApp(App):
         # self.disabled_actions = False
         # self.exit_stack = False
         # self.proxi_ability = None
-        # self.pereraspredelenie_label_dict = defaultdict(int)
-        # self.pereraspredelenie_dict = {}
         # self.curr_id_on_bord = 0
         # self.stack_cards = []
         # self.multiple_targets_list = []

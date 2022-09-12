@@ -215,7 +215,7 @@ class Game:
         elif isinstance(target, int):
             out.append(target)
             out.append('cell')
-        elif isinstance(target, list):  # TODO FIX FOR FISHKA
+        elif isinstance(target, list):
             for el in target:
                 if isinstance(el, int):
                     out.append(el)
@@ -225,6 +225,9 @@ class Game:
                 #     out.append(el.id_on_board)
                 #     out.append('card')
                 #     break
+        elif not target:
+            out.append(card.id_on_board)
+            out.append('card')
         self.arrows.append(out)
 
     def update_tap_to_hit_flyers(self, card):
@@ -888,10 +891,13 @@ class Game:
                 new_card.alive = True
                 new_card.loc = place
                 new_card.player = card.player
+                new_card.curr_life = new_card.life
+                new_card.curr_move = new_card.move
+                new_card.curr_fishka = new_card.curr_fishka  # TODO WTF
                 self.board.populate_board([new_card])
                 self.on_reveal([new_card])
                 new_card.zone = self.board.assign_initial_zone(new_card)
-                print(vars(new_card))
+                # print(vars(new_card))
                 if ability.is_tapped:
                     new_card.tapped = True
                 else:
@@ -917,33 +923,18 @@ class Game:
                     for t in target:
                         self.destroy_card(t, is_ubiranie_v_colodu=True)
                 return
-            # if isinstance(ability, PopupAction):
-            #     if not hasattr(self, 'attack_popup'):
-            #         self.attack_popup = self.create_selection_popup('Сделайте выбор: ',
-            #                                                         button_texts=ability.options,
-            #                                                         button_binds=ability.action_list,
-            #                                                         show_to=ability.show_to)
-            #     self.press_1 = ability.action_list[0]
-            #     dur = self.timer.duration - 1
-            #     self.timer_ability = Animation(duration=dur)
-            #     self.timer_ability.bind(on_complete=self.press_1)
-            #     self.timer_ability.start(self)
-            #     return
-            # if ability.a_type == ActionTypes.PERERASPREDELENIE_RAN:  # Implicitly make it as 1 damage
-            #     self.remove_pereraspredelenie_ran()
-            #     if isinstance(victim, list):
-            #         for vi in victim:
-            #             if card in all_cards and vi in all_cards:
-            #                 rana = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=0, range_max=6,
-            #                                         txt='1 рана',
-            #                                         ranged=False, isinstant=False,
-            #                                         state_of_action=[GameStates.MAIN_PHASE], target='all')
-            #                 out.append((rana, card, vi, 1))
-            #     self.reset_passage()
-            #     self.backend.stack.append(out)
-            #     self.destroy_flickering(card)
-            #     self.process_stack()
-            #     return
+            if ability.a_type == ActionTypes.PERERASPREDELENIE_RAN:
+                # self.remove_pereraspredelenie_ran()
+                # if isinstance(target, list):
+                # for vi in victim:
+                #     if card in all_cards and vi in all_cards:
+                #     rana = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=0, range_max=6,
+                #                             txt='1 рана',
+                #                             ranged=False, isinstant=False,
+                #                             state_of_action=[GameStates.MAIN_PHASE], target='all')
+                #     out.append((rana, card, vi, 1))
+                self.stack.pop()
+                return
             if card in all_cards and target in all_cards:
                 if ability.a_type == ActionTypes.TAP:
                     if not target.tapped:
@@ -1104,9 +1095,15 @@ class Game:
             return
         for ability, card, target, stage in action:
             self.update_arrows(card, target)
+            all_cards = self.board.get_all_cards()
+            cb = self.board.get_all_cards_with_callback(Condition.ON_MAKING_DAMAGE_STAGE)
+            for c, a in cb:
+                a.cleanup()
+                if a.check(ability, card, target):
+                    a.prep(ability, card, target)
+                    return
             if self.stack:
                 self.stack.pop()
-            all_cards = self.board.get_all_cards()
             if isinstance(ability, BlockAction):
                 to_block = ability.to_block
                 for el in reversed(self.stack):
@@ -1262,9 +1259,9 @@ if __name__ == '__main__':
                Ledyanoy_ohotnik_1(player=1, location=21, gui=game),
                Elfiyskiy_voin_1(player=1, location=12, gui=game),
                Necromant_1(player=1, location=14, gui=game),
-               # Otshelnik_1(player=1, location=4, gui=game),
+               Otshelnik_1(player=1, location=4, gui=game),
                Gnom_basaarg_1(player=1, location=15, gui=game),
-               Draks_1(player=1, location=5, gui=game)
+               # Cobold_1(player=1, location=5, gui=game)
         ]
     cards2 = [
         Draks_1(player=2, location=20),
