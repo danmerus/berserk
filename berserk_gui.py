@@ -113,7 +113,7 @@ class BerserkApp(App):
     def draw_red_arrows(self, arrow_list):
         with self.root.canvas:
             c = Color(1, 0, 0, 0.8)
-            # print('arrow_list', arrow_list)
+            print('arrow_list', arrow_list)
             for fr, to, type_ in arrow_list:
                 if to is None:
                     continue
@@ -328,6 +328,29 @@ class BerserkApp(App):
                     self.card_popup_obj.open()
         except:
             pass
+
+    def add_pereraspredelenie_marker(self, card):
+        print('in add_pereraspredelenie_marker')
+        ly = self.base_overlays[card]
+        if self.pereraspredelenie_label_dict[card] == 0:
+            self.pereraspredelenie_label_dict[card] += 1
+            rl = RelativeLayout()
+            with rl.canvas:
+                Color(0.8, 0, 0)
+                Rectangle(size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15), color=(1, 1, 1, 0.3),
+                          pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70))
+                Color(1, 1, 1)
+                Line(width=0.5, color=(1, 1, 1, 0),
+                     rectangle=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70, CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15))
+                lbl = Label(pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70), text=str(self.pereraspredelenie_label_dict[card]), color=(1, 1, 1, 1),
+                            size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
+                            font_size=Window.height * 0.02, valign='top')
+                self.garbage_dict[card] = lbl
+                ly.add_widget(rl)
+                self.pereraspredelenie_dict[card] = rl
+        else:
+            self.pereraspredelenie_label_dict[card] += 1
+            self.garbage_dict[card].text = str(self.pereraspredelenie_label_dict[card])
 
     def remove_pereraspredelenie_ran(self):
         all_cards = self.backend.board.get_all_cards()
@@ -802,9 +825,12 @@ class BerserkApp(App):
                 rect2 = Rectangle(size=(CARD_X_SIZE, CARD_Y_SIZE),
                                   background_color=c,
                                   pos=(0, 0), size_hint=(1, 1))
+
                 btn.bind(on_press=partial(self.mark_clicked, t))
             if i < total:
                 btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
+            if self.red_fishki_state:
+                btn.bind(on_press=partial(self.add_pereraspredelenie_marker, self.id_card_dict[t]))
 
             self.target_rectangles.append((rect1, self.cards_dict[t].canvas))
             self.target_rectangles.append((rect2, self.cards_dict[t].canvas))
@@ -1007,6 +1033,7 @@ class BerserkApp(App):
         if new_state['popups']:
             if new_state['popups']['show_to'] == self.pow:
                 self.create_selection_popup(new_state['popups'])
+        self.red_fishki_state = new_state['red_fishki']
 
     def on_state_received(self, state):
         self.garbage_dict = {}

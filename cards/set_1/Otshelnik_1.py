@@ -61,35 +61,32 @@ class Otshelnik_1(Card):
             return
         print('N:', N)
         self.a2.cleanup()
+        self.a2.passed = False
         pereraspr = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=1, range_max=6,
-                                    txt='Перераспределение ран simple',
+                                    txt='Перераспределение ран simple', multitarget=True,
                                     target='ally', display=False, #self.a3_trg
                                     ranged=False, state_of_action=[GameStates.MAIN_PHASE])
         # self.tapped = True  # TODO TAP SELF
         pereraspr.marks_needed = N
-        self.gui.stack.pop()
-        self.gui.ability_clicked_forced(pereraspr, self, self.player)
+        pereraspr.target_list = ['ally' for _ in range(N)]
+        pereraspr.cellsorfieldlist = ['card' for _ in range(N)]
+        # print(self.gui.curr_top[0][0].damage_make)
+        # self.gui.stack.pop()
+        self.a2.inc_ability.damage_make = 0  # asssume to be attack on top of the stack
+        self.gui.ability_clicked_forced(pereraspr, self, self.player, red_fishki=True)
 
-        # action_list = [SelectTargetAction(targets=self.a3_trg) for _ in range(N - 1)]
-        # action_list.append(self.a32)
-        # a3 = MultipleCardAction(a_type=ActionTypes.VOZDEISTVIE, txt='Перераспределение ран multi',
-        #                         action_list=action_list,
-        #                         target_callbacks=None,
-        #                         ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
-        #                         isinstant=True)
-        # self.a2.inc_ability.damage_make = 0
 
     def a2_prep(self, ability, card, target):
-        print('prepped!')
         self.a2.disabled = False
         self.a2.passed = True
         self.a2.inc_ability = ability
+        self.a2.card = card
+        self.a2.target = target
         self.gui.flicker_dict = {self.player: [self.id_on_board]}
         self.gui.in_stack = True
         self.gui.passed_1 = False
         self.gui.passed_2 = False
         self.gui.curr_priority = self.player
-        print(vars(self.a2))
         self.gui.handle_passes()
 
     def a2_check(self, ability, card, target):
@@ -104,4 +101,5 @@ class Otshelnik_1(Card):
     def a2_non_ins(self, *args):
         self.gui.flicker_dict = {}
         self.a2.disabled = True
+        self.a2.passed = False
 

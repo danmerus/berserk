@@ -48,6 +48,7 @@ class Game:
         self.popup_temp = []
         self.send_count = 0
         self.card_exit = False
+        self.red_fishki_bool = False
 
     def set_cards(self, cards_on_board1, cards_on_board2, game):
         new_cards = []
@@ -221,10 +222,10 @@ class Game:
                     out.append(el)
                     out.append('cell')
                     break
-                # if isinstance(el, Card):
-                #     out.append(el.id_on_board)
-                #     out.append('card')
-                #     break
+                if isinstance(el, Card):
+                    out.append(el.id_on_board)
+                    out.append('card')
+                    break
         elif not target:
             out.append(card.id_on_board)
             out.append('card')
@@ -325,8 +326,6 @@ class Game:
             res['curr_move'] = card.curr_move
         if hasattr(card, 'curr_fishka'):
             res['curr_fishka'] = card.curr_fishka
-        if hasattr(card, 'red_fishka'):  # TODO для перераспределения
-            res['red_fishka'] = card.curr_fishka
         if hasattr(card, 'pic'):
             res['pic'] = card.pic
         if hasattr(card, 'loc'):
@@ -372,6 +371,7 @@ class Game:
         state['arrows'] = self.arrows
         state['dices'] = self.dices
         state['popups'] = self.popup_state
+        state['red_fishki'] = self.red_fishki_bool
         return state
 
     def get_available_targets(self, ability, card):
@@ -470,12 +470,14 @@ class Game:
             self.send_state(player=pow)
             self.timer_state['restart'] = True
 
-    def ability_clicked_forced(self, ab, card, pow):  # like selectcardaction
+    def ability_clicked_forced(self, ab, card, pow, red_fishki=False):  # like selectcardaction
         self.card_exit = True
         self.default_card = card
         self.default_ability = ab
         self.marks_bind = ab
         self.selected_card[pow-1] = card
+        if red_fishki:
+            self.red_fishki_bool = True
         if self.marks_bind.marks_needed == 0:
             self.selected_marks_list = []
             self.target_dict = {}
@@ -561,6 +563,7 @@ class Game:
         else:
             if self.popup_state:
                 self.popup_state = {}
+        self.red_fishki_bool = False
 
     def on_reveal(self, cards):
         for card in cards:
@@ -876,7 +879,6 @@ class Game:
                 self.stack.pop()
                 return
             if isinstance(ability, TriggerBasedCardAction):
-                print('TriggerBasedCardAction', ability)
                 self.stack.pop()
                 if ability.recieve_inc:
                     ability.callback(target)
@@ -922,18 +924,6 @@ class Game:
                 else:
                     for t in target:
                         self.destroy_card(t, is_ubiranie_v_colodu=True)
-                return
-            if ability.a_type == ActionTypes.PERERASPREDELENIE_RAN:
-                # self.remove_pereraspredelenie_ran()
-                # if isinstance(target, list):
-                # for vi in victim:
-                #     if card in all_cards and vi in all_cards:
-                #     rana = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=0, range_max=6,
-                #                             txt='1 рана',
-                #                             ranged=False, isinstant=False,
-                #                             state_of_action=[GameStates.MAIN_PHASE], target='all')
-                #     out.append((rana, card, vi, 1))
-                self.stack.pop()
                 return
             if card in all_cards and target in all_cards:
                 if ability.a_type == ActionTypes.TAP:
@@ -1098,10 +1088,10 @@ class Game:
             all_cards = self.board.get_all_cards()
             cb = self.board.get_all_cards_with_callback(Condition.ON_MAKING_DAMAGE_STAGE)
             for c, a in cb:
-                a.cleanup()
                 if a.check(ability, card, target):
                     a.prep(ability, card, target)
                     return
+                a.cleanup()
             if self.stack:
                 self.stack.pop()
             if isinstance(ability, BlockAction):
@@ -1115,33 +1105,46 @@ class Game:
                             if isinstance(a, FishkaCardAction):
                                 self.remove_fishka(c, a.cost_fishka)
                 return
+            elif isinstance(target, list):
+                for t in target:
+                    self.deal_damage_stage_2(ability, card, t, stage)
             elif ability.a_type not in target.defences and card in all_cards and target in all_cards:
-                cb_abs = self.board.cards_callback(target, Condition.ON_TAKING_DAMAGE)
-                for cb_ab in cb_abs:
-                    cb_ab.callback(ability, card, target)
-                if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
-                    if card.can_hit_flyer and target.type_ == CreatureType.FLYER:
-                        card.can_hit_flyer = False
-                    if ability.damage_make:
-                        target.curr_life -= ability.damage_make
-                    if ability.damage_receive:
-                        card.curr_life -= ability.damage_receive
+                self.deal_damage_stage_2(ability, card, target, stage)
+
+            ability.rolls = []  # cleanup
+            ability.damage_make = 0
+            ability.damage_receive = 0
+
+
+    def deal_damage_stage_2(self, ability, card, target, stage):
+        all_cards = self.board.get_all_cards()
+        if ability.a_type not in target.defences and card in all_cards and target in all_cards:
+            cb_abs = self.board.cards_callback(target, Condition.ON_TAKING_DAMAGE)
+            for cb_ab in cb_abs:
+                cb_ab.callback(ability, card, target)
+            if ability.a_type == ActionTypes.ATAKA or ability.a_type == ActionTypes.UDAR_LETAUSHEGO:
+                if card.can_hit_flyer and target.type_ == CreatureType.FLYER:
+                    card.can_hit_flyer = False
+                if ability.damage_make:
+                    target.curr_life -= ability.damage_make
+                if ability.damage_receive:
+                    card.curr_life -= ability.damage_receive
+            else:
+                if ability.a_type == ActionTypes.LECHENIE:
+                    target.curr_life = min(target.curr_life + ability.damage_make, target.life)
+                elif ability.a_type == ActionTypes.EXTRA_LIFE:
+                    target.life += ability.damage_make
+                    target.curr_life += ability.damage_make
+                elif ability.a_type in [ActionTypes.VYSTREL, ActionTypes.METANIE, ActionTypes.RAZRYAD]:  # bez UCHR
+                    target.curr_life -= ability.damage_make
+                elif ability.a_type == ActionTypes.NET:
+                    target.actions_left = 0
+                    target.active_status.append(CardEffect.NETTED)
+                elif ability.a_type == ActionTypes.DOBIVANIE and target.curr_life <= ability.damage and \
+                        CardEffect.BESTELESNOE not in target.active_status:
+                    target.curr_life = 0
                 else:
-                    if ability.a_type == ActionTypes.LECHENIE:
-                        target.curr_life = min(target.curr_life + ability.damage_make, target.life)
-                    elif ability.a_type == ActionTypes.EXTRA_LIFE:
-                        target.life += ability.damage_make
-                        target.curr_life += ability.damage_make
-                    elif ability.a_type in [ActionTypes.VYSTREL, ActionTypes.METANIE, ActionTypes.RAZRYAD]:  # bez UCHR
-                        target.curr_life -= ability.damage_make
-                    elif ability.a_type == ActionTypes.NET:
-                        target.actions_left = 0
-                        target.active_status.append(CardEffect.NETTED)
-                    elif ability.a_type == ActionTypes.DOBIVANIE and target.curr_life <= ability.damage and \
-                            CardEffect.BESTELESNOE not in target.active_status:
-                        target.curr_life = 0
-                    else:
-                        target.curr_life -= ability.damage_make
+                    target.curr_life -= ability.damage_make
 
             if card and target:
                 if card.curr_life <= 0 and card in all_cards:
@@ -1164,9 +1167,6 @@ class Game:
             if hasattr(ability, 'failed') and not ability.failed:
                 self.handle_PRI_ATAKE(ability, card, target)
                 ability.failed = False
-            ability.rolls = []  # cleanup
-            ability.damage_make = 0
-            ability.damage_receive = 0
 
 
     def handle_PRI_ATAKE(self, ability, card, victim, *args):
@@ -1182,6 +1182,8 @@ class Game:
     def process_rolls(self, rolls, bonus1, bonus2, x1, x2, card, target):
         # self.dices = [[], []]
         bonuses = [bonus1, bonus2]
+        if isinstance(card, list) or isinstance(target, list):  # TODO
+            return
         if not target or card.player == target.player:
             self.dices[card.player-1].append((rolls, bonuses[card.player-1]))
         elif card.player != target.player:
