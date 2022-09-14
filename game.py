@@ -49,6 +49,7 @@ class Game:
         self.send_count = 0
         self.card_exit = False
         self.red_fishki_bool = False
+        self.stack_pause = False
 
     def set_cards(self, cards_on_board1, cards_on_board2, game):
         new_cards = []
@@ -472,6 +473,7 @@ class Game:
 
     def ability_clicked_forced(self, ab, card, pow, red_fishki=False):  # like selectcardaction
         self.card_exit = True
+        self.stack_pause = True
         self.default_card = card
         self.default_ability = ab
         self.marks_bind = ab
@@ -693,6 +695,7 @@ class Game:
         #     print('cheater!!', ability, card)
         #     return
         self.card_exit = False
+        self.stack_pause = False
         if self.defenders:
             for c in self.defenders:
                 c.defence_action.disabled = True
@@ -772,9 +775,13 @@ class Game:
             self.process_stack()
 
     def process_stack(self):
+        if self.stack_pause:
+            return
         self.dices = [[], []]
         while self.stack:
-            # print('in stack!', self.passed_1, self.passed_2)
+            if self.stack_pause:
+                return
+                # print('in stack!', self.passed_1, self.passed_2)
             if self.passed_1 and self.passed_2:
                 self.curr_top = self.stack[-1]
                 # print(self.curr_top)
