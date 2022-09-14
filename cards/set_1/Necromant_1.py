@@ -34,13 +34,6 @@ class Necromant_1(Card):
         self._update_abilities()
 
     def _update_abilities(self):  # txt max length 17
-
-        # a21 = SelectTargetAction(targets=self.a2_t_cb)
-        #
-        # a2 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Возрождение элитного существа', action_list=[a21, a22],
-        #                    target_callbacks=None,
-        #                    ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
-        #                    isinstant=False)
         a2 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,
                                txt='Возрождение рядового существа', multitarget=True,
                                target_list=[partial(self.gui.board.get_grave_ryad, 3), partial(self.gui.board.get_adjacent_empty, self)],
@@ -50,12 +43,6 @@ class Necromant_1(Card):
         a2.marks_needed = 2
         self.abilities.append(a2)
 
-        # a31 = SelectTargetAction(targets=self.a3_t_cb)
-        # a3 = MultipleCardAction(a_type=ActionTypes.ZAKLINANIE, txt='Возрождение рядового существа',
-        #                         action_list=[a31, a32],
-        #                         target_callbacks=None,
-        #                         ranged=True, state_of_action=[GameStates.MAIN_PHASE], take_all_targets=True,
-        #                         isinstant=False)
         a3 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,
                                txt='Возрождение элитного существа', multitarget=True,
                                target_list=[partial(self.gui.board.get_grave_elite, 3), partial(self.gui.board.get_adjacent_empty, self)],

@@ -49,6 +49,7 @@ class Card:
 
     def add_default_abilities(self):
         self.abilities = []
+        self.start_fishka = self.curr_fishka
         if self.can_tap_for_fishka:
             self.abilities.append(IncreaseFishkaAction(txt='Накопить фишку', state_of_action=[GameStates.MAIN_PHASE]))
         if self.type_ == CreatureType.CREATURE:

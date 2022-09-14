@@ -113,7 +113,7 @@ class BerserkApp(App):
     def draw_red_arrows(self, arrow_list):
         with self.root.canvas:
             c = Color(1, 0, 0, 0.8)
-            print('arrow_list', arrow_list)
+            # print('arrow_list', arrow_list)
             for fr, to, type_ in arrow_list:
                 if to is None:
                     continue
@@ -329,11 +329,10 @@ class BerserkApp(App):
         except:
             pass
 
-    def add_pereraspredelenie_marker(self, card):
-        print('in add_pereraspredelenie_marker')
-        ly = self.base_overlays[card]
-        if self.pereraspredelenie_label_dict[card] == 0:
-            self.pereraspredelenie_label_dict[card] += 1
+    def add_pereraspredelenie_marker(self, card, *args):
+        ly = self.base_overlays[card['id']]
+        if self.pereraspredelenie_label_dict[card['id']] == 0:
+            self.pereraspredelenie_label_dict[card['id']] += 1
             rl = RelativeLayout()
             with rl.canvas:
                 Color(0.8, 0, 0)
@@ -342,24 +341,24 @@ class BerserkApp(App):
                 Color(1, 1, 1)
                 Line(width=0.5, color=(1, 1, 1, 0),
                      rectangle=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70, CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15))
-                lbl = Label(pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70), text=str(self.pereraspredelenie_label_dict[card]), color=(1, 1, 1, 1),
+                lbl = Label(pos=(CARD_X_SIZE*0.85, CARD_Y_SIZE * 0.70), text=str(self.pereraspredelenie_label_dict[card['id']]), color=(1, 1, 1, 1),
                             size=(CARD_X_SIZE * 0.15, CARD_Y_SIZE * 0.15),
                             font_size=Window.height * 0.02, valign='top')
-                self.garbage_dict[card] = lbl
+                self.garbage_dict[card['id']] = lbl
                 ly.add_widget(rl)
-                self.pereraspredelenie_dict[card] = rl
+                self.pereraspredelenie_dict[card['id']] = rl
         else:
-            self.pereraspredelenie_label_dict[card] += 1
-            self.garbage_dict[card].text = str(self.pereraspredelenie_label_dict[card])
+            self.pereraspredelenie_label_dict[card['id']] += 1
+            self.garbage_dict[card['id']].text = str(self.pereraspredelenie_label_dict[card['id']])
 
     def remove_pereraspredelenie_ran(self):
-        all_cards = self.backend.board.get_all_cards()
+        all_cards = self.cards_dict.keys()
         try:
-            for card in all_cards:
-                if card in self.pereraspredelenie_dict.keys():
-                    ly = self.base_overlays[card]
-                    self.pereraspredelenie_label_dict[card] = 0
-                    ly.remove_widget(self.pereraspredelenie_dict[card])
+            for card_id in all_cards:
+                if card_id in self.pereraspredelenie_dict.keys():
+                    ly = self.base_overlays[card_id]
+                    self.pereraspredelenie_label_dict[card_id] = 0
+                    ly.remove_widget(self.pereraspredelenie_dict[card_id])
         except Exception as e:
             print('Error on remove_pereraspredelenie_ran', e)
 
@@ -826,11 +825,11 @@ class BerserkApp(App):
                                   background_color=c,
                                   pos=(0, 0), size_hint=(1, 1))
 
-                btn.bind(on_press=partial(self.mark_clicked, t))
-            if i < total:
-                btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
+            btn.bind(on_press=partial(self.mark_clicked, t))
             if self.red_fishki_state:
                 btn.bind(on_press=partial(self.add_pereraspredelenie_marker, self.id_card_dict[t]))
+            if i < total:
+                btn.bind(on_press=partial(self.display_available_targets_helper, targets, i+1, total))
 
             self.target_rectangles.append((rect1, self.cards_dict[t].canvas))
             self.target_rectangles.append((rect2, self.cards_dict[t].canvas))
@@ -853,7 +852,7 @@ class BerserkApp(App):
             self.root.add_widget(rl)
             self.target_marks_buttons.append(t)
 
-    def card_remover(self, card, prev_zone, *args):
+    def card_remover(self, card, prev_zone, next_zone, *args):
         if prev_zone == 'dz':
             if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
                 self.dop_zone_1.children[0].remove_widget(self.cards_dict[card['id']])
@@ -872,25 +871,26 @@ class BerserkApp(App):
         self.base_overlays[card['id']] = RelativeLayout()
         Clock.schedule_once(partial(self.draw_card_overlay, card, 3))
         rl1.add_widget(self.base_overlays[card['id']])
-        if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
-            self.grave_1_gl.add_widget(rl1)
-            self.grave_buttons_1.append(rl1)
-        elif (card['player'] == 2 and self.pow == 1) or (card['player'] == 1 and self.pow == 2):
-            self.grave_2_gl.add_widget(rl1)
-            self.grave_buttons_2.append(rl1)
+        if next_zone == 'gr':
+            if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
+                self.grave_1_gl.add_widget(rl1)
+                self.grave_buttons_1.append(rl1)
+            elif (card['player'] == 2 and self.pow == 1) or (card['player'] == 1 and self.pow == 2):
+                self.grave_2_gl.add_widget(rl1)
+                self.grave_buttons_2.append(rl1)
         self.update_zone_counters()
 
-    def move_to_grave(self, card, prev_zone):
+    def move_to_grave(self, card, prev_zone, next_zone):
         for el in self.cards_dict[card['id']].children:
             if isinstance(el, Button):
                 anim = Animation(pos=(CARD_Y_SIZE/2, CARD_Y_SIZE/2), size=(0, 0), d=0.5, s=1/60, t='in_back')
-                anim.bind(on_complete=partial(self.card_remover, card, prev_zone))
+                anim.bind(on_complete=partial(self.card_remover, card, prev_zone, next_zone))
                 anim.start(el)
             else:
                 el.opacity = 0
 
     def move_from_grave(self, card):
-        print('ressurrect: ',  card, card['zone'])
+        # print('ressurrect: ',  card, card['zone'])
         rl1 = self.cards_dict[card['id']]
         if (card['player'] == 1 and self.pow == 1) or (card['player'] == 2 and self.pow == 2):
             self.grave_1_gl.remove_widget(rl1)
@@ -1007,8 +1007,10 @@ class BerserkApp(App):
         self.curr_state = new_state
         for card_id in new_state['cards'].keys():
             if old_state['cards'][card_id]['zone'] != 'gr' and new_state['cards'][card_id]['zone'] == 'gr':
-                self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'])
-            if old_state['cards'][card_id]['zone'] == 'gr' and new_state['cards'][card_id]['zone'] != 'gr':
+                self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'], next_zone='gr')
+            elif old_state['cards'][card_id]['zone'] != 'deck' and new_state['cards'][card_id]['zone'] == 'deck':
+                self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'], next_zone='deck')
+            elif old_state['cards'][card_id]['zone'] == 'gr' and new_state['cards'][card_id]['zone'] != 'gr':
                 self.move_from_grave(new_state['cards'][card_id])
             if old_state['cards'][card_id]['loc'] != new_state['cards'][card_id]['loc']:
                 self.move_card(card_id, new_state['cards'][card_id]['loc'])
@@ -1034,9 +1036,10 @@ class BerserkApp(App):
             if new_state['popups']['show_to'] == self.pow:
                 self.create_selection_popup(new_state['popups'])
         self.red_fishki_state = new_state['red_fishki']
+        if not self.red_fishki_state:
+            self.remove_pereraspredelenie_ran()
 
     def on_state_received(self, state):
-        self.garbage_dict = {}
         if not self.curr_state:
             self.curr_state = state
             cards = self.curr_state['cards'].values()

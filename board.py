@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import chain
 from cards.card_properties import *
 
@@ -150,6 +151,22 @@ class Board():
                 out.append(a)
         return out
 
+    def check_for_uniqueness(self, player):
+        """ returns for zero or one card """
+        all_cards = self.get_all_cards()
+        consider = [x.name for x in all_cards if x.player == player and x.is_unique]
+        d = defaultdict(int)
+        for key in consider:
+            d[key] += 1
+        temp = None
+        for key in d.keys():
+            if d[key] > 1:
+                temp = key
+        if temp:
+            return [x for x in [x for x in all_cards if x.player == player and x.is_unique] if x.name == temp]
+        else:
+            return None
+
     def get_instants(self):
         all_cards = self.get_all_cards()
         out = []
@@ -229,6 +246,9 @@ class Board():
 
     def get_grave(self):
         return self.grave1 + self.grave2
+
+    def get_decks(self):
+        return self.deck1 + self.deck2
 
     def get_card_by_id(self, id_):
         all_cards = self.get_all_cards()+self.get_grave()

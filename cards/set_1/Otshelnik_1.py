@@ -46,34 +46,32 @@ class Otshelnik_1(Card):
                                          cleanup=self.a2_non_ins,
                                          isinstant=True, impose=False, state_of_action=[GameStates.MAIN_PHASE],
                                          callback=self.a2_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
+        self.a2.display_fast = True
         self.a2.passed = False
         self.a2.clear_cb = self.a2_non_ins
         self.abilities.append(self.a2)
-        # self.a32 = SimpleCardAction(a_type=ActionTypes.PERERASPREDELENIE_RAN, damage=0, range_min=1, range_max=6,
-        #                        txt='Перераспределение ран simple',
-        #                        target=self.a3_trg, display=False,
-        #                        ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        # self.abilities.append(self.a32)
 
-    def a2_cb(self, ability, card, victim):
+    def a2_cb(self):
         N = self.a2.inc_ability.damage_make
         if N < 1:
             return
-        print('N:', N)
+        # print('N:', N)
         self.a2.cleanup()
         self.a2.passed = False
         pereraspr = SimpleCardAction(a_type=ActionTypes.VOZDEISTVIE, damage=1, range_min=1, range_max=6,
                                     txt='Перераспределение ран simple', multitarget=True,
-                                    target='ally', display=False, #self.a3_trg
+                                    target=self.a3_trg, display=False,
+                                    on_complete=self.a2_on_complete,
                                     ranged=False, state_of_action=[GameStates.MAIN_PHASE])
-        # self.tapped = True  # TODO TAP SELF
         pereraspr.marks_needed = N
-        pereraspr.target_list = ['ally' for _ in range(N)]
+        pereraspr.target_list = [self.a3_trg for _ in range(N)]
         pereraspr.cellsorfieldlist = ['card' for _ in range(N)]
-        # print(self.gui.curr_top[0][0].damage_make)
-        # self.gui.stack.pop()
-        self.a2.inc_ability.damage_make = 0  # asssume to be attack on top of the stack
+        self.gui.red_fishki_bool = True
+        self.gui.send_state(self.player)
         self.gui.ability_clicked_forced(pereraspr, self, self.player, red_fishki=True)
+
+    def a2_on_complete(self):
+        self.a2.inc_ability.damage_make = 0
 
 
     def a2_prep(self, ability, card, target):
@@ -83,11 +81,15 @@ class Otshelnik_1(Card):
         self.a2.card = card
         self.a2.target = target
         self.gui.flicker_dict = {self.player: [self.id_on_board]}
-        self.gui.in_stack = True
-        self.gui.passed_1 = False
-        self.gui.passed_2 = False
-        self.gui.curr_priority = self.player
-        self.gui.handle_passes()
+        # if not self.gui.in_stack:
+        # self.gui.in_stack = True
+        if self.player == 1:
+            self.gui.passed_2 = False
+        else:
+            self.gui.passed_1 = False
+        # self.gui.curr_priority = self.player
+        print(self.gui.passed_1, self.gui.passed_2)
+        # self.gui.handle_passes()
 
     def a2_check(self, ability, card, target):
         return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
@@ -96,7 +98,7 @@ class Otshelnik_1(Card):
 
     def a3_trg(self):
         all_ = self.gui.board.get_all_cards()
-        return [x for x in all_ if x != self and not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x!= self.a2.victim]
+        return [x for x in all_ if x != self and not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x != self.a2.target]
 
     def a2_non_ins(self, *args):
         self.gui.flicker_dict = {}

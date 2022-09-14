@@ -210,6 +210,7 @@ class SimpleCardAction:
 
     def __init__(self, a_type: ActionTypes, damage, range_min: int, range_max: int, txt: str, ranged: bool,
                  state_of_action: [GameStates], isinstant=False, target=None, callback=None, condition=None, target_count=1,
+                 on_complete=None,
                  reverse=False, target_restriction=[], can_be_redirected=True, display=True, multitarget=False, target_list=[], cellsorfieldlist=[]):
         self.a_type = a_type
         self.damage = damage
@@ -236,6 +237,7 @@ class SimpleCardAction:
         self.target_restriction = target_restriction
         self.can_be_redirected = can_be_redirected
         self.marks_needed = 1
+        self.on_complete = on_complete
 
     def __str__(self):
         return self.txt
