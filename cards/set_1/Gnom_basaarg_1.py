@@ -59,8 +59,8 @@ class Gnom_basaarg_1(Card):
         return len(closed_enemy) > 0
 
 
-    def a1_cb(self, cause):
-        if cause and cause != 'zashita':
+    def a1_cb(self, cause=None):
+        if cause != 'zashita':
             adj = self.gui.board.get_adjacent_cells(self.loc, range_=1)
             closed_enemy = [x for x in adj if self.gui.board.game_board[x] != 0]
             closed_enemy = [self.gui.board.game_board[x] for x in closed_enemy if self.gui.board.game_board[x].tapped and self.gui.board.game_board[x].player != self.player]

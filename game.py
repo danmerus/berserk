@@ -12,7 +12,7 @@ from copy import copy
 
 class Game:
 
-    def __init__(self, turn_duration=10, stack_duration=10, server=None, server_ip=None, server_port=None):
+    def __init__(self, turn_duration=30, stack_duration=30, server=None, server_ip=None, server_port=None):
         """"
         cards_on_board is a cards list
         """
@@ -438,7 +438,7 @@ class Game:
 
     def card_clicked(self, card, pow):
         """ send back ability list with active/passive status, move tile numbers"""
-        # print(self.curr_priority, self.current_active_player, self.curr_game_state)
+        print(self.curr_priority, self.current_active_player, self.curr_game_state)
         if self.card_exit:
             self.timer_state['restart'] = False
             self.send_state(player=pow)
