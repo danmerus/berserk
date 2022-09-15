@@ -481,6 +481,7 @@ class Game:
         self.default_ability = ab
         self.marks_bind = ab
         self.selected_card[pow-1] = card
+        prev_prio = self.curr_priority
         if red_fishki:
             self.red_fishki_bool = True
         if self.marks_bind.marks_needed == 0:
@@ -493,6 +494,7 @@ class Game:
             self.target_dict = self.get_available_targets(self.marks_bind, self.selected_card[pow - 1])
             self.curr_priority = pow
             self.send_state(player=pow)
+            self.curr_priority = prev_prio
             self.timer_state['restart'] = True
 
 
@@ -1293,7 +1295,7 @@ if __name__ == '__main__':
                Ledyanoy_ohotnik_1(player=1, location=21, gui=game),
                # Elfiyskiy_voin_1(player=1, location=12, gui=game),
                Necromant_1(player=1, location=14, gui=game),
-               # Otshelnik_1(player=1, location=4, gui=game),
+               Otshelnik_1(player=1, location=4, gui=game),
                Ar_gull_1(player=1, location=15, gui=game),
                Cobold_1(player=1, location=6, gui=game)
         ]
@@ -1301,7 +1303,7 @@ if __name__ == '__main__':
         Draks_1(player=2, location=20),
                 Voin_hrama_1(player=2, location=22, gui=game),
                 Ovrajnii_gnom_1(player=2, location=19, gui=game),
-                Otshelnik_1(player=2, location=18, gui=game),
+                # Otshelnik_1(player=2, location=18, gui=game),
                 Lovets_dush_1(player=2, location=16, gui=game),
                 Cobold_1(player=2, location=22, gui=gui), #Draks_1(player=2, location=25, gui=gui)
             ]
