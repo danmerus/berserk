@@ -31,7 +31,8 @@ class Necromant_1(Card):
         self.player = player
         self.loc = location
         self.add_default_abilities()
-        self._update_abilities()
+        if self.gui:
+            self._update_abilities()
 
     def _update_abilities(self):  # txt max length 17
         a2 = FishkaCardAction(a_type=ActionTypes.VOZROJDENIE, damage=0, range_min=1, range_max=6,

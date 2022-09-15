@@ -90,6 +90,7 @@ class Condition(enum.Enum):
     PRI_ATAKE = 6
     ON_TAKING_DAMAGE = 7
     ON_MAKING_DAMAGE_STAGE = 8
+    ON_CREATURE_TAP = 9
 
 class DefenceAction:
 

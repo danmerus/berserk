@@ -413,7 +413,7 @@ class Game:
                 targets = [x for x in targets if x.type_ != CreatureType.FLYER]
             if hasattr(ability, 'target_restriction') and 'enemy' in ability.target_restriction:
                 targets = [x for x in targets if x.player != card.player]
-        elif card.can_hit_flyer:  # NO TARGETS ON GROUND ONLY FLYING  CREATURES
+        elif card.can_hit_flyer:  # NO TARGETS ON GROUND ONLY FLYING CREATURES
             targets = self.board.get_flying_targets()
         elif card.type_ == CreatureType.FLYER:
             magnets = self.board.get_flyer_magnets(card.player, enemy=True)
@@ -491,6 +491,7 @@ class Game:
             self.timer_state['restart'] = False
             self.selected_marks_list = []
             self.target_dict = self.get_available_targets(self.marks_bind, self.selected_card[pow - 1])
+            self.curr_priority = pow
             self.send_state(player=pow)
             self.timer_state['restart'] = True
 
@@ -558,22 +559,13 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player):
+        # print('player sent:', player, self.target_dict)
         state = self.form_state_obj(player)
         if self.mode == 'online':
             self.server.send_state(player, state)
         else:
-            # print('send_state:', player, state['flickers'], self.curr_priority)
+            # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)
-        if self.mode == 'online':  # TODO костыльно
-            self.send_count += 1
-            if self.send_count == 2:
-                self.send_count = 0
-            if self.send_count == 0:
-                if self.popup_state:
-                    self.popup_state = {}
-        else:
-            if self.popup_state:
-                self.popup_state = {}
 
     def on_reveal(self, cards):
         for card in cards:
@@ -647,6 +639,21 @@ class Game:
             self.popup_state = {'show_to': show_to, 'texts': texts, 'q': question, 'type': type}
 
     def pop_up_clicked(self, choice, type_, *args):
+        # if self.mode == 'online':  # TODO костыльно
+        #     self.send_count += 1
+        #     if self.send_count == 2:
+        #         self.send_count = 0
+        #     if self.send_count == 0:
+        #         if self.popup_state:
+        #             self.popup_state = {}
+        # else:
+        #     if self.popup_state:
+        self.popup_state = {}
+        if self.mode == 'online':
+            self.send_state(1)
+            self.send_state(2)
+        else:
+            self.send_state(1)
         if type_ == 'attack':
             ability, c, v, s = self.curr_top[0]
             a, b = self.popup_temp[int(choice)]
@@ -844,7 +851,7 @@ class Game:
                     defenders = self.check_for_defenders(a_ability, a_card, a_target, a_stage)
                     if card in defenders:
                         card.actions_left -= 1
-                        card.tapped = True
+                        self.tap_card(card, cause='zashita')
                         new_ability = copy(a_ability)
                         new_ability.can_be_redirected = False
                         new_ability.redirected = True
@@ -889,7 +896,7 @@ class Game:
             if isinstance(ability, TapToHitFlyerAction):
                 card.can_hit_flyer = True
                 card.actions_left -= 1
-                card.tapped = True
+                self.tap_card(card)
                 self.stack.pop()
                 return
             if isinstance(ability, TriggerBasedCardAction):
@@ -918,8 +925,7 @@ class Game:
                     new_card.tapped = False
                 if isinstance(ability, FishkaCardAction):
                     self.remove_fishka(card, ability.cost_fishka)
-                if not card.tapped:
-                    card.tapped = True
+                self.tap_card(card)
                 self.stack.pop()
                 uq = self.board.check_for_uniqueness(new_card.player)
                 if uq:
@@ -941,8 +947,7 @@ class Game:
                 return
             if card in all_cards and target in all_cards:
                 if ability.a_type == ActionTypes.TAP:
-                    if not target.tapped:
-                        target.tapped = True
+                    self.tap_card(target)
                     self.stack.pop()
                     return
                 if (ability.a_type in ATTACK_LIST) and \
@@ -952,8 +957,7 @@ class Game:
                     target.curr_move = target.move
                     card.actions_left -= 1
                     if card.actions_left <= 0:
-                        if not card.tapped:
-                            card.tapped = True
+                        self.tap_card(card)
                     self.stack.pop()
                     return
 
@@ -1175,8 +1179,7 @@ class Game:
                     self.destroy_card(target)
                 card.actions_left -= 1
                 if card.actions_left <= 0:
-                    if not card.tapped:
-                        card.tapped = True
+                    self.tap_card(card)
 
             if isinstance(ability, FishkaCardAction):
                 self.remove_fishka(card, ability.cost_fishka)
@@ -1194,6 +1197,14 @@ class Game:
                         ab.callback(victim)
                     else:
                         ab.callback()
+
+    def tap_card(self, card, cause=None):
+        if not card.tapped:
+            card.tapped = True
+            cb = self.board.get_all_cards_with_callback(Condition.ON_CREATURE_TAP)
+            for c, a in cb:
+                if a.check():
+                    a.callback(cause)
 
     def process_rolls(self, rolls, bonus1, bonus2, x1, x2, card, target):
         # self.dices = [[], []]
@@ -1255,7 +1266,7 @@ class Game:
             card.curr_fishka += 1
             if close:
                 card.actions_left -= 1
-                card.tapped = True
+                self.tap_card(card)
 
 
 
@@ -1278,21 +1289,21 @@ if __name__ == '__main__':
     game.gui = gui
     cards1 = [Elfiyskiy_voin_1(player=1, location=27, gui=game),
                Lovets_dush_1(player=1, location=13, gui=game),
-              #  Lovets_dush_1(player=1, location=0, gui=game),
+               Gnom_basaarg_1(player=1, location=12, gui=game),
                Ledyanoy_ohotnik_1(player=1, location=21, gui=game),
                # Elfiyskiy_voin_1(player=1, location=12, gui=game),
                Necromant_1(player=1, location=14, gui=game),
-               Otshelnik_1(player=1, location=4, gui=game),
+               # Otshelnik_1(player=1, location=4, gui=game),
                Ar_gull_1(player=1, location=15, gui=game),
                Cobold_1(player=1, location=6, gui=game)
         ]
     cards2 = [
         Draks_1(player=2, location=20),
                 Voin_hrama_1(player=2, location=22, gui=game),
-                Necromant_1(player=2, location=19, gui=game),
-                Lovets_dush_1(player=2, location=18, gui=game),
-                # Otshelnik_1(player=2, location=16, gui=game),
-             #  Voin_hrama_1(player=2, location=22, gui=gui), Draks_1(player=2, location=25, gui=gui)
+                Ovrajnii_gnom_1(player=2, location=19, gui=game),
+                Otshelnik_1(player=2, location=18, gui=game),
+                Lovets_dush_1(player=2, location=16, gui=game),
+                Cobold_1(player=2, location=22, gui=gui), #Draks_1(player=2, location=25, gui=gui)
             ]
     game.set_cards(cards1, cards2, game)
     game.start()

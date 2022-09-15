@@ -977,6 +977,8 @@ class BerserkApp(App):
             self.die_pics.append(r2_i)
 
     def create_selection_popup(self, data):
+        if hasattr(self, 'popup_') and self.popup_:
+            return
         question = data['q']
         button_texts = data['texts']
         self.default_popup_option = (0, data['type'])

@@ -74,7 +74,7 @@ class Cobold_1(Card):
     def a2_cb(self, ability, card, target):
         self.a1.cleanup()
         b = BlockAction(self.a1.to_remove)
-        self.tapped = True  # TODO TAP SELF
+        self.gui.tap_card(self)
         self.gui.add_to_stack(b, self, None, 2)
 
     def a1_non_ins(self):

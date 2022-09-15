@@ -48,7 +48,6 @@ class Otshelnik_1(Card):
                                          callback=self.a2_cb, condition=Condition.ON_MAKING_DAMAGE_STAGE, display=True)
         self.a2.display_fast = True
         self.a2.passed = False
-        self.a2.clear_cb = self.a2_non_ins
         self.abilities.append(self.a2)
 
     def a2_cb(self):
@@ -83,22 +82,21 @@ class Otshelnik_1(Card):
         self.gui.flicker_dict = {self.player: [self.id_on_board]}
         # if not self.gui.in_stack:
         # self.gui.in_stack = True
-        if self.player == 1:
-            self.gui.passed_2 = False
-        else:
-            self.gui.passed_1 = False
-        # self.gui.curr_priority = self.player
-        print(self.gui.passed_1, self.gui.passed_2)
+        # if self.player == 1:
+        self.gui.passed_2 = False
+        self.gui.passed_1 = False
+        self.gui.curr_priority = self.player
+        # print(self.gui.passed_1, self.gui.passed_2)
         # self.gui.handle_passes()
 
     def a2_check(self, ability, card, target):
-        return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and\
+        return ability.a_type in [ActionTypes.ATAKA, ActionTypes.UDAR_LETAUSHEGO, ActionTypes.OSOBII_UDAR, ActionTypes.MAG_UDAR] and \
             not CardEffect.BESTELESNOE in target.active_status and target != self and target.player == self.player and not self.tapped and \
                ability.damage_make > 0 and not self.a2.passed  #and not self.a2.repeat
 
     def a3_trg(self):
         all_ = self.gui.board.get_all_cards()
-        return [x for x in all_ if x != self and not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x != self.a2.target]
+        return [x for x in all_ if not CardEffect.BESTELESNOE in x.active_status and x.player == self.player and x != self.a2.target]
 
     def a2_non_ins(self, *args):
         self.gui.flicker_dict = {}

@@ -64,13 +64,8 @@ class Ovrajnii_gnom_1(Card):
             # pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
             #                  a_type=ActionTypes.POPUP, txt='Закрыться?', show_to=(3-int(self.player)))
             self.gui.handle_popups(question='Закрыться или получить урон?', texts=['Закрыться', 'Получить два урона'],
-                                           type='append', show_to=(3-int(self.player)), extra=[a21_action, a22_action])
+                                           type='append', show_to=target.player, extra=[a21_action, a22_action])
 
-
-    # def a_action(self, a, target, state, *args):
-    #     self.gui.timer_ability.unbind(on_complete=self.gui.press_1)
-    #     self.gui.start_stack_action(a, self, target, state, force=1)
-    #     self.gui.process_stack()
 
     def a1_cb(self, victim):
         if self.upped:
