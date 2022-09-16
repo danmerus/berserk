@@ -238,8 +238,16 @@ class GameServer:
 
 class MainServer:
 
-    def __init__(self):
-        HOST, PORT = socket.gethostname(), 12345
+    def __init__(self, port=None):
+        if port:
+            HOST, PORT = socket.gethostname(), port
+        else:
+            HOST = socket.gethostname()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                PORT = s.getsockname()[1]
+        self.HOST = socket.gethostbyname(HOST)
+        self.PORT = PORT
         print('starting on: ', socket.gethostbyname(HOST), PORT)
         self.server = socketserver.TCPServer((HOST, PORT), MainHandler)
         self.clients = {}
@@ -265,5 +273,5 @@ class MainServer:
 
 
 if __name__ == "__main__":
-    s = MainServer()
+    s = MainServer(12345)
     s.start()

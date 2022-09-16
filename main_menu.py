@@ -50,15 +50,16 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from kivy.graphics import Rectangle
+from kivy.graphics import Rectangle, Color
 from kivy.utils import get_color_from_hex
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
 from kivy.uix.dropdown import DropDown
 import threading
 from functools import partial
 from screens import deck_selection
 #from game import Game
 import network
+import server
 
 SUPPORTED_RESOLUTIONS = [(1920, 1080), (1536, 864), (1440, 900), (1366, 768), (960, 540)]
 
@@ -79,6 +80,8 @@ class MainMenuApp(App):
         CARD_Y_SIZE = CARD_X_SIZE  # (Window.height * 0.15)
         self.title = 'Berserk Renewal'
         self.icon = 'data/icons/Berserk_icon.ico'
+        self.server_up = False
+        self.garbage = []
 
     def open_settings(self, *largs):
         pass
@@ -120,61 +123,99 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text='172.27.112.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
+        self.server_input = TextInput(text=' 127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
                                 font_size=Window.height * 0.024,
                                 multiline=False,
-                                pos=(Window.width * 0.035, Window.height * 0.24), size_hint=(None, None))
+                                pos=(Window.width * 0.035, Window.height * 0.34), size_hint=(None, None))
         rl.add_widget(self.server_input)
         self.nickname_input = TextInput(text='Унгар', size=(Window.width * 0.15, Window.height * 0.05),
                                       font_size=Window.height * 0.024,
                                       multiline=False,
-                                      pos=(Window.width * 0.2, Window.height * 0.24), size_hint=(None, None))
+                                      pos=(Window.width * 0.2, Window.height * 0.34), size_hint=(None, None))
         rl.add_widget(self.nickname_input)
-        btn1 = Button(text='Подключиться к серверу', pos=(Window.width * 0.09, Window.height * 0.17), background_color=(1, 0, 0, 1),
+        btn1 = Button(text='Подключиться к серверу', pos=(Window.width * 0.09, Window.height * 0.25), background_color=(1, 0, 0, 1),
                       font_size=Window.height * 0.03,
                       size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
         rl.add_widget(btn1)
-        btn2 = Button(text='Создать свой сервер', pos=(Window.width * 0.09, Window.height * 0.07),
+        btn2 = Button(text='Создать свой сервер', pos=(Window.width * 0.09, Window.height * 0.15),
                       background_color=(1, 0, 0, 1), font_size=Window.height * 0.03,
                       size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
         rl.add_widget(btn2)
+        self.server_output_label = Label(text='Сервер запущен на:', size=(Window.width * 0.35, Window.height * 0.05),
+                                      opacity=0,
+                                      font_size=Window.height * 0.024,
+                                      pos=(Window.width * (-0.1), Window.height * 0.05), size_hint=(None, None))
+        # self.garbage.append(self.server_output_label)
+        rl.add_widget(self.server_output_label)
+        self.server_output = TextInput(text='Сервер запущен на:', size=(Window.width * 0.15, Window.height * 0.05),
+                                      opacity=0,
+                                      font_size=Window.height * 0.024,
+                                      multiline=False,
+                                      pos=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(self.server_output)
         self.conn_popup = Popup(title='', separator_height=0,
                   content=rl, background_color=(1, 0, 0, 1), overlay_color=(0, 0, 0, 0),
-                  size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.38))
-        # btn1.bind(on_press=p.dismiss)
-        # btn2.bind(on_press=p.dismiss)
+                  size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.48))
         btn1.bind(on_press=self.server_popup)
+        btn2.bind(on_press=self.on_start_server_pressed)
         self.conn_popup.open()
 
-    def server_popup(self, *args):
+    def on_start_server_pressed(self, *args):
+        if not self.server_up:
+            self.server_up = True
+            self.server_output.opacity = 1
+            self.server_output_label.opacity = 1
+            s = server.MainServer()
+            host, port = s.HOST, s.PORT
+            t = threading.Thread(target=s.start, daemon=True)
+            t.start()
+            self.server_output.text = str(host) + ':' + str(port)
+            self.server_output.select_all()
+        else:
+            self.server_output_label.opacity = 1
+            self.server_output_label.text = 'Сервер уже создан!'
+
+    def server_popup_thread(self, *args):
         self.host, self.port = self.server_input.text.split(':')
         code = network.join_server(self.host, self.port, self.nickname_input.text)
+        self.server_popup_mainthread(code)
+
+    @mainthread
+    def server_popup_mainthread(self, code):
+        if hasattr(self, 'wait_conn_popup'):
+            self.wait_conn_popup.dismiss()
         if code == -1:
             p = Popup(title='', separator_height=0, background='',
-                      content=Label(text='Не удалось подключиться'), background_color=(0.8, 0.3, 0, 1), overlay_color=(0, 0, 0, 0),
-                      size_hint=(None, None), size=(Window.width * 0.4, Window.height*0.38))
+                      content=Label(text='Не удалось подключиться'), background_color=(0.8, 0.3, 0, 1),
+                      overlay_color=(0, 0, 0, 0),
+                      size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.38))
             p.open()
-            Clock.schedule_once(lambda x: p.dismiss(), 1)
-            return
+            Clock.schedule_once(lambda x: p.dismiss(), 2)
         else:
             self.conn_popup.dismiss()
-        #Clock.schedule_interval(self.update_serverlist, 3)
+            self.server_popup_display()
+
+
+    def server_popup_display(self, *args):
         self.gl = GridLayout(cols=1, spacing=(0, 5), size_hint_y=None)
         rl = RelativeLayout()
-        sv = ScrollView(size_hint=(None, None), size=(Window.width*0.21, Window.height * 0.45),
-                              always_overscroll=False, pos=(Window.width * 0.08, Window.height * 0.1))
+        sv = ScrollView(size_hint=(None, None), size=(Window.width * 0.21, Window.height * 0.45),
+                        always_overscroll=False, pos=(Window.width * 0.08, Window.height * 0.1))
         self.gl.bind(minimum_height=self.gl.setter('height'))
+        # with self.gl.canvas:
+        #     Color(1, 0, 1, 1, mode='rgba')
         sv.add_widget(self.gl)
         rl.add_widget(sv)
         self.create_table = Button(text='Создать стол', disabled=False, opacity=1,
-                                pos=(Window.width * 0.02, Window.height * 0.02),
-                                size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
+                                   pos=(Window.width * 0.02, Window.height * 0.02),
+                                   size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
         self.create_table.bind(on_press=partial(network.start_waiting, self.host, self.port, self))
         self.create_table.bind(on_press=Clock.schedule_once(self.update_serverlist, 1))
         self.create_table.bind(on_press=self.set_connect_btn)
         rl.add_widget(self.create_table)
         self.start_game_btn = Button(text='Подключиться', disabled=False, opacity=1,
-                      pos=(Window.width * 0.18, Window.height * 0.02), size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
+                                     pos=(Window.width * 0.18, Window.height * 0.02),
+                                     size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
         self.start_game_btn.bind(on_press=self.accept_game)
         self.start_game_btn.bind(on_press=self.set_connect_btn)
         rl.add_widget(self.start_game_btn)
@@ -183,6 +224,16 @@ class MainMenuApp(App):
                   size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.7))
         p.bind(on_dismiss=self.remove_client)
         p.open()
+
+    def server_popup(self, *args):
+        t = threading.Thread(target=self.server_popup_thread, daemon=True)
+        t.start()
+        self.wait_conn_popup = Popup(title='', separator_height=0, background='',
+                  content=Label(text='Подключаемся к серверу..'), background_color=(0.3, 0.7, 0, 1),
+                  overlay_color=(0, 0, 0, 0),
+                  size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.38))
+        self.wait_conn_popup.open()
+        #Clock.schedule_interval(self.update_serverlist, 3)
 
     def update_serverlist(self, *args):
         t = threading.Thread(target=network.get_waiting_players, args=(self.host, self.port, self), daemon=True)
@@ -243,7 +294,8 @@ class MainMenuApp(App):
 
     def remove_client(self, *args):
         try:
-            network.client_left(self.host, self.port)
+            t = threading.Thread(target=network.client_left, args=(self.host, self.port), daemon=True)
+            t.start()
         except Exception as e:
             print(e)
 

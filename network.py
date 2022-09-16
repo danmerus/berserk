@@ -32,6 +32,7 @@ def join_server(host, port, nick, *args):
     res = -1
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.settimeout(5)
             s1.connect((host, int(port)))
             res = s1.sendall(b'joining'+nick.encode('utf-8'))
     except Exception as e:
@@ -110,6 +111,7 @@ def client_left(host, port, *args):
     res = -1
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
+            s1.settimeout(5)
             s1.connect((host, int(port)))
             res = s1.sendall(b'client_left')
     except Exception as e:
