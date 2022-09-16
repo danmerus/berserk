@@ -123,7 +123,7 @@ class MainMenuApp(App):
 
     def new_net_game_bind(self, *args):
         rl = RelativeLayout()
-        self.server_input = TextInput(text=' 127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
+        self.server_input = TextInput(text='127.0.1.1:12345', size=(Window.width * 0.15, Window.height * 0.05), # 127.0.1.1:12345  172.30.112.1:12345
                                 font_size=Window.height * 0.024,
                                 multiline=False,
                                 pos=(Window.width * 0.035, Window.height * 0.34), size_hint=(None, None))
@@ -203,7 +203,8 @@ class MainMenuApp(App):
                         always_overscroll=False, pos=(Window.width * 0.08, Window.height * 0.1))
         self.gl.bind(minimum_height=self.gl.setter('height'))
         # with self.gl.canvas:
-        #     Color(1, 0, 1, 1, mode='rgba')
+        #     Color(1, 0, 0, 1, mode='rgba')
+        #     Rectangle(pos=(Window.width * 0.08, Window.height * 0.1), size=(Window.width * 0.21, Window.height * 0.95))
         sv.add_widget(self.gl)
         rl.add_widget(sv)
         self.create_table = Button(text='Создать стол', disabled=False, opacity=1,
