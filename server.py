@@ -178,7 +178,7 @@ class GameHandler(socketserver.BaseRequestHandler):
 class GameServer:
     def __init__(self, game_id, ip1, port1, ip2, port2, nick1='Унгар1', nick2='Унгар1'):
         HOST = socket.gethostname()
-        self.server = socketserver.TCPServer((HOST, 0), GameHandler)
+        self.server = socketserver.TCPServer(("", 0), GameHandler)
         print(f'starting game {game_id} on: ', self.server.server_address)
         self.server_address = self.server.server_address
         self.game = game.Game(server=self, server_ip=self.server_address[0], server_port=self.server_address[1])

@@ -264,7 +264,7 @@ class MainMenuApp(App):
 
     def handle_start_game_response(self, game_id, *args):
         rl = RelativeLayout()
-        lbl = Label(text=f'Начнём игру?\nid:{game_id}',
+        lbl = Label(text=f'Начнём игру?', #\nid:{game_id}
                     y=Window.height * 0.06, font_size=Window.height * 0.03)
         rl.add_widget(lbl)
         btn2 = Button(text='Го!', pos=(Window.width * 0.09, Window.height * 0.07),
@@ -272,11 +272,30 @@ class MainMenuApp(App):
                       size=(Window.width * 0.1, Window.height * 0.05), size_hint=(None, None))
         rl.add_widget(btn2)
         p = Popup(title='', separator_height=0, background='',
+                  auto_dismiss=False,
                   content=rl, background_color=(0.4, 0, 0.1, 1), overlay_color=(0, 0, 0, 0),
                   size_hint=(None, None), size=(Window.width * 0.3, Window.height * 0.3))
         p.open()
         btn2.bind(on_press=partial(self.start_for_constra_net, game_id))
         btn2.bind(on_press=partial(Popup.dismiss, p))
+        btn2.bind(on_press=self.wait_start_game_conf_popup)
+
+    def wait_start_game_conf_popup(self, *args):
+        rl = RelativeLayout()
+        lbl = Label(text=f'Ожидаем подтверждения оппонента..',
+                    y=Window.height * 0.06, font_size=Window.height * 0.03)
+        rl.add_widget(lbl)
+        btn2 = Button(text='Выйти', pos=(Window.width * 0.09, Window.height * 0.07),
+                      background_color=(0.6, 0.6, 0, 1), font_size=Window.height * 0.03,
+                      size=(Window.width * 0.1, Window.height * 0.05), size_hint=(None, None))
+        rl.add_widget(btn2)
+        p = Popup(title='', separator_height=0, background='',
+                  auto_dismiss=False,
+                  content=rl, background_color=(0.4, 0, 0.1, 1), overlay_color=(0, 0, 0, 0),
+                  size_hint=(None, None), size=(Window.width * 0.3, Window.height * 0.3))
+        p.open()
+        btn2.bind(on_press=partial(Popup.dismiss, p))
+        btn2.bind(on_press=self.remove_client)
 
     def start_for_constra_net(self, game_id, *args):
         #self.stop()

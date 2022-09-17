@@ -1130,6 +1130,10 @@ class Game:
                     self.deal_damage_stage_2(ability, card, t, stage)
             elif ability.a_type not in target.defences and card in all_cards and target in all_cards:
                 self.deal_damage_stage_2(ability, card, target, stage)
+            else:
+                card.actions_left -= 1
+                if card.actions_left <= 0:
+                    self.tap_card(card)
 
             if hasattr(ability, 'on_complete') and ability.on_complete:
                 ability.on_complete()
@@ -1188,6 +1192,10 @@ class Game:
             if hasattr(ability, 'failed') and not ability.failed:
                 self.handle_PRI_ATAKE(ability, card, target)
                 ability.failed = False
+        else:
+            card.actions_left -= 1
+            if card.actions_left <= 0:
+                self.tap_card(card)
 
 
     def handle_PRI_ATAKE(self, ability, card, victim, *args):
@@ -1295,7 +1303,7 @@ if __name__ == '__main__':
                Ledyanoy_ohotnik_1(player=1, location=21, gui=game),
                # Elfiyskiy_voin_1(player=1, location=12, gui=game),
                Necromant_1(player=1, location=14, gui=game),
-               Otshelnik_1(player=1, location=4, gui=game),
+               # Otshelnik_1(player=1, location=4, gui=game),
                Ar_gull_1(player=1, location=15, gui=game),
                Cobold_1(player=1, location=6, gui=game)
         ]
@@ -1304,7 +1312,7 @@ if __name__ == '__main__':
                 Voin_hrama_1(player=2, location=22, gui=game),
                 Ovrajnii_gnom_1(player=2, location=19, gui=game),
                 # Otshelnik_1(player=2, location=18, gui=game),
-                Lovets_dush_1(player=2, location=16, gui=game),
+                Gnom_basaarg_1(player=2, location=16, gui=game),
                 Cobold_1(player=2, location=22, gui=gui), #Draks_1(player=2, location=25, gui=gui)
             ]
     game.set_cards(cards1, cards2, game)
