@@ -4,8 +4,9 @@ import numpy.random as rng
 
 import network
 import game_properties
+from game_properties import GameStates
 from kivy.clock import Clock
-from cards.card import *
+# from cards.card import *
 from copy import copy
 
 # Config.set('graphics', 'fullscreen', 'auto')

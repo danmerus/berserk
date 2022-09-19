@@ -13,8 +13,9 @@ if sys.platform == 'linux2' or sys.platform == 'linux':
         'xrandr | grep "\*" | cut -d" " -f4',
         shell=True,
         stdout=subprocess.PIPE).communicate()[0]
-    screenx = int(output.decode("utf-8") .replace('\n', '').split('x')[0])
-    screeny = int(output.decode("utf-8") .replace('\n', '').split('x')[1])
+    if output:
+        screenx = int(output.decode("utf-8") .replace('\n', '').split('x')[0])
+        screeny = int(output.decode("utf-8") .replace('\n', '').split('x')[1])
 elif sys.platform == 'win32':
     from win32api import GetSystemMetrics
     screenx = GetSystemMetrics(0)
