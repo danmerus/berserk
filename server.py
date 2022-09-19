@@ -238,18 +238,16 @@ class GameServer:
 
 class MainServer:
 
-    def __init__(self, port=None):
-        if port:
-            HOST, PORT = socket.gethostname(), port
+    def __init__(self, host=None, port=None):
+        if port and not host:
+            self.server = socketserver.TCPServer((socket.gethostbyname(socket.gethostname()), port), MainHandler)
+        elif port and host:
+            self.server = socketserver.TCPServer((host, port), MainHandler)
         else:
-            HOST = socket.gethostname()
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(("", 0))
-                PORT = s.getsockname()[1]
-        self.HOST = socket.gethostbyname(HOST)
-        self.PORT = PORT
-        print('starting on: ', socket.gethostbyname(HOST), PORT)
-        self.server = socketserver.TCPServer((HOST, PORT), MainHandler)
+            self.server = socketserver.TCPServer((socket.gethostbyname(socket.gethostname()), 0), MainHandler)
+        self.HOST = self.server.server_address[0]
+        self.PORT = self.server.server_address[1]
+        print('starting on: ', self.server.server_address,  self.HOST, self.PORT)
         self.clients = {}
         self.game_id_ip_dict = defaultdict(list)
         self.waiting_clients = []
@@ -273,5 +271,5 @@ class MainServer:
 
 
 if __name__ == "__main__":
-    s = MainServer(12345)
+    s = MainServer('172.27.112.1', 12344)
     s.start()
