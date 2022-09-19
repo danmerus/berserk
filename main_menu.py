@@ -16,6 +16,8 @@ if sys.platform == 'linux2' or sys.platform == 'linux':
     if output:
         screenx = int(output.decode("utf-8") .replace('\n', '').split('x')[0])
         screeny = int(output.decode("utf-8") .replace('\n', '').split('x')[1])
+    else:
+        screenx, screeny = 800, 600
 elif sys.platform == 'win32':
     from win32api import GetSystemMetrics
     screenx = GetSystemMetrics(0)
