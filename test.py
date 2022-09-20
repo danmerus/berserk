@@ -12,12 +12,13 @@
 #     NewLeaseDuration=10000)
 import socket
 
-HOST = "185.237.96.75"
+HOST = "139.162.135.194"
 PORT = 12345
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
+    print(s)
     conn, addr = s.accept()
     with conn:
         print(f"Connected by {addr}")
@@ -25,4 +26,5 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             data = conn.recv(1024)
             if not data:
                 break
+            print('data:', data, 'conn:', conn)
             conn.sendall(data)
