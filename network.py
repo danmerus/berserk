@@ -39,6 +39,7 @@ def join_server(host, port, nick, *args):
             client_id = s1.recv(2048).decode('utf-8')
     except Exception as e:
         print('join_server: ', e)
+        res = -1
     return res, int(client_id)
 
 
@@ -102,7 +103,7 @@ def on_entering_next_screen(host, port, turn, parent, *args):
     res = -1
     try:
         s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind((socket.gethostname(), 0))
+        s2.bind(('', 0))
         ip, h = s2.getsockname()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.connect((host, int(port)))
