@@ -30,20 +30,21 @@ def get_waiting_players_cb(parent, res):
 
 def join_server(host, port, nick, *args):
     res = -1
+    client_id = -1
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
             s1.settimeout(5)
             s1.connect((host, int(port)))
             res = s1.sendall(b'joining'+nick.encode('utf-8'))
+            client_id = s1.recv(2048).decode('utf-8')
     except Exception as e:
         print('join_server: ', e)
-    return res
+    return res, int(client_id)
 
 
 def start_waiting_helper(sock, parent):
     while True:
-        conn, address = sock.accept()
-        datachunk = conn.recv(8192)
+        datachunk = sock.recv(8192)  #  receiving game_id here
         if datachunk:
             start_waiting_cb(datachunk, parent)
             sock.close()
@@ -53,58 +54,37 @@ def start_waiting_helper(sock, parent):
 def start_waiting_cb(data, parent):
     parent.handle_start_game_response(data.decode('utf-8'))
 
-def start_waiting(host, port, parent, *args):
-    res = -1
-    # try:
-
-    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s2.bind((socket.gethostname(), 0))
-    ip, h = s2.getsockname()
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-        # s1.settimeout(100)
-        s1.connect((host, int(port)))
-        res = s1.sendall(b'start_waiting'+(str(ip)+'#'+str(h)).encode())
-    s2.listen(1)
-    print('starting loop creater', s2.getsockname())
-    t = threading.Thread(target=start_waiting_helper, args=([s2, parent]), daemon=True)
+def start_waiting(host, port, parent, client_id, *args):
+    s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s1.connect((host, int(port)))
+    s1.sendall(b'start_waiting' + (str(client_id)).encode())
+    print('starting loop creater', s1)
+    t = threading.Thread(target=start_waiting_helper, args=([s1, parent]), daemon=True)
     t.start()
-    return res
 
-def accept_game(host, port, parent, ip_to_join, *args):
-    res = -1
+def accept_game(host, port, parent, self_id, id_to_join, *args):
     try:
-        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind((socket.gethostname(), 0))
-        ip, h = s2.getsockname()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-            s1.connect((host, int(port)))
-            res = s1.sendall(b'accept_game'+(str(ip)+'#'+str(h)+'#'+str(ip_to_join)).encode())
-        s2.listen(1)
-        print('starting loop accepter', s2.getsockname())
-        t = threading.Thread(target=start_waiting_helper, args=([s2, parent]), daemon=True)
+        s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s1.bind((socket.gethostname(), 0))
+        s1.connect((host, int(port)))
+        t = threading.Thread(target=start_waiting_helper, args=([s1, parent]), daemon=True)
         t.start()
+        s1.sendall(b'accept_game'+(str(self_id)+'#'+str(id_to_join)).encode())
+        print('starting loop accepter', s1)
     except Exception as e:
         print('accept_game', e)
-    return res
 
+################################### GAME SERVER ############################################
 
-################# GAME SERVER ##################################
-
-def start_constr_game(host, port, parent, game_id, *args):
-    res = -1
+def start_constr_game(host, port, parent, game_id, client_id, *args):
     try:
-        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind((socket.gethostname(), 0))
-        ip, h = s2.getsockname()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-            s1.connect((host, int(port)))
-            res = s1.sendall(b'start_constr'+(str(ip)+'#'+str(h)+'#'+str(game_id)).encode())
-        s2.listen(1)
-        t = threading.Thread(target=start_constr_helper, args=([s2, parent]), daemon=True)
+        s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s1.connect((host, int(port)))
+        s1.sendall(b'start_constr'+(str(game_id)+'#'+str(client_id)).encode())
+        t = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
         t.start()
     except Exception as e:
         print('start_constr_game: ', e)
-    return res
 
 
 def client_left(host, port, *args):
@@ -133,6 +113,7 @@ def on_entering_next_screen(host, port, turn, parent, *args):
     except Exception as e:
         print('on_entering_next_screen: ', e)
     return res
+
 
 def placement_ready(host, port, turn, data, *args):
     res = -1
@@ -244,8 +225,7 @@ def get_rolls(host, port, count):
 
 def start_constr_helper(sock, parent):
     while True:
-        conn, address = sock.accept()
-        datachunk = conn.recv(8192)
+        datachunk = sock.recv(8192)
         if datachunk.startswith(b'game_server'):
             constr_cb1(datachunk[len('game_server'):], parent)
         elif datachunk.startswith(b'close'):
@@ -263,7 +243,7 @@ def start_constr_helper(sock, parent):
         elif datachunk.startswith(b'ability_pressed'):
             byte_data = datachunk[len('ability_pressed'):]
             data = pickle.loads(byte_data)
-            constr_cb5(data, parent)
+            # constr_cb5(data, parent)
         elif datachunk.startswith(b'state_obj'):
             byte_data = datachunk[len('state_obj'):]
             data = pickle.loads(byte_data)
@@ -284,11 +264,11 @@ def constr_cb7(state, parent):
     # print('Sending state: ', state)
     parent.on_state_received(state)
 
-@mainthread
-def constr_cb5(data, parent):
-    ability, card, victim, state, force = pickle_to_ability(data, parent)
-    print('Launching ability: ', ability, card, victim, state, force)
-    parent.start_stack_action(ability, card, victim, state, force, imposed=True)
+# @mainthread
+# def constr_cb5(data, parent):
+#     ability, card, victim, state, force = pickle_to_ability(data, parent)
+#     print('Launching ability: ', ability, card, victim, state, force)
+#     parent.start_stack_action(ability, card, victim, state, force, imposed=True)
 
 @mainthread
 def constr_cb6(parent):
@@ -313,4 +293,4 @@ def constr_cb2(nick, parent):
 def constr_cb1(data, parent):
     turn, ip, port = data.decode('utf-8').split('#')
     parent.start_for_constra(turn, ip, port)
-    # print('got server addr!', data)
+    print('got server addr!', data)

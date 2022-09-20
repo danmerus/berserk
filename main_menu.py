@@ -180,7 +180,9 @@ class MainMenuApp(App):
 
     def server_popup_thread(self, *args):
         self.host, self.port = self.server_input.text.split(':')
-        code = network.join_server(self.host, self.port, self.nickname_input.text)
+        code, client_id = network.join_server(self.host, self.port, self.nickname_input.text)
+        print('client_id', client_id)
+        self.client_id = client_id
         self.server_popup_mainthread(code)
 
     @mainthread
@@ -213,7 +215,7 @@ class MainMenuApp(App):
         self.create_table = Button(text='Создать стол', disabled=False, opacity=1,
                                    pos=(Window.width * 0.02, Window.height * 0.02),
                                    size=(Window.width * 0.15, Window.height * 0.05), size_hint=(None, None))
-        self.create_table.bind(on_press=partial(network.start_waiting, self.host, self.port, self))
+        self.create_table.bind(on_press=partial(network.start_waiting, self.host, self.port, self, self.client_id))
         self.create_table.bind(on_press=Clock.schedule_once(self.update_serverlist, 1))
         self.create_table.bind(on_press=self.set_connect_btn)
         rl.add_widget(self.create_table)
@@ -249,8 +251,10 @@ class MainMenuApp(App):
             for player in players:
                 btn1 = Button(text=player[1].decode('utf-8'), disabled=False, opacity=1,
                               pos=(0, 0), size=(Window.width * 0.2, Window.height * 0.05), size_hint=(None, None))
+                if int(player[0]) == self.client_id:
+                    btn1.disabled = True
                 self.gl.add_widget(btn1)
-                btn1.bind(on_press=lambda x: self.set_game_ip(player[0], btn1))
+                btn1.bind(on_press=lambda x: self.set_game_opponent(player[0], btn1))
                 btn1.bind(on_touch_down=self.join_double_click)
         except Exception as e:
             print(e)
@@ -261,9 +265,7 @@ class MainMenuApp(App):
             self.set_connect_btn()
 
     def accept_game(self, *args):
-        ip = socket.gethostbyname(socket.gethostname())
-        # if ip != self.game_ip:
-        res = network.accept_game(self.host, self.port, self, self.game_ip)  # if res == -1 >?
+        network.accept_game(self.host, self.port, self, self.client_id, self.game_opp_id)  # if res == -1 >?
 
     def handle_start_game_response(self, game_id, *args):
         rl = RelativeLayout()
@@ -302,7 +304,7 @@ class MainMenuApp(App):
 
     def start_for_constra_net(self, game_id, *args):
         #self.stop()
-        network.start_constr_game(self.host, self.port, self, game_id)
+        network.start_constr_game(self.host, self.port, self, game_id, self.client_id)
 
     def start_for_constra(self, turn, ip, port):
         for b in [self.deck_btn, self.settings_btn, self.exit_btn]:
@@ -311,9 +313,9 @@ class MainMenuApp(App):
         d = deck_selection.DeckSelectionApp(self.window_size, mode='constr', server_ip=ip, server_port=port, turn=int(turn))
         d.run()
 
-    def set_game_ip(self, ip, instance):
+    def set_game_opponent(self, ip, instance):
         instance.disabled = False
-        self.game_ip = ip
+        self.game_opp_id = ip
 
     def remove_client(self, *args):
         try:
@@ -376,7 +378,7 @@ class MainMenuApp(App):
         root = MainField()
         Window.bind(on_request_close=self.on_request_close)
         self.all_buttons = []
-        self.game_ip = ''
+        self.game_opp_id = ''
         self.layout = FloatLayout(size=(Window.width, Window.height))
         self.future_res = self.window_size
 
