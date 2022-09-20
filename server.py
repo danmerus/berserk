@@ -28,25 +28,21 @@ class GameHandler(socketserver.BaseRequestHandler):
         elif self.data.startswith(b'placement_ready'):
             turn = int(self.data[len('placement_ready'):len('placement_ready') + 1].decode('utf-8'))
             card_data = self.data[len('placement_ready')+1:]
-            ip1, port1, nick1 = self.server.player1
-            ip2, port2, nick2 = self.server.player2
+            s1, nick1 = self.server.player1
+            s2, nick2 = self.server.player2
             self.server.ready_count.add(turn)
             if (turn == 2 and self.server.turn_rng == 1) or (turn == 1 and self.server.turn_rng == 2):
                 try:
                     self.server.player2_cards = pickle.loads(card_data)
                 except:
                     print('error in decoding card data!')
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip1, int(port1)))
-                    s1.sendall(b'ready' + nick2)
+                s1.sendall(b'ready' + nick2)
             elif (turn == 1 and self.server.turn_rng == 1) or (turn == 2 and self.server.turn_rng == 2):
                 try:
                     self.server.player1_cards = pickle.loads(card_data)
                 except:
                     print('error in decoding card data!')
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-                    s1.connect((ip2, int(port2)))
-                    s1.sendall(b'ready' + nick1)
+                s2.sendall(b'ready' + nick1)
             if len(self.server.ready_count) == 2:
                 self.server.game.set_cards(self.server.player1_cards, self.server.player2_cards, self.server.game)
                 self.server.ready_count = set()
@@ -266,5 +262,6 @@ class MainServer:
             self.handle()
 
 if __name__ == "__main__":
+    TODO: Rewrite gameserver to pure sockets
     s = MainServer(host="", port=12345)  # 139.162.135.194:12343
     s.start()
