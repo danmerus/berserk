@@ -271,5 +271,5 @@ class MainServer:
 
 
 if __name__ == "__main__":
-    s = MainServer(port=12344)
+    s = MainServer(host="139.162.135.194", port=12344)
     s.start()
