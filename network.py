@@ -65,7 +65,7 @@ def start_waiting(host, port, parent, client_id, *args):
 def accept_game(host, port, parent, self_id, id_to_join, *args):
     try:
         s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s1.bind((socket.gethostname(), 0))
+        s1.bind(('', 0))
         s1.connect((host, int(port)))
         t = threading.Thread(target=start_waiting_helper, args=([s1, parent]), daemon=True)
         t.start()

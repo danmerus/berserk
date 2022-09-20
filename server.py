@@ -266,5 +266,5 @@ class MainServer:
             self.handle()
 
 if __name__ == "__main__":
-    s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194",
+    s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345
     s.start()
