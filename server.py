@@ -40,7 +40,7 @@ class GameServer:
         data = pickle.dumps(state_obj)
         s1, nick1 = self.player1
         s2, nick2 = self.player2
-        print('send_state:', player, state_obj['cards'])
+        # print('send_state:', player, state_obj['cards'])
         if self.turn_rng == 1 and player == 1:
             s1.sendall(b'state_obj'+data)
         elif self.turn_rng == 1 and player == 2:

@@ -1009,7 +1009,7 @@ class BerserkApp(App):
         self.curr_state = new_state
         for card_id in new_state['cards'].keys():
             if new_state['cards'][card_id]['name'] == 'Некромант':
-                print('draw_from_state_diff', new_state['cards'][card_id]['loc'])
+                print('draw_from_state_diff', new_state['cards'][card_id]['loc'], old_state['cards'][card_id]['loc'])
             if old_state['cards'][card_id]['zone'] != 'gr' and new_state['cards'][card_id]['zone'] == 'gr':
                 self.move_to_grave(new_state['cards'][card_id], prev_zone=old_state['cards'][card_id]['zone'], next_zone='gr')
             elif old_state['cards'][card_id]['zone'] != 'deck' and new_state['cards'][card_id]['zone'] == 'deck':
