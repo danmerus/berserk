@@ -42,10 +42,10 @@ class GameServer:
         s2, nick2 = self.player2
         # print('send_state:', player, state_obj['cards'])
         if (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
-            res = s1.sendall(b'state_obj'+data)
+            res = s1.sendall(b'state_obj'+data, socket.MSG_DONTWAIT)
         elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):
-            res = s2.sendall(b'state_obj'+data)
-        print('send res', res)
+            res = s2.sendall(b'state_obj'+data, socket.MSG_DONTWAIT)
+
 
     def handle(self):
         self.data = self.request.recv(65536).strip()

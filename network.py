@@ -245,7 +245,7 @@ def start_constr_helper(sock, parent):
         elif datachunk.startswith(b'state_obj'):
             byte_data = datachunk[len('state_obj'):]
             data = pickle.loads(byte_data)
-            print('state recieved!')
+            print('state recieved')
             constr_cb7(data, parent)
         elif datachunk.startswith(b'end_game'):
             txt = datachunk[len('end_game'):].decode('utf-8')
