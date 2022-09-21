@@ -567,7 +567,7 @@ class Game:
     def send_state(self, player, msg=None):
         state = self.form_state_obj(player)
         if msg:
-            print('send_state', msg, 'player:', player)
+            print('send_state', msg, 'player:', player, 'state:', state)
         if self.mode == 'online':
             self.server.send_state(player, state)
         else:
