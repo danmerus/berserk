@@ -291,4 +291,4 @@ def constr_cb2(nick, parent):
 def constr_cb1(data, parent):
     turn, ip, port = data.decode('utf-8').split('#')
     parent.start_for_constra(turn, ip, port)
-    print('got server addr!', data)
+    # print('got server addr!', data)

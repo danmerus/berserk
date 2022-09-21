@@ -11,7 +11,10 @@ import game
 
 class GameServer:
     def __init__(self, game_id, s1, s2, nick1='Унгар1', nick2='Унгар1'):
-        self.server = socket.create_server(("", 0), family=socket.AF_INET)
+        if REMOTE_MODE:
+            self.server = socket.create_server(("139.162.135.194", 0), family=socket.AF_INET)
+        else:
+            self.server = socket.create_server(("", 0), family=socket.AF_INET)
         self.host = self.server.getsockname()[0]
         self.port = self.server.getsockname()[1]
         print(f'starting game {game_id} on: ', self.server.getsockname())
@@ -222,8 +225,8 @@ class MainServer:
                 t.start()
                 s1.sendall(b'game_server'+(str(gs.turn_rng) +'#'+gs.host+'#'+str(gs.port)).encode('utf-8'))
                 s2.sendall(b'game_server'+(str(3-gs.turn_rng) +'#'+gs.host+'#'+str(gs.port)).encode('utf-8'))
-                s1.sendall(b'close')
-                s2.sendall(b'close')
+                # s1.sendall(b'close')
+                # s2.sendall(b'close')
 
     def start(self):
         while True:
@@ -231,7 +234,10 @@ class MainServer:
             self.request = conn
             self.handle()
 
+REMOTE_MODE = False
 if __name__ == "__main__":
-    s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345
-    # s = MainServer(host="", port=12345)  # 139.162.135.194:12345
+    if REMOTE_MODE:
+        s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345
+    else:
+        s = MainServer(host="", port=12345)  # 139.162.135.194:12345127.0.1.1:36647
     s.start()

@@ -80,6 +80,7 @@ class Game:
         else:
             return
         if self.mode == 'online':
+            print('check_game_end:', text_)
             self.server.end_game(text_)
         else:
             self.gui.on_game_end(text_)
