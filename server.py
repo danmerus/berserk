@@ -40,6 +40,7 @@ class GameServer:
         data = pickle.dumps(state_obj)
         s1, nick1 = self.player1
         s2, nick2 = self.player2
+        print('send_state:', s1, s2)
         if self.turn_rng == 1 and player == 1:
             s1.sendall(b'state_obj'+data)
         elif self.turn_rng == 1 and player == 2:
@@ -234,7 +235,7 @@ class MainServer:
             self.request = conn
             self.handle()
 
-REMOTE_MODE = False
+REMOTE_MODE = True
 if __name__ == "__main__":
     if REMOTE_MODE:
         s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345

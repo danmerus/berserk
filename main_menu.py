@@ -239,7 +239,7 @@ class MainMenuApp(App):
                   overlay_color=(0, 0, 0, 0),
                   size_hint=(None, None), size=(Window.width * 0.4, Window.height * 0.38))
         self.wait_conn_popup.open()
-        Clock.schedule_interval(self.update_serverlist, 3)
+        # Clock.schedule_interval(self.update_serverlist, 3)
 
     def update_serverlist(self, *args):
         t = threading.Thread(target=network.get_waiting_players, args=(self.host, self.port, self), daemon=True)
