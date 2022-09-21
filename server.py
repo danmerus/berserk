@@ -195,10 +195,11 @@ class MainServer:
             print('waiting:', client_id, self.request)
         elif self.data.decode().startswith('client_left'):
             try:
-                del self.server[self.client_address[0]]
-                for el in self.waiting_clients:
-                    if el[0][0] == self.client_address[0]:
-                        self.waiting_clients.remove(el)
+                pass
+                # del self.server[self.client_address[0]]
+                # for el in self.waiting_clients:
+                #     if el[0][0] == self.client_address[0]:
+                #         self.waiting_clients.remove(el)
             except Exception as e:
                 print("client_left exc ", e)
         elif self.data.decode().startswith('accept_game'):
@@ -221,6 +222,8 @@ class MainServer:
                 t.start()
                 s1.sendall(b'game_server'+(str(gs.turn_rng) +'#'+gs.host+'#'+str(gs.port)).encode('utf-8'))
                 s2.sendall(b'game_server'+(str(3-gs.turn_rng) +'#'+gs.host+'#'+str(gs.port)).encode('utf-8'))
+                s1.sendall(b'close')
+                s2.sendall(b'close')
 
     def start(self):
         while True:
@@ -229,5 +232,5 @@ class MainServer:
             self.handle()
 
 if __name__ == "__main__":
-    s = MainServer(host="", port=12345)  # 139.162.135.194:12343
+    s = MainServer(host="", port=12345)  # 139.162.135.194:12345
     s.start()
