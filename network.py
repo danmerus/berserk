@@ -81,9 +81,9 @@ def start_constr_game(host, port, parent, game_id, client_id, *args):
     try:
         s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s1.connect((host, int(port)))
-        s1.sendall(b'start_constr'+(str(game_id)+'#'+str(client_id)).encode())
         t = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
         t.start()
+        s1.sendall(b'start_constr'+(str(game_id)+'#'+str(client_id)).encode())
     except Exception as e:
         print('start_constr_game: ', e)
 
@@ -105,11 +105,11 @@ def on_entering_next_screen(host, port, turn, parent, *args):
         s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s1.bind(('', 0))
         s1.connect((host, int(port)))
-        s1.sendall(b'next_screen' + str(turn).encode())
         t = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
         t.start()
+        s1.sendall(b'next_screen' + str(turn).encode())
     except Exception as e:
-        print('on_entering_next_screen: ', e)
+        print('on_entering_next_screen: ', e, host, port, turn)
     return res
 
 
