@@ -41,14 +41,11 @@ class GameServer:
         s1, nick1 = self.player1
         s2, nick2 = self.player2
         # print('send_state:', player, state_obj['cards'])
-        if self.turn_rng == 1 and player == 1:
-            s1.sendall(b'state_obj'+data)
-        elif self.turn_rng == 1 and player == 2:
-            s2.sendall(b'state_obj'+data)
-        elif self.turn_rng == 2 and player == 1:
-            s2.sendall(b'state_obj'+data)
-        elif self.turn_rng == 2 and player == 2:
-            s1.sendall(b'state_obj'+data)
+        if (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
+            res = s1.sendall(b'state_obj'+data)
+        elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):
+            res = s2.sendall(b'state_obj'+data)
+        print('send res', res)
 
     def handle(self):
         self.data = self.request.recv(65536).strip()
