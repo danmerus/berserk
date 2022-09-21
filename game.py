@@ -327,6 +327,8 @@ class Game:
             res['curr_life'] = card.curr_life
         if hasattr(card, 'move'):
             res['move'] = card.move
+            if card.name == 'Некромант':
+                print('Некромант loc', card.loc)
         if hasattr(card, 'curr_move'):
             res['curr_move'] = card.curr_move
         if hasattr(card, 'curr_fishka'):
@@ -567,7 +569,7 @@ class Game:
     def send_state(self, player, msg=None):
         state = self.form_state_obj(player)
         if msg:
-            print('send_state', msg, 'player:', player, 'state:', state)
+            print('send_state', msg, 'player:', player, 'state:', state['cards'])
         if self.mode == 'online':
             self.server.send_state(player, state)
         else:
@@ -784,8 +786,8 @@ class Game:
             else:
                 self.butt_state = [(0, 0), (0, 1)]
         if self.mode == 'online':
-            self.send_state(1, msg='passes')
-            self.send_state(2, msg='passes')
+            self.send_state(1,)# msg='passes')
+            self.send_state(2,)# msg='passes')
         else:
             self.send_state(1)
         if not self.passed_1 or not self.passed_2:
@@ -807,11 +809,10 @@ class Game:
                 self.curr_top = self.stack[-1]
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
-                    self.send_state(1) #, msg='from stack')
-                    self.send_state(2) #, msg='from stack')
+                    self.send_state(1, msg='from stack')
+                    self.send_state(2, msg='from stack')
                 else:
-                    # print('stack send')
-                    self.send_state(1)
+                    self.send_state(1, msg='from stack')
             else:
                 return  # return here to get back to Kivy mainloop waiting for players to pass
             self.arrows = []
