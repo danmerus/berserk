@@ -784,8 +784,8 @@ class Game:
             else:
                 self.butt_state = [(0, 0), (0, 1)]
         if self.mode == 'online':
-            self.send_state(1)
-            self.send_state(2)
+            self.send_state(1, msg='passes')
+            self.send_state(2, msg='passes')
         else:
             self.send_state(1)
         if not self.passed_1 or not self.passed_2:
@@ -807,8 +807,8 @@ class Game:
                 self.curr_top = self.stack[-1]
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
-                    self.send_state(1, msg='from stack')
-                    self.send_state(2, msg='from stack')
+                    self.send_state(1) #, msg='from stack')
+                    self.send_state(2) #, msg='from stack')
                 else:
                     # print('stack send')
                     self.send_state(1)
