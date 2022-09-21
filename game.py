@@ -503,7 +503,6 @@ class Game:
 
 
     def mark_clicked(self, marks, pow, *args):
-        print('mark_clicked:', marks, pow)
         self.selected_marks_list = marks
         if self.marks_bind.marks_needed == len(self.selected_marks_list):
             self.target_dict = {}
@@ -805,11 +804,12 @@ class Game:
                 # print('in stack!', self.passed_1, self.passed_2)
             if self.passed_1 and self.passed_2:
                 self.curr_top = self.stack[-1]
-                # print(self.curr_top)
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
+                    print('sending from stack')
                     self.send_state(1)
                     self.send_state(2)
+                    print('end sending from stack')
                 else:
                     # print('stack send')
                     self.send_state(1)
