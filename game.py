@@ -503,6 +503,7 @@ class Game:
 
 
     def mark_clicked(self, marks, pow, *args):
+        print('mark_clicked:', marks, pow)
         self.selected_marks_list = marks
         if self.marks_bind.marks_needed == len(self.selected_marks_list):
             self.target_dict = {}
