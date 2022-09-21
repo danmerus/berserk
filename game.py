@@ -564,9 +564,10 @@ class Game:
         else:
             self.next_game_state()
 
-    def send_state(self, player):
-        # print('player sent:', player, self.target_dict)
+    def send_state(self, player, msg=None):
         state = self.form_state_obj(player)
+        if msg:
+            print('send_state', msg, 'player:', player)
         if self.mode == 'online':
             self.server.send_state(player, state)
         else:
@@ -806,10 +807,8 @@ class Game:
                 self.curr_top = self.stack[-1]
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
-                    print('sending from stack')
-                    self.send_state(1)
-                    self.send_state(2)
-                    print('end sending from stack')
+                    self.send_state(1, msg='from stack')
+                    self.send_state(2, msg='from stack')
                 else:
                     # print('stack send')
                     self.send_state(1)
