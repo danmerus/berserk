@@ -809,8 +809,8 @@ class Game:
                 self.curr_top = self.stack[-1]
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
-                    self.send_state(1, msg='from stack')
-                    self.send_state(2, msg='from stack')
+                    self.send_state(1)#, msg='from stack')
+                    self.send_state(2)#, msg='from stack')
                 else:
                     self.send_state(1, msg='from stack')
             else:
