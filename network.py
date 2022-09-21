@@ -102,14 +102,11 @@ def client_left(host, port, *args):
 def on_entering_next_screen(host, port, turn, parent, *args):
     res = -1
     try:
-        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind(('', 0))
-        ip, h = s2.getsockname()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s1:
-            s1.connect((host, int(port)))
-            res = s1.sendall(b'next_screen' + (str(ip)+'#'+str(h)+'#'+str(turn)).encode())
-        s2.listen(5)
-        t = threading.Thread(target=start_constr_helper, args=([s2, parent]), daemon=True)
+        s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s1.bind(('', 0))
+        s1.connect((host, int(port)))
+        s1.sendall(b'next_screen' + str(turn).encode())
+        t = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
         t.start()
     except Exception as e:
         print('on_entering_next_screen: ', e)

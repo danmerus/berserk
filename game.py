@@ -8,6 +8,8 @@ from game_properties import GameStates
 from kivy.clock import Clock
 # from cards.card import *
 from copy import copy
+from cards.card_properties import *
+from cards.card import *
 
 # Config.set('graphics', 'fullscreen', 'auto')
 

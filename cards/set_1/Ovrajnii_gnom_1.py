@@ -61,8 +61,6 @@ class Ovrajnii_gnom_1(Card):
                                  ranged=False, state_of_action=[GameStates.MAIN_PHASE])
             a21_action = (a22, self, target, 0)
             a22_action = (a21, self, target, 0)
-            # pp = PopupAction(options=['Закрыться', 'Получить два урона'], action_list=[a21_action, a22_action],
-            #                  a_type=ActionTypes.POPUP, txt='Закрыться?', show_to=(3-int(self.player)))
             self.gui.handle_popups(question='Закрыться или получить урон?', texts=['Закрыться', 'Получить два урона'],
                                            type='append', show_to=target.player, extra=[a21_action, a22_action])
 
