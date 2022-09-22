@@ -39,7 +39,7 @@ class GameServer:
         s2.sendall(b'end_game' + (str(text)).encode())
 
     def send_state(self, player, state_obj, both=False):
-        print('send_state player:', player, self.turn_rng, both)
+        print('send_state player:', player, self.turn_rng, both, state_obj['cards'])
         data = pickle.dumps(state_obj)
         s1, nick1 = self.player1
         s2, nick2 = self.player2
