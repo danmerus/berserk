@@ -44,17 +44,15 @@ class GameServer:
         s1, nick1 = self.player1
         s2, nick2 = self.player2
         # print('send_state:', player, state_obj['cards'])
-        if both:
-            print('s1:', s1)
-            s1.sendall(b'state_obj' + data)
-            time.sleep(0.2)
-            print('s2:', s2)
-            s2.sendall(b'state_obj' + data)
-        elif (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
-            s1.sendall(b'state_obj' + data)
-            # ack = s1.recv(1024)
-        elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):
-            s2.sendall(b'state_obj' + data)
+        with threading.Lock():
+            if both:
+                s1.sendall(b'state_obj' + data)
+                s2.sendall(b'state_obj' + data)
+            elif (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
+                s1.sendall(b'state_obj' + data)
+                # ack = s1.recv(1024)
+            elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):
+                s2.sendall(b'state_obj' + data)
             # ack = s1.recv(1024)
         # print('send state ask:', ack)
 
