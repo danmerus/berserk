@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 
 import board
 import numpy.random as rng
@@ -55,6 +56,7 @@ class Game:
         self.card_exit = False
         self.red_fishki_bool = False
         self.stack_pause = False
+        self.send_complete = True
 
     def set_cards(self, cards_on_board1, cards_on_board2, game):
         new_cards = []
@@ -569,8 +571,9 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player, msg=None):
-        import time
-        time.sleep(0.2)
+        while self.send_complete:
+            time.sleep(0.1)
+        self.send_complete = False
         state = self.form_state_obj(player)
         if msg:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
@@ -582,6 +585,7 @@ class Game:
         else:
             # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)
+        self.send_complete = True
 
     def on_reveal(self, cards):
         for card in cards:
