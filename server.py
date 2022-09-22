@@ -244,7 +244,7 @@ class MainServer:
             self.request = conn
             self.handle()
 
-REMOTE_MODE = False
+REMOTE_MODE = True
 if __name__ == "__main__":
     if REMOTE_MODE:
         s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345
