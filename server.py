@@ -43,11 +43,11 @@ class GameServer:
         # print('send_state:', player, state_obj['cards'])
         if (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
             s1.sendall(b'state_obj'+data)
-            ack = s1.recv(1024)
+            # ack = s1.recv(1024)
         elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):
             s2.sendall(b'state_obj'+data)
-            ack = s1.recv(1024)
-        print('send state ask:', ack)
+            # ack = s1.recv(1024)
+        # print('send state ask:', ack)
 
 
     def handle(self):
