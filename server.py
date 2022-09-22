@@ -36,13 +36,16 @@ class GameServer:
         s1.sendall(b'end_game' + (str(text)).encode())
         s2.sendall(b'end_game' + (str(text)).encode())
 
-    def send_state(self, player, state_obj):
-        print('send_state player:', player, self.turn_rng)
+    def send_state(self, player, state_obj, both=False):
+        print('send_state player:', player, self.turn_rng, both)
         data = pickle.dumps(state_obj)
         s1, nick1 = self.player1
         s2, nick2 = self.player2
         # print('send_state:', player, state_obj['cards'])
-        if (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
+        if both:
+            s1.sendall(b'state_obj' + data)
+            s2.sendall(b'state_obj' + data)
+        elif (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
             s1.sendall(b'state_obj'+data)
             # ack = s1.recv(1024)
         elif (self.turn_rng == 1 and player == 2) or (self.turn_rng == 2 and player == 1):

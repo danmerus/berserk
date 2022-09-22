@@ -527,8 +527,8 @@ class Game:
             self.card_exit = False
         self.next_game_state()
         if self.mode == 'online':
-           self.send_state(1)
-           self.send_state(2)
+           self.send_state(1, both=True)
+           # self.send_state(2)
         else:
            self.send_state(1)
 
@@ -546,8 +546,8 @@ class Game:
         self.timer_state['restart'] = True
         self.player_passed()
         if self.mode == 'online':
-            self.send_state(1)
-            self.send_state(2)
+            self.send_state(1, both=True)
+            # self.send_state(2)
         else:
             self.send_state(1)
         self.handle_passes()
@@ -570,7 +570,7 @@ class Game:
         else:
             self.next_game_state()
 
-    def send_state(self, player, msg=None):
+    def send_state(self, player, msg=None, both=False):
         while not self.send_complete:
             time.sleep(0.1)
         self.send_complete = False
@@ -581,7 +581,7 @@ class Game:
             # print('send_state player:', player)
             # t = threading.Thread(target=self.server.send_state, args=(player, state), daemon=True)
             # t.start()
-            self.server.send_state(player, state)
+            self.server.send_state(player, state, both)
         else:
             # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)
@@ -614,8 +614,8 @@ class Game:
         self.on_reveal(self.board.get_all_cards())
         if self.mode == 'online':
             self.timer_state = {'restart': True, 'duration': self.turn_duration}
-            self.send_state(1)
-            self.send_state(2)
+            self.send_state(1, both=True)
+            # self.send_state(2)
         else:
             self.timer_state = {'restart': True, 'duration': self.turn_duration}
             self.send_state(1)
@@ -671,8 +671,8 @@ class Game:
         #     if self.popup_state:
         self.popup_state = {}
         if self.mode == 'online':
-            self.send_state(1)
-            self.send_state(2)
+            self.send_state(1, both=True)
+            # self.send_state(2)
         else:
             self.send_state(1)
         if type_ == 'attack':
@@ -798,8 +798,8 @@ class Game:
             else:
                 self.butt_state = [(0, 0), (0, 1)]
         if self.mode == 'online':
-            self.send_state(1,)# msg='passes')
-            self.send_state(2,)# msg='passes')
+            self.send_state(1, both=True)
+            # self.send_state(2,)# msg='passes')
         else:
             self.send_state(1)
         if not self.passed_1 or not self.passed_2:
@@ -821,8 +821,8 @@ class Game:
                 self.curr_top = self.stack[-1]
                 self.perform_action(self.curr_top)
                 if self.mode == 'online':
-                    self.send_state(1)#, msg='from stack')
-                    self.send_state(2)#, msg='from stack')
+                    self.send_state(1, both=True)
+                    # self.send_state(2)#, msg='from stack')
                 else:
                     self.send_state(1, msg='from stack')
             else:
