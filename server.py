@@ -46,8 +46,12 @@ class GameServer:
         # print('send_state:', player, state_obj['cards'])
         with threading.Lock():
             if both:
-                s1.sendall(b'state_obj' + data)
-                s2.sendall(b'state_obj' + data)
+                # s1.sendall(b'state_obj' + data)
+                # s2.sendall(b'state_obj' + data)
+                t = threading.Thread(target=s1.sendall, args=(b'state_obj' + data), daemon=True)
+                t.start()
+                t1 = threading.Thread(target=s2.sendall, args=(b'state_obj' + data), daemon=True)
+                t1.start()
             elif (self.turn_rng == 1 and player == 1) or (self.turn_rng == 2 and player == 2):
                 s1.sendall(b'state_obj' + data)
                 # ack = s1.recv(1024)
@@ -242,7 +246,7 @@ class MainServer:
             self.request = conn
             self.handle()
 
-REMOTE_MODE = True
+REMOTE_MODE = False
 if __name__ == "__main__":
     if REMOTE_MODE:
         s = MainServer(host="139.162.135.194", port=12345)  # 139.162.135.194:12345

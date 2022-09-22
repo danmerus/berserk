@@ -579,8 +579,6 @@ class Game:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
         if self.mode == 'online':
             # print('send_state player:', player)
-            # t = threading.Thread(target=self.server.send_state, args=(player, state), daemon=True)
-            # t.start()
             self.server.send_state(player, state, both)
         else:
             # print('send_state:', player, self.curr_priority)
