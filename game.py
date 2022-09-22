@@ -570,7 +570,7 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player, msg=None):
-        if not self.sending:
+        if self.sending:
             print('!returning!')
             return
         state = self.form_state_obj(player)
