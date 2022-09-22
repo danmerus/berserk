@@ -569,6 +569,8 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player, msg=None):
+        import time
+        time.sleep(0.2)
         state = self.form_state_obj(player)
         if msg:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
