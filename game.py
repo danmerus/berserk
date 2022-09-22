@@ -571,7 +571,7 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player, msg=None):
-        while self.send_complete:
+        while not self.send_complete:
             time.sleep(0.1)
         self.send_complete = False
         state = self.form_state_obj(player)
