@@ -586,6 +586,7 @@ class Game:
             # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)
         self.send_complete = True
+        time.sleep(0.1)
 
     def on_reveal(self, cards):
         for card in cards:
