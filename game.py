@@ -573,7 +573,7 @@ class Game:
         if msg:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
         if self.mode == 'online':
-            print('send_state player:', player)
+            # print('send_state player:', player)
             # t = threading.Thread(target=self.server.send_state, args=(player, state), daemon=True)
             # t.start()
             self.server.send_state(player, state)
