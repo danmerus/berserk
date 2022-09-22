@@ -1,4 +1,6 @@
 import os
+import threading
+
 import board
 import numpy.random as rng
 
@@ -572,7 +574,9 @@ class Game:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
         if self.mode == 'online':
             print('send_state player:', player)
-            self.server.send_state(player, state)
+            t = threading.Thread(target=self.server.send_state, args=(player, state), daemon=True)
+            t.start()
+            # self.server.send_state(player, state)
         else:
             # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)
