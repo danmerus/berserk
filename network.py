@@ -83,6 +83,8 @@ def start_constr_game(host, port, parent, game_id, client_id, *args):
         s1.connect((host, int(port)))
         t = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
         t.start()
+        t1 = threading.Thread(target=start_constr_helper, args=([s1, parent]), daemon=True)
+        t1.start()
         s1.sendall(b'start_constr'+(str(game_id)+'#'+str(client_id)).encode())
     except Exception as e:
         print('start_constr_game: ', e)
