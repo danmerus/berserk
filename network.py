@@ -264,7 +264,7 @@ def constr_cb8(txt, parent):
 
 @mainthread
 def constr_cb7(state, parent):
-    # print('Got state: ', state)
+    print('Got state: ', state['cards'])
     parent.on_state_received(state)
 
 # @mainthread
