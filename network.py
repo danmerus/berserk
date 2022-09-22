@@ -224,6 +224,10 @@ def get_rolls(host, port, count):
 def start_constr_helper(sock, parent):
     while True:
         datachunk = sock.recv(8192)
+        try:
+            print('-->', datachunk.decode('utf-8'))
+        except:
+            print('!-->', datachunk[:5].decode('utf-8'))
         if datachunk.startswith(b'game_server'):
             constr_cb1(datachunk[len('game_server'):], parent)
         elif datachunk.startswith(b'close'):

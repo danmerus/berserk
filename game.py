@@ -55,7 +55,6 @@ class Game:
         self.card_exit = False
         self.red_fishki_bool = False
         self.stack_pause = False
-        self.sending = False
 
     def set_cards(self, cards_on_board1, cards_on_board2, game):
         new_cards = []
@@ -570,9 +569,6 @@ class Game:
             self.next_game_state()
 
     def send_state(self, player, msg=None):
-        if self.sending:
-            print('!returning!')
-            return
         state = self.form_state_obj(player)
         if msg:
             print('send_state', msg, 'player:', player, 'state:', state['cards'])
@@ -580,9 +576,7 @@ class Game:
             print('send_state player:', player)
             # t = threading.Thread(target=self.server.send_state, args=(player, state), daemon=True)
             # t.start()
-            self.sending = True
             self.server.send_state(player, state)
-            self.sending = False
         else:
             # print('send_state:', player, self.curr_priority)
             self.gui.on_state_received(state)

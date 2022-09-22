@@ -1044,7 +1044,7 @@ class BerserkApp(App):
             self.remove_pereraspredelenie_ran()
 
     def on_state_received(self, state):
-        print('on_state_received')
+        # print('on_state_received')
         if not self.curr_state:
             self.curr_state = state
             cards = self.curr_state['cards'].values()
